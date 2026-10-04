@@ -1,0 +1,261 @@
+<div class="stock-container">
+
+  <div class="page-title-bar"><i class="fas fa-boxes"></i> Inventario — Stock Actual</div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="stats-grid">
+    <div class="stat-card c-blue">
+      <div class="stat-icon-box"><i class="fas fa-cubes"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Total Productos</p>
+        <p class="stat-value">{{ totalItems() }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-icon-box"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Stock Normal</p>
+        <p class="stat-value">{{ normalItems() }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-yellow">
+      <div class="stat-icon-box"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Stock Bajo</p>
+        <p class="stat-value">{{ lowStockItems() }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-icon-box"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Sin Stock</p>
+        <p class="stat-value">{{ criticalItems() }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-purple">
+      <div class="stat-icon-box"><i class="fas fa-dollar-sign"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Valor Total</p>
+        <p class="stat-value" style="font-size:16px;margin-top:2px">{{ formatCurrency(totalValue()) }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA ACCIONES -->
+  <div class="actions-bar">
+    <button (click)="openNew()" class="btn-nuevo">
+      <i class="fas fa-plus"></i> Nuevo Registro
+    </button>
+
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearchChange()"
+             placeholder="Buscar producto o categoría..." class="search-input" />
+    </div>
+
+    <!-- Filtros de estado -->
+    <div class="status-filter-btns">
+      <button [class.active]="statusFilter===''" (click)="statusFilter='';applyFilter()" class="sfbtn all">Todos</button>
+      <button [class.active]="statusFilter==='normal'" (click)="statusFilter='normal';applyFilter()" class="sfbtn ok"><i class="fas fa-check"></i> Normal</button>
+      <button [class.active]="statusFilter==='low'" (click)="statusFilter='low';applyFilter()" class="sfbtn low"><i class="fas fa-exclamation-triangle"></i> Bajo</button>
+      <button [class.active]="statusFilter==='critical'" (click)="statusFilter='critical';applyFilter()" class="sfbtn crit"><i class="fas fa-times-circle"></i> Sin Stock</button>
+    </div>
+
+    <div class="pagination-inline" style="margin-left:auto">
+      <button (click)="previousPage()" [disabled]="currentPage===1" class="page-btn"><i class="fas fa-chevron-left"></i></button>
+      @for (p of getPageNumbers(); track p) {
+        <button (click)="goToPage(p)" [class.active]="currentPage===p" class="page-btn">{{ p }}</button>
+      }
+      <button (click)="nextPage()" [disabled]="currentPage===totalPages()" class="page-btn"><i class="fas fa-chevron-right"></i></button>
+      <select [(ngModel)]="itemsPerPage" (change)="applyFilter()" class="items-select">
+        <option [value]="10">10</option><option [value]="25">25</option><option [value]="50">50</option>
+      </select>
+    </div>
+  </div>
+  @if (getCategories().length > 0) {
+    <div class="category-chips">
+      @for (cat of getCategories(); track cat.name) {
+        <div class="category-chip" (click)="searchTerm=cat.name;applyFilter()">
+          <span class="chip-dot" [style.background]="getCategoryColor(cat.name)"></span>
+          <span class="cat-name">{{ cat.name }}</span>
+          <span class="cat-count">{{ cat.count }}</span>
+          <span class="cat-value">{{ formatCurrency(cat.value) }}</span>
+        </div>
+      }
+    </div>
+  }
+  <!-- TABLA -->
+  <div class="table-container">
+    <table class="stock-table">
+      <thead>
+      <tr>
+        <th>N°</th>
+        <th>Producto</th>
+        <th>Categoría</th>
+        <th style="text-align:center">Stock Actual</th>
+        <th style="text-align:center">Stock Mínimo</th>
+        <th style="text-align:right">Precio Unit.</th>
+        <th style="text-align:right">Valor Total</th>
+        <th style="text-align:center">Estado</th>
+        <th style="text-align:center">Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          <tr><td colspan="9" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando stock...</td></tr>
+        } @else if (getPaginatedItems().length === 0) {
+          <tr><td colspan="9" class="empty-row"><i class="fas fa-inbox"></i><br/>No hay registros de stock</td></tr>
+        } @else {
+          @for (item of getPaginatedItems(); track item.idExisting; let i = $index) {
+            <tr [class]="'row-' + getStockStatus(item)">
+              <td style="color:#94a3b8;font-size:12px">{{ (currentPage-1)*itemsPerPage+i+1 }}</td>
+
+              <!-- Producto -->
+              <td>
+                <div class="product-cell">
+                  <div class="product-icon" [style.background]="getCategoryColor(item.product?.categoria)">
+                    <i class="fas fa-box"></i>
+                  </div>
+                  <div>
+                    <div class="product-name">{{ item.product?.articulo ?? '—' }}</div>
+                    <div class="product-code">{{ item.product?.codigoQR ?? '' }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Categoría -->
+              <td><span class="cat-badge" [style.background]="getCategoryColor(item.product?.categoria)+'22'" [style.color]="getCategoryColor(item.product?.categoria)">{{ item.product?.categoria ?? '—' }}</span></td>
+
+              <!-- Stock Actual con barra visual -->
+              <td style="text-align:center">
+                <div class="stock-cell">
+                  <span class="stock-num" [class.stock-ok]="getStockStatus(item)==='normal'" [class.stock-warn]="getStockStatus(item)==='low'" [class.stock-crit]="getStockStatus(item)==='critical'">
+                    {{ item.stockACtual ?? 0 }}
+                  </span>
+                  <div class="stock-bar-wrap">
+                    <div class="stock-bar-fill" [class]="'bar-'+getStockStatus(item)"
+                         [style.width]="getStockPercent(item) + '%'"></div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Stock Mínimo -->
+              <td style="text-align:center;color:#64748b;font-weight:600">{{ item.stockMinimo ?? 0 }}</td>
+
+              <!-- Precio -->
+              <td style="text-align:right;font-weight:600">{{ formatCurrency(item.product?.precio ?? 0) }}</td>
+
+              <!-- Valor Total -->
+              <td style="text-align:right;font-weight:700;color:#1b6f6f">
+                {{ formatCurrency((item.stockACtual ?? 0) * (item.product?.precio ?? 0)) }}
+              </td>
+
+              <!-- Estado -->
+              <td style="text-align:center">
+                <span [class]="'status-badge status-' + getStockStatus(item)">
+                  {{ getStockStatusText(item) }}
+                </span>
+              </td>
+
+              <!-- Acciones -->
+              <td style="text-align:center">
+                <div class="actions-cell">
+                  <button (click)="openEdit(item)" class="btn-action edit" title="Editar stock">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button (click)="deleteExisting(item)" class="btn-action delete" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Info y Resumen -->
+  <div class="bottom-row">
+    <div class="pagination-info">
+      Mostrando {{ (currentPage-1)*itemsPerPage+1 }}–{{ Math.min(currentPage*itemsPerPage, existing().length) }}
+      de {{ existing().length }} registros
+    </div>
+
+
+  </div>
+
+</div>
+
+<!-- MODAL EDITAR STOCK -->
+@if (showEditModal()) {
+  <div class="modal-overlay" (click)="showEditModal.set(false)">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span><i class="fas fa-edit"></i> Editar Stock — {{ editingItem?.product?.articulo }}</span>
+        <button (click)="showEditModal.set(false)" class="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="stock-edit-preview">
+          <div class="sep">
+            <span class="sep-label">Stock Actual</span>
+            <span class="sep-value" [class.stock-crit]="newStockActual===0" [class.stock-warn]="newStockActual>0&&newStockActual<=newStockMinimo" [class.stock-ok]="newStockActual>newStockMinimo">
+              {{ newStockActual }}
+            </span>
+          </div>
+          <div class="sep">
+            <span class="sep-label">Mínimo</span>
+            <span class="sep-value">{{ newStockMinimo }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Stock Actual</label>
+          <input type="number" [(ngModel)]="newStockActual" min="0" class="field-input big-num" />
+        </div>
+        <div class="field">
+          <label class="field-label">Stock Mínimo</label>
+          <input type="number" [(ngModel)]="newStockMinimo" min="0" class="field-input" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showEditModal.set(false)" class="btn-cancel">Cancelar</button>
+        <button (click)="saveEdit()" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL NUEVO STOCK -->
+@if (showNewModal()) {
+  <div class="modal-overlay" (click)="showNewModal.set(false)">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span><i class="fas fa-plus"></i> Nuevo Registro de Stock</span>
+        <button (click)="showNewModal.set(false)" class="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label">Producto *</label>
+          <select [(ngModel)]="selectedProductId" class="field-input">
+            <option [ngValue]="null">— Selecciona un producto —</option>
+            @for (p of products(); track p.idProducto) {
+              <option [ngValue]="p.idProducto">{{ p.articulo }} ({{ p.categoria }})</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Stock Inicial</label>
+          <input type="number" [(ngModel)]="newStockValue" min="0" class="field-input big-num" />
+        </div>
+        <div class="field">
+          <label class="field-label">Stock Mínimo</label>
+          <input type="number" [(ngModel)]="newStockMin" min="0" class="field-input" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showNewModal.set(false)" class="btn-cancel">Cancelar</button>
+        <button (click)="saveNew()" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+}

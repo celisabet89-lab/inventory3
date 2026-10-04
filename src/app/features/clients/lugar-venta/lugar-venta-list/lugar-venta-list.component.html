@@ -1,0 +1,84 @@
+<div class="lv-page">
+
+  <!-- FORM INLINE (igual que categoría) -->
+  @if (showForm) {
+    <div class="form-card">
+      <h3 class="form-title">
+        <i class="fas" [class.fa-plus-circle]="!isEdit" [class.fa-edit]="isEdit"></i>
+        {{ isEdit ? 'Editar Lugar de Venta' : 'Nuevo Lugar de Venta' }}
+      </h3>
+
+      <div class="form-row">
+        <div class="field-wrap">
+          <label>Nombre *</label>
+          <input [(ngModel)]="nombre" class="f-input" [class.f-error]="errorMsg"
+                 placeholder="Ej: Tienda Centro, Local Norte..." (keyup.enter)="guardar()" />
+        </div>
+      </div>
+
+      @if (errorMsg) { <span class="f-err">{{ errorMsg }}</span> }
+
+      <div class="form-btns">
+        <button class="btn-cancel" (click)="cancel()" [disabled]="saving()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button class="btn-save" (click)="guardar()" [disabled]="saving() || !nombre.trim()">
+          @if (saving()) { <i class="fas fa-spinner fa-spin"></i> } @else { <i class="fas fa-save"></i> }
+          {{ isEdit ? 'Actualizar' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- LOADING -->
+  @if (loading()) {
+    <div class="loading-wrap"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+  }
+
+  <!-- GRID DE TARJETAS (igual que rol/categoría) -->
+  @if (!loading()) {
+    @if (lugares().length === 0) {
+      <div class="empty-wrap">
+        <i class="fas fa-store" style="font-size:48px;color:#d1d5db"></i>
+        <p>No hay lugares de venta registrados</p>
+        <button class="btn-nuevo" (click)="openNew()">
+          <i class="fas fa-plus"></i> Crear primer lugar
+        </button>
+      </div>
+    } @else {
+      <div class="roles-grid">
+        <div class="rol-card-new" (click)="openNew()">
+        <i class="fas fa-plus-circle"></i>
+        <span>Nuevo Lugar</span>
+      </div>
+        @for (l of lugares(); track l.idLugarVenta) {
+          <div class="rol-card">
+            <div class="rol-icon">
+              <i class="fas fa-store" style="font-size:20px"></i>
+            </div>
+            <div class="rol-body">
+              <h3 class="rol-nombre">{{ l.nombre }}</h3>
+
+              @if (l.direccion) {
+                <span class="rol-dir">{{ l.direccion }}</span>
+              }
+              @if (l.telefono) {
+                <span class="rol-tel"><i class="fas fa-phone"></i> {{ l.telefono }}</span>
+              }
+            </div>
+            <div class="rol-actions">
+              <button class="btn-ac edit" (click)="openEdit(l)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-ac del" (click)="eliminar(l)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+  }
+
+</div>

@@ -1,0 +1,122 @@
+<div class="scanner-container">
+  <!-- Encabezado -->
+  <div class="scanner-header">
+    <h1>
+      <i class="fas fa-qrcode"></i>
+      Escáner de Productos
+    </h1>
+    <button (click)="stopScanning()" class="btn-close">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Vista de Cámara -->
+  <div class="camera-container">
+    @if (!cameraActive()) {
+      <div class="camera-placeholder">
+        <i class="fas fa-camera camera-icon"></i>
+        <h2>Listo para escanear</h2>
+        <p>Pulsa el botón para activar la cámara</p>
+        <button (click)="startScanning()" class="btn-start">
+          <i class="fas fa-camera mr-2"></i>
+          Activar Cámara
+        </button>
+      </div>
+    } @else {
+      <div class="video-wrapper">
+        <video
+          #video
+          autoplay
+          playsinline
+          class="scanner-video"
+        ></video>
+        <canvas #canvas class="scanner-canvas"></canvas>
+
+        <!-- Overlay de guía -->
+        <div class="scan-overlay">
+          <div class="scan-box">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+          </div>
+          <p class="scan-instruction">
+            @if (scanning()) {
+              <i class="fas fa-spinner fa-spin"></i>
+              Enfoca el código en el recuadro
+            } @else {
+              <i class="fas fa-check-circle"></i>
+              Código detectado
+            }
+          </p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Producto Actual -->
+  @if (currentProduct()) {
+    <div class="product-info">
+      <div class="product-header">
+        <i class="fas fa-box"></i>
+        Último producto escaneado
+      </div>
+      <div class="product-details">
+        <h3>{{ currentProduct()!.articulo }}</h3>
+        <div class="product-meta">
+          <span class="badge">{{ currentProduct()!.categoria }}</span>
+          <span class="stock">Stock: {{ currentProduct()!.unidad }} unidades</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Historial de Escaneos -->
+  @if (scanHistory().length > 0) {
+    <div class="scan-history">
+      <div class="history-header">
+        <h3>
+          <i class="fas fa-history"></i>
+          Historial
+        </h3>
+        <button (click)="clearHistory()" class="btn-clear">
+          <i class="fas fa-trash"></i>
+          Limpiar
+        </button>
+      </div>
+      <div class="history-list">
+        @for (scan of scanHistory(); track scan.timestamp) {
+          <div class="history-item">
+            <div class="history-icon">
+              <i [class]="scan.format === 'QR_CODE' ? 'fas fa-qrcode' : 'fas fa-barcode'"></i>
+            </div>
+            <div class="history-info">
+              <div class="history-code">{{ scan.code }}</div>
+              <div class="history-time">
+                {{ scan.timestamp | date:'HH:mm:ss' }}
+              </div>
+            </div>
+            <div class="history-format">
+              {{ scan.format === 'QR_CODE' ? 'QR' : 'Barras' }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Botones de Acción -->
+  <div class="action-buttons">
+    @if (cameraActive()) {
+      <button (click)="stopScanning()" class="btn-action btn-stop">
+        <i class="fas fa-stop"></i>
+        Detener
+      </button>
+    } @else {
+      <button (click)="startScanning()" class="btn-action btn-start-scan">
+        <i class="fas fa-play"></i>
+        Iniciar Escaneo
+      </button>
+    }
+  </div>
+</div>

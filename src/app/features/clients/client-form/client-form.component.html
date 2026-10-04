@@ -1,0 +1,147 @@
+<div class="cf-wrap">
+
+  <div class="cf-header">
+    <div class="header-left">
+      <div class="header-icon-wrap"><i class="fas fa-user-friends"></i></div>
+      <div>
+        <h3>{{ isEdit ? 'Editar Cliente' : 'Nuevo Cliente' }}</h3>
+        <span class="header-sub">{{ isEdit ? 'Modifica los datos del cliente' : 'Completa los datos del nuevo cliente' }}</span>
+      </div>
+    </div>
+    <button class="btn-close" (click)="cancelar()" type="button"><i class="fas fa-times"></i></button>
+  </div>
+
+  <form [formGroup]="form" class="cf-body">
+    <div class="cf-grid">
+
+      <!-- COLUMNA PRINCIPAL -->
+      <div class="col-main">
+
+        <div class="section-card">
+          <h4 class="section-t"><i class="fas fa-user"></i> Datos Personales</h4>
+
+          <div class="row-2">
+            <div class="fld">
+              <label>Nombre *</label>
+              <input formControlName="nombre" class="f-in" placeholder="Nombre..." />
+              @if (hasError('nombre','required')) { <span class="ferr">Requerido</span> }
+            </div>
+            <div class="fld">
+              <label>Apellido *</label>
+              <input formControlName="apellido" class="f-in" placeholder="Apellido..." />
+              @if (hasError('apellido','required')) { <span class="ferr">Requerido</span> }
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="fld">
+              <label><i class="fas fa-id-card"></i> CI</label>
+              <input formControlName="ci" class="f-in" placeholder="Número de CI..." />
+            </div>
+            <div class="fld">
+              <label><i class="fas fa-phone"></i> Teléfono</label>
+              <input type="number" formControlName="telefono" class="f-in" placeholder="77712345" />
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="fld">
+              <label><i class="fas fa-envelope"></i> Gmail</label>
+              <input formControlName="gmail" class="f-in" placeholder="correo@gmail.com" />
+            </div>
+            <div class="fld">
+              <label><i class="fas fa-map-marker-alt"></i> Zona</label>
+              <input formControlName="zona" class="f-in" placeholder="Norte, Sur, Centro..." />
+            </div>
+          </div>
+
+          <div class="fld">
+            <label><i class="fas fa-home"></i> Dirección</label>
+            <input formControlName="direccion" class="f-in" placeholder="Av. Principal 123..." />
+          </div>
+
+          <div class="fld">
+            <label><i class="fas fa-sticky-note"></i> Observaciones</label>
+            <textarea formControlName="observaciones" class="f-in f-ta" rows="2"
+                      placeholder="Observaciones adicionales..."></textarea>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h4 class="section-t"><i class="fas fa-file-contract"></i> Lugar y Estado</h4>
+
+          <div class="row-2">
+            <!-- DROPDOWN LUGAR DE VENTA — idLugarVenta igual que idCategoria en producto -->
+            <div class="fld">
+              <label><i class="fas fa-store"></i> Lugar de Venta</label>
+              @if (lugares().length > 0) {
+                <select formControlName="idLugarVenta" class="f-in f-sel">
+                  <option [value]="null">— Sin lugar asignado —</option>
+                  @for (l of lugares(); track $index) {
+                    <option [value]="l.idLugarVenta">
+                      {{ l.nombre }}@if (l.ciudad) { · {{ l.ciudad }} }
+                    </option>
+                  }
+                </select>
+              } @else {
+                <div class="f-hint">
+                  ⏳ Cargando lugares... Si no aparecen,
+                  <a routerLink="/clientes/lugar-venta">créalos aquí</a>
+                </div>
+              }
+            </div>
+
+            <div class="fld">
+              <label>Estado</label>
+              <select formControlName="estado" class="f-in f-sel">
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA LATERAL -->
+      <div class="col-side">
+        <div class="section-card avatar-card">
+          <div class="avatar-grande">
+            {{ (form.value.nombre?.charAt(0) || '?').toUpperCase() }}{{ (form.value.apellido?.charAt(0) || '').toUpperCase() }}
+          </div>
+          <p class="avatar-nombre">{{ form.value.nombre || 'Nombre' }} {{ form.value.apellido || '' }}</p>
+          <span class="estado-chip" [class.activo]="form.value.estado === 'ACTIVO'">
+            {{ form.value.estado }}
+          </span>
+        </div>
+
+        <!-- Preview lugar seleccionado -->
+        @if (getLugarSeleccionado()) {
+          <div class="section-card lugar-preview">
+            <p class="preview-lbl"><i class="fas fa-store"></i> Lugar seleccionado:</p>
+            <p class="lugar-nombre">{{ getLugarSeleccionado()?.nombre }}</p>
+            @if (getLugarSeleccionado()?.ciudad) {
+              <span class="lugar-det">📍 {{ getLugarSeleccionado()?.ciudad }}</span>
+            }
+            @if (getLugarSeleccionado()?.direccion) {
+              <span class="lugar-det">{{ getLugarSeleccionado()?.direccion }}</span>
+            }
+            @if (getLugarSeleccionado()?.telefono) {
+              <span class="lugar-det"><i class="fas fa-phone"></i> {{ getLugarSeleccionado()?.telefono }}</span>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+  </form>
+
+  <div class="cf-footer">
+    <button type="button" class="btn-cancel" (click)="cancelar()" [disabled]="saving()">
+      <i class="fas fa-times"></i> Cancelar
+    </button>
+    <button type="button" class="btn-save" (click)="guardar()" [disabled]="saving()">
+      @if (saving()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
+      @else { <i class="fas fa-save"></i> {{ isEdit ? 'Actualizar Cliente' : 'Guardar Cliente' }} }
+    </button>
+  </div>
+</div>

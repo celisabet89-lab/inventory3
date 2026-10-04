@@ -1,0 +1,87 @@
+.users-page { padding: 24px; background: #f3f4f6; min-height: 100vh; box-sizing: border-box; width: 100%; }
+
+.page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #fff; padding: 18px 24px; border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-icon { font-size: 26px; color: #1b6f6f; }
+.page-header h2 { margin: 0; font-size: 20px; color: #111827; }
+.header-sub { font-size: 13px; color: #6b7280; }
+.btn-nuevo {
+  background: linear-gradient(135deg,#1b6f6f,#0f4f4f);
+  color:#fff; border:none; padding:10px 22px; border-radius:8px;
+  font-size:14px; font-weight:600; cursor:pointer; transition:.2s;
+  display:flex; align-items:center; gap:7px;
+}
+.btn-nuevo:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(27,111,111,.4); }
+
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.stat-card {
+  background:#fff; border-radius:12px; padding:16px 20px;
+  display:flex; align-items:center; gap:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.08); border-left:4px solid transparent;
+}
+.stat-card.s-total { border-left-color:#6b7280; }
+.stat-card.s-admin { border-left-color:#8b5cf6; }
+.stat-card.s-tec   { border-left-color:#f59e0b; }
+.stat-card.s-enc    { border-left-color:#3b82f6; }
+.stat-icon { font-size:22px; color:#6b7280; }
+.s-admin .stat-icon { color:#8b5cf6; }
+.s-tec   .stat-icon { color:#f59e0b; }
+.s-enc    .stat-icon { color:#3b82f6; }
+.stat-val { margin:0; font-size:24px; font-weight:700; color:#111827; }
+.stat-lbl { margin:0; font-size:12px; color:#6b7280; }
+
+.bar-filtros { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.search-wrap {
+  display:flex; align-items:center; gap:8px;
+  background:#fff; padding:8px 14px; border-radius:8px;
+  border:1.5px solid #e5e7eb; flex:1; min-width:200px;
+}
+.search-wrap i { color:#9ca3af; }
+.search-in { border:none; outline:none; font-size:14px; width:100%; }
+.f-sel {
+  padding:8px 12px; border:1.5px solid #e5e7eb;
+  border-radius:8px; font-size:13px; background:#fff; outline:none;
+}
+
+.table-wrap { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+.usr-table { width:100%; border-collapse:collapse; }
+.usr-table th { background:#1b6f6f; color:#fff; padding:12px 16px; font-size:13px; text-align:left; font-weight:600; }
+.usr-table td { padding:12px 16px; font-size:13px; color:#374151; border-bottom:1px solid #f3f4f6; }
+.usr-table tr:hover td { background:#f9fafb; }
+.tc { text-align:center; }
+.gray { color:#6b7280; }
+
+.usr-cell { display:flex; align-items:center; gap:10px; }
+.usr-avatar {
+  width:34px; height:34px; border-radius:50%; background:#1b6f6f;
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; flex-shrink:0;
+}
+.usr-nombre { font-weight:600; color:#111827; }
+
+.rol-badge { display:inline-block; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:600; }
+.badge-admin { background:#ede9fe; color:#6d28d9; }
+.badge-tec   { background:#fef3c7; color:#d97706; }
+.badge-enc    { background:#dbeafe; color:#2563eb; }
+.badge-user  { background:#f3f4f6; color:#374151; }
+
+.acc-cell { display:flex; gap:5px; }
+.btn-ac { width:30px; height:30px; border-radius:6px; border:none; cursor:pointer; font-size:12px; transition:.2s; display:flex; align-items:center; justify-content:center; }
+.btn-ac.edit { background:#fef3c7; color:#d97706; }
+.btn-ac.del  { background:#fee2e2; color:#dc2626; }
+.btn-ac:hover { transform:translateY(-1px); }
+
+.empty-st { text-align:center; padding:60px; color:#9ca3af; font-size:15px; }
+.empty-st p { margin:8px 0 0; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
+.modal-box { background:#fff; border-radius:16px; width:100%; max-width:560px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+
+@media(max-width:768px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .users-page { padding:12px; }
+}

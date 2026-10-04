@@ -1,0 +1,286 @@
+<div class="del-page">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-truck header-icon"></i>
+      <div>
+        <h2>Entregas</h2>
+        <span class="header-sub">Gestión de entregas a clientes</span>
+      </div>
+    </div>
+    <button class="btn-nuevo" (click)="openNew()">
+      <i class="fas fa-plus"></i> Nueva Entrega
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-box s-total">
+      <span class="sn">{{ total }}</span><span class="sl">Total</span>
+    </div>
+    <div class="stat-box s-pend">
+      <span class="sn">{{ pendientes }}</span><span class="sl">⏳ Pendientes</span>
+    </div>
+    <div class="stat-box s-cam">
+      <span class="sn">{{ enCamino }}</span><span class="sl">🚚 En Camino</span>
+    </div>
+    <div class="stat-box s-ent">
+      <span class="sn">{{ instalados }}</span><span class="sl">✅ Instalado</span>
+    </div>
+    <div class="stat-box s-can">
+      <span class="sn">{{ cancelados }}</span><span class="sl">❌ Cancelados</span>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="bar-filtros">
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input [(ngModel)]="searchTerm" (input)="applyFilter()"
+             placeholder="Buscar código, cliente..." class="search-in" />
+    </div>
+    <div class="estado-btns">
+      @for (e of estadoOpciones; track e) {
+        <button [class.activo]="filtroEstado===e" (click)="filtroEstado=e; applyFilter()">
+          {{ getEstadoIcono(e) }} {{ e === 'TODOS' ? 'Todos' : e.replace('_',' ') }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    @if (loading()) {
+      <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+    } @else if (filteredList().length === 0) {
+      <div class="empty-state"><i class="fas fa-truck" style="font-size:36px;color:#d1d5db"></i><p>No hay entregas</p></div>
+    } @else {
+      <table class="del-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Técnico</th>
+          <th>Dirección</th>
+          <th>Fecha</th>
+          <th>Productos</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (d of filteredList(); track d.idDelivery) {
+            <tr>
+              <td><span class="cod-badge">{{ d.codigo || '—' }}</span></td>
+              <td>
+                <div class="cli-cell">
+                  <i class="fas fa-user-circle" style="color:#1b6f6f;font-size:18px"></i>
+                  <span>{{ getNombreCliente(d.cliente) }}</span>
+                </div>
+              </td>
+              <td>{{ getNombreTecnico(d.tecnico) }}</td>
+              <td style="font-size:12px;max-width:140px">{{ d.direccionEntrega || '—' }}</td>
+              <td style="font-size:12px;color:#6b7280">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="prod-count">{{ (d.detalles?.length ?? 0) }} ítem(s)</span>
+              </td>
+              <td>
+                <select [value]="d.estado" (change)="cambiarEstado(d, $any($event.target).value)"
+                        [class]="'estado-select ' + getEstadoClass(d.estado)">
+                  @for (e of estadoEntrega; track e) {
+                    <option [value]="e" [selected]="d.estado===e">{{ e.replace('_',' ') }}</option>
+                  }
+                </select>
+              </td>
+              <td class="acc-cell">
+                <button (click)="verDetalle(d)"  class="btn-ac ver"    title="Ver detalle"><i class="fas fa-eye"></i></button>
+                <button (click)="openEdit(d)"    class="btn-ac edit"   title="Editar"><i class="fas fa-edit"></i></button>
+                <button (click)="eliminar(d)"    class="btn-ac del"    title="Eliminar"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- ══ MODAL NUEVA / EDITAR ENTREGA ════════════════════════════ -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-hd">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-truck" style="font-size:22px"></i>
+          <div>
+            <h3 style="margin:0">{{ isEdit ? 'Editar Entrega' : 'Nueva Entrega' }}</h3>
+            <span style="font-size:12px;opacity:.8">Complete los datos</span>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body-wrap">
+
+        <!-- FORM DATOS -->
+        <form [formGroup]="form" class="form-grid-2">
+
+          <div class="fld">
+            <label>👤 Cliente *</label>
+            <select formControlName="clienteId" class="f-in">
+              <option [value]="null">— Seleccionar —</option>
+              @for (c of clientes(); track c.idCliente) {
+                <option [value]="c.idCliente">
+                  {{ getNombreCliente(c) }} {{ c.nContrato ? '· #'+c.nContrato : '' }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="fld">
+            <label>🔧 Técnico</label>
+            <select formControlName="tecnicoId" class="f-in">
+              <option [value]="null">— Sin asignar —</option>
+              @for (t of tecnicos(); track t.idUser) {
+                <option [value]="t.idUser">{{ getNombreTecnico(t) }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="fld">
+            <label>📅 Fecha</label>
+            <input type="date" formControlName="fecha" class="f-in" />
+          </div>
+
+          <div class="fld">
+            <label>🔄 Estado</label>
+            <select formControlName="estado" class="f-in">
+              @for (e of estadoEntrega; track e) { <option [value]="e">{{ e.replace('_',' ') }}</option> }
+            </select>
+          </div>
+
+          <div class="fld full">
+            <label>📍 Dirección de Entrega</label>
+            <input type="text" formControlName="direccionEntrega" placeholder="Av. Principal #123" class="f-in" />
+          </div>
+
+          <div class="fld full">
+            <label>📝 Observaciones</label>
+            <textarea formControlName="observacion" rows="2" class="f-in" placeholder="Notas adicionales..."></textarea>
+          </div>
+        </form>
+
+        <!-- SELECTOR DE PRODUCTOS -->
+        <div class="prod-section">
+          <h4 class="prod-title"><i class="fas fa-boxes"></i> Productos a Entregar</h4>
+
+          <div class="prod-search-wrap">
+            <i class="fas fa-search"></i>
+            <input [(ngModel)]="productoSearch" (input)="onProductoSearch()"
+                   placeholder="Buscar producto..." class="prod-search-in" />
+          </div>
+
+          <div class="prod-list-scroll">
+            @for (p of productosFiltrados(); track p.idProducto) {
+              <div class="prod-item" (click)="addProducto(p)">
+                <div class="prod-item-info">
+                  @if (p.foto) { <img [src]="p.foto" class="prod-thumb" /> }
+                  @else { <div class="prod-thumb-ph"><i class="fas fa-box"></i></div> }
+                  <div>
+                    <span class="prod-nom">{{ p.articulo }}</span>
+                    <span class="prod-cat">{{ p.categoria }}</span>
+                  </div>
+                </div>
+                <span class="prod-stock" [class.stock-ok]="(p.unidad??0)>0" [class.stock-zero]="(p.unidad??0)<=0">
+                  Stock: {{ p.unidad ?? 0 }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- DETALLE SELECCIONADO -->
+        @if (detalle.length > 0) {
+          <div class="detalle-section">
+            <h4 class="prod-title">📋 Detalle ({{ detalle.length }} producto(s))</h4>
+            <table class="det-mini-table">
+              <thead><tr><th>Producto</th><th>Cantidad</th><th></th></tr></thead>
+              <tbody>
+                @for (item of detalle; track item.productId; let i = $index) {
+                  <tr>
+                    <td>{{ item.articulo }}</td>
+                    <td>
+                      <input type="number" [(ngModel)]="item.cantidad" min="1"
+                             class="cant-in" />
+                    </td>
+                    <td>
+                      <button (click)="removeDetalle(i)" class="btn-del-item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+      </div>
+
+      <div class="modal-ft">
+        <button (click)="closeModal()" class="btn-cancel-m">Cancelar</button>
+        <button (click)="guardar()" class="btn-save-m" [disabled]="loading()">
+          @if (loading()) { <i class="fas fa-spinner fa-spin"></i> } @else { <i class="fas fa-save"></i> }
+          {{ isEdit ? 'Actualizar' : 'Crear Entrega' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══ MODAL VER DETALLE ════════════════════════════════════════ -->
+@if (showDetalle() && detalleEntrega) {
+  <div class="modal-overlay" (click)="cerrarDetalle()">
+    <div class="modal-det" (click)="$event.stopPropagation()">
+      <div class="modal-hd">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">{{ getEstadoIcono(detalleEntrega.estado) }}</span>
+          <div>
+            <h3 style="margin:0">{{ detalleEntrega.codigo }}</h3>
+            <span style="font-size:12px;opacity:.8">{{ getNombreCliente(detalleEntrega.cliente) }}</span>
+          </div>
+        </div>
+        <button class="modal-close" (click)="cerrarDetalle()">✕</button>
+      </div>
+      <div class="det-body">
+        <div class="det-info-grid">
+          <div><span class="di-lbl">Técnico</span><span class="di-val">{{ getNombreTecnico(detalleEntrega.tecnico) }}</span></div>
+          <div><span class="di-lbl">Fecha</span><span class="di-val">{{ detalleEntrega.fecha | date:'dd/MM/yyyy' }}</span></div>
+          <div><span class="di-lbl">Dirección</span><span class="di-val">{{ detalleEntrega.direccionEntrega || '—' }}</span></div>
+          <div><span class="di-lbl">Estado</span><span [class]="'di-val estado-badge ' + getEstadoClass(detalleEntrega.estado)">{{ detalleEntrega.estado }}</span></div>
+        </div>
+        @if (detalleEntrega.observacion) {
+          <p style="font-size:13px;color:#6b7280;margin:8px 0 0"><b>Observación:</b> {{ detalleEntrega.observacion }}</p>
+        }
+        <h4 style="margin:16px 0 8px;font-size:14px;color:#374151">📦 Productos</h4>
+        <table class="det-mini-table">
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Cantidad</th></tr></thead>
+          <tbody>
+            @for (item of (detalleEntrega.detalles ?? []); track item.idDeliveryDetails) {
+              <tr>
+                <td>{{ item.product?.articulo || '—' }}</td>
+                <td style="font-size:12px;color:#9ca3af">{{ item.product?.categoria || '—' }}</td>
+                <td><b>{{ item.cantidad }}</b></td>
+              </tr>
+            }
+            @if (!detalleEntrega.detalles?.length) {
+              <tr><td colspan="3" style="text-align:center;color:#9ca3af">Sin productos</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

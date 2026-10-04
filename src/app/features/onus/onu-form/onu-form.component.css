@@ -1,0 +1,113 @@
+.mac-input-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0 8px;
+  flex: 1;
+}
+
+.mac-input-container:focus-within {
+  border-color: #1b6f6f;
+  box-shadow: 0 0 0 3px rgba(27,111,111,0.1);
+  background: #fff;
+}
+
+.mac-part {
+  width: 42px;
+  padding: 8px 0;
+  text-align: center;
+  border: none;
+  background: transparent;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.mac-part:focus {
+  outline: none;
+  background: #e6f7f7;
+  border-radius: 4px;
+}
+
+.mac-separator {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1b6f6f;
+  user-select: none;
+}
+
+.input-with-scanner {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}/* === FORM ONU — mismo estilo que product-form === */
+.form-wrapper { background:#fff; border-radius:14px; width:100%; max-width:560px; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+.form-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:#1b6f6f; border-radius:14px 14px 0 0; }
+.form-title { font-size:18px; font-weight:700; color:white; margin:0; display:flex; align-items:center; gap:10px; }
+.btn-close { width:32px; height:32px; border:none; background:rgba(255,255,255,0.2); color:white; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+.btn-close:hover { background:rgba(255,255,255,0.35); }
+.form-body { padding:20px 24px 24px; background:#fff; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.field { display:flex; flex-direction:column; gap:5px; }
+.field.full { grid-column:1/-1; }
+.field-label { font-size:12px; font-weight:600; color:#374151; display:flex; align-items:center; gap:5px; }
+.field-label i { color:#1b6f6f; font-size:11px; }
+.field-input { padding:8px 12px; border:1.5px solid #e5e7eb; border-radius:8px; font-size:13px; color:#111827; background:#f9fafb; outline:none; transition:border-color 0.2s,box-shadow 0.2s; width:100%; box-sizing:border-box; }
+.field-input:focus { border-color:#1b6f6f; box-shadow:0 0 0 3px rgba(27,111,111,0.1); background:#fff; }
+.field-input.error { border-color:#ef4444; }
+textarea.field-input { resize:vertical; min-height:60px; }
+select.field-input { cursor:pointer; }
+.field-error { font-size:11px; color:#ef4444; }
+
+/* Input + botón escáner */
+.input-with-scanner { display:flex; gap:6px; align-items:stretch; }
+.input-with-scanner .field-input { flex:1; }
+.btn-scanner {
+  width:38px; min-width:38px; height:38px;
+  background:#1b6f6f; color:white; border:none;
+  border-radius:8px; cursor:pointer; font-size:15px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s, transform 0.15s;
+  flex-shrink:0;
+}
+.btn-scanner:hover { background:#155f5f; transform:scale(1.08); }
+.btn-scanner:active { transform:scale(0.95); }
+
+/* Botones del form */
+.form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid #f3f4f6; }
+.btn-cancel { padding:9px 20px; border:1.5px solid #d1d5db; background:white; color:#374151; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:7px; transition:all 0.2s; }
+.btn-cancel:hover:not(:disabled) { background:#f3f4f6; }
+.btn-save { padding:9px 24px; background:#1b6f6f; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:7px; transition:all 0.2s; }
+.btn-save:hover:not(:disabled) { background:#155f5f; }
+.btn-save:disabled,.btn-cancel:disabled { opacity:0.5; cursor:not-allowed; }
+
+/* ======== MODAL ESCÁNER ======== */
+.scanner-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:2000; }
+.scanner-modal { background:#1a1a2e; border-radius:16px; width:90%; max-width:480px; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,0.5); }
+.scanner-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#16213e; color:white; font-size:15px; font-weight:600; }
+.scanner-header i { color:#1b6f6f; margin-right:8px; }
+.btn-close-scanner { background:rgba(255,255,255,0.15); border:none; color:white; width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+.btn-close-scanner:hover { background:rgba(255,255,255,0.25); }
+
+.scanner-body { position:relative; padding:16px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.scanner-video { width:100%; max-width:420px; height:280px; object-fit:cover; border-radius:10px; background:#000; }
+
+/* Marco de escaneo */
+.scanner-frame { position:absolute; top:16px; left:50%; transform:translateX(-50%); width:calc(100% - 32px); max-width:420px; height:280px; pointer-events:none; }
+.corner { position:absolute; width:24px; height:24px; border-color:#1b6f6f; border-style:solid; }
+.corner.tl { top:10px; left:10px; border-width:3px 0 0 3px; }
+.corner.tr { top:10px; right:10px; border-width:3px 3px 0 0; }
+.corner.bl { bottom:10px; left:10px; border-width:0 0 3px 3px; }
+.corner.br { bottom:10px; right:10px; border-width:0 3px 3px 0; }
+
+/* Línea de escaneo animada */
+.scan-line { position:absolute; left:10px; right:10px; height:2px; background:linear-gradient(90deg, transparent, #1b6f6f, #00ffcc, #1b6f6f, transparent); animation:scanMove 2s linear infinite; top:50%; box-shadow:0 0 8px #00ffcc; }
+@keyframes scanMove { 0%{top:15px} 50%{top:calc(100% - 15px)} 100%{top:15px} }
+
+.scanner-hint { color:#94a3b8; font-size:12px; text-align:center; margin:0; }
+.scan-success { background:#dcfce7; color:#16a34a; padding:10px 20px; border-radius:8px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; animation:popIn 0.3s ease; }
+@keyframes popIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }

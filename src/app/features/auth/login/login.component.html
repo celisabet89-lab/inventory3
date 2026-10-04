@@ -1,0 +1,118 @@
+<div class="login-container">
+
+  <!-- PANEL IZQUIERDO -->
+  <div class="login-left">
+    <div class="spheres">
+      <div class="sphere-large"></div>
+      <div class="sphere-medium"></div>
+      <div class="sphere-small"></div>
+    </div>
+    <div class="brand-content">
+      <h1 class="logo-text">
+        <i class="fas fa-infinity logo-icon"></i>
+        SIN <span class="highlight">LIMITE</span>
+      </h1>
+      <h2 class="welcome-text">
+        <i class="fas fa-hand-wave welcome-icon"></i>
+        Bienvenido de nuevo
+      </h2>
+    </div>
+  </div>
+
+  <!-- PANEL DERECHO - Mismo tamaño que el panel izquierdo -->
+  <div class="login-right">
+    <div class="login-card">
+      <h3 class="login-title">
+        <i class="fas fa-sign-in-alt title-icon"></i>
+      </h3>
+
+      <div class="form-separator">
+        <i class="fas fa-minus separator-icon"></i>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+        <!-- USUARIO -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-user form-icon"></i>
+            Usuario
+          </label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope input-icon"></i>
+            <input
+              type="text"
+              formControlName="email"
+              placeholder="michel@gmail.com"
+              class="form-input"
+              value="michel@gmail.com"
+            />
+          </div>
+          @if (hasError('email', 'required')) {
+            <p class="error-text">
+              <i class="fas fa-exclamation-circle error-icon"></i>
+              El usuario es requerido
+            </p>
+          }
+        </div>
+
+        <!-- CONTRASEÑA -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-key form-icon"></i>
+            Contraseña
+          </label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="......"
+              class="form-input"
+              value="password123"
+            />
+            <button type="button" (click)="togglePassword()" class="eye-btn">
+              <i class="fas" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+            </button>
+          </div>
+          @if (hasError('password', 'required')) {
+            <p class="error-text">
+              <i class="fas fa-exclamation-circle error-icon"></i>
+              La contraseña es requerida
+            </p>
+          }
+        </div>
+
+        <!-- OPCIONES -->
+        <div class="options">
+          <label class="remember">
+            <input type="checkbox" class="checkbox" checked />
+            <i class="fas fa-check check-icon"></i>
+            <span class="checkbox-label">Recordarme</span>
+          </label>
+          <a href="#" class="forgot-password">
+            <i class="fas fa-question-circle forgot-icon"></i>
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
+        <div class="form-separator">
+          <i class="fas fa-minus separator-icon"></i>
+        </div>
+
+        <!-- BOTÓN -->
+        <button type="submit" [disabled]="loading()" class="login-btn">
+          @if (loading()) {
+            <i class="fas fa-spinner fa-spin loading-icon"></i>
+            Iniciando...
+          } @else {
+            <i class="fas fa-sign-in-alt btn-icon"></i>
+            Iniciar Sesión
+          }
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+</div>

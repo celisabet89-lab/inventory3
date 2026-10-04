@@ -1,0 +1,347 @@
+<div class="movements-page">
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    <a routerLink="/dashboard">📋 Inicio</a>
+    <span> / </span>
+    <span class="active">Gestión de {{ activeTab() === 'COMPRA' ? 'Compras' : 'Ventas' }}</span>
+  </div>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas" [class.fa-shopping-cart]="activeTab() === 'COMPRA'" [class.fa-chart-line]="activeTab() === 'VENTA'"></i>
+      <div>
+        <h2>{{ activeTab() === 'COMPRA' ? 'Compras' : 'Ventas' }}</h2>
+        <span class="header-sub">Gestión de {{ activeTab() === 'COMPRA' ? 'Compras' : 'Ventas' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-container">
+    <button class="tab-btn" [class.active]="activeTab() === 'COMPRA'" (click)="cambiarTab('COMPRA')">
+      <i class="fas fa-shopping-cart"></i> Compras
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'VENTA'" (click)="cambiarTab('VENTA')">
+      <i class="fas fa-chart-line"></i> Ventas
+    </button>
+  </div>
+
+  <!-- BARRA DE ACCIONES -->
+  <div class="actions-bar">
+    <div class="pagination-controls-left">
+      <span class="mostrar-label">Mostrar</span>
+      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="items-select">
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <span class="registros-label">Registros por Página</span>
+    </div>
+
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input [(ngModel)]="searchTerm" (input)="onSearchChange()"
+             placeholder="Buscar..." class="search-in" />
+    </div>
+
+    <button class="btn-nuevo" (click)="openNew()">
+      <i class="fas fa-plus"></i> Nuevo
+    </button>
+  </div>
+
+  <!-- TABLA DE MOVIMIENTOS - COMPRAS -->
+  @if (activeTab() === 'COMPRA') {
+    <div class="table-wrap">
+      @if (loading()) {
+        <div class="empty-st">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando compras...</p>
+        </div>
+      } @else if (filteredMovimientos().length === 0) {
+        <div class="empty-st">
+          <i class="fas fa-shopping-cart"></i>
+          <p>No hay compras registradas</p>
+          <button class="btn-nuevo" (click)="openNew()">
+            <i class="fas fa-plus"></i> Registrar compra
+          </button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="movements-table">
+            <thead>
+            <tr>
+              <th>Nro Compra</th>
+              <th>Fecha y Hora</th>
+              <th>Usuario</th>
+              <th>Proveedor</th>
+              <th>Total</th>
+              <th>Forma Pago</th>
+              <th>Estado Pago</th>
+              <th>Tipo Compra</th>
+              <th>Opciones</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (mov of getPaginatedMovements(); track mov.idMovimiento) {
+                <tr [class.row-anulado]="mov.estadoPago === 'anulado'">
+                  <td class="nro-cell">{{ mov.nroMovimiento || '#' + mov.idMovimiento }}</td>
+                  <td class="fecha-cell">{{ formatDate(mov.fecha) }}</td>
+                  <td>{{ getUsuarioNombre(mov.usuario) }}</td>
+                  <td class="proveedor-cell">{{ mov.responsable }}</td>
+                  <td class="total-cell">{{ formatCurrency(mov.total || (mov.precio * mov.cantidad)) }}</td>
+                  <td>
+                    <span class="badge" [class]="getFormaPagoClass(mov.formaPago)">
+                      {{ mov.formaPago | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="getEstadoPagoClass(mov.estadoPago)">
+                      {{ mov.estadoPago | titlecase }}
+                    </span>
+                  </td>
+                  <td>{{ mov.tipoDetalle || 'Compras Generales' }}</td>
+                  <td class="acc-cell">
+                    <button class="btn-ac edit" (click)="openEdit(mov)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-ac view" (click)="verDetalle(mov)" title="Ver Detalle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    @if (mov.estadoPago !== 'anulado') {
+                      <button class="btn-ac delete" (click)="anularMovimiento(mov)" title="Anular">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TABLA DE MOVIMIENTOS - VENTAS -->
+  @if (activeTab() === 'VENTA') {
+    <div class="table-wrap">
+      @if (loading()) {
+        <div class="empty-st">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando ventas...</p>
+        </div>
+      } @else if (filteredMovimientos().length === 0) {
+        <div class="empty-st">
+          <i class="fas fa-chart-line"></i>
+          <p>No hay ventas registradas</p>
+          <button class="btn-nuevo" (click)="openNew()">
+            <i class="fas fa-plus"></i> Registrar venta
+          </button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="movements-table ventas-table">
+            <thead>
+            <tr>
+              <th>Nro Venta</th>
+              <th>Fecha y Hora</th>
+              <th>Cliente</th>
+              <th>Usuario</th>
+              <th>Cajas</th>
+              <th>Total</th>
+              <th>Total Ajustado</th>
+              <th>Estado de Pago</th>
+              <th>Forma de Pago</th>
+              <th>Tipo de Venta</th>
+              <th>Opciones</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (mov of getPaginatedMovements(); track mov.idMovimiento) {
+                <tr [class.row-anulado]="mov.estadoPago === 'anulado'">
+                  <td class="nro-cell">{{ mov.nroMovimiento || '#' + mov.idMovimiento }}</td>
+                  <td class="fecha-cell">{{ formatDate(mov.fecha) }}</td>
+                  <td class="cliente-cell">{{ mov.responsable }}</td>
+                  <td>{{ getUsuarioNombre(mov.usuario) }}</td>
+                  <td class="cajas-cell">—</td>
+                  <td class="total-cell">{{ formatCurrency(mov.total || (mov.precio * mov.cantidad)) }}</td>
+                  <td class="ajustado-cell">S/R</td>
+                  <td>
+                    <span class="badge" [class]="getEstadoPagoClass(mov.estadoPago)">
+                      {{ mov.estadoPago | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="getFormaPagoClass(mov.formaPago)">
+                      {{ mov.formaPago | titlecase }}
+                    </span>
+                  </td>
+                  <td>{{ mov.tipoDetalle || 'Generales' }}</td>
+                  <td class="acc-cell">
+                    <button class="btn-ac edit" (click)="openEdit(mov)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-ac view" (click)="verDetalle(mov)" title="Ver Detalle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    @if (mov.estadoPago !== 'anulado') {
+                      <button class="btn-ac delete" (click)="anularMovimiento(mov)" title="Anular">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- PAGINACIÓN -->
+  @if (filteredMovimientos().length > 0 && totalPages() > 1) {
+    <div class="pagination-bar">
+      <div class="pagination-info">
+        Mostrando {{ (currentPage() - 1) * itemsPerPage() + 1 }} -
+        {{ Math.min(currentPage() * itemsPerPage(), filteredMovimientos().length) }}
+        de {{ filteredMovimientos().length }} registros
+      </div>
+      <div class="pagination-controls">
+        <button (click)="previousPage()" [disabled]="currentPage() === 1" class="page-btn">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        @for (page of getPageNumbers(); track page) {
+          <button (click)="goToPage(page)" [class.active]="currentPage() === page" class="page-btn">
+            {{ page }}
+          </button>
+        }
+        <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="page-btn">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- MODAL FORMULARIO -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="fas" [class.fa-shopping-cart]="activeTab() === 'COMPRA'" [class.fa-chart-line]="activeTab() === 'VENTA'"></i>
+          {{ isEditMode ? 'Editar' : 'Nuevo' }} {{ activeTab() === 'COMPRA' ? 'Compra' : 'Venta' }}
+        </h3>
+        <button class="close-btn" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° {{ activeTab() === 'COMPRA' ? 'Compra' : 'Venta' }} *</label>
+            <input type="text" [(ngModel)]="formData.nroMovimiento" class="form-control" placeholder="Número de movimiento" />
+          </div>
+          <div class="form-group">
+            <label>Usuario *</label>
+            <select [(ngModel)]="formData.usuario" class="form-control">
+              <option [value]="''">-- Seleccione un usuario --</option>
+              @for (user of users(); track user.id) {
+                <option [value]="user.username || user.nombre">
+                  {{ user.nombre }}
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ activeTab() === 'COMPRA' ? 'Proveedor' : 'Cliente' }} *</label>
+          <select [(ngModel)]="formData.responsable" class="form-control">
+            <option [value]="''">-- {{ activeTab() === 'COMPRA' ? 'Seleccione un proveedor' : 'Seleccione un cliente' }} --</option>
+            @for (item of (activeTab() === 'COMPRA' ? providers() : clients()); track item.idProveedor || item.idCliente) {
+              <option [value]="item.nombre">
+                {{ item.nombre }} {{ item.apellido || '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>NIT / CI</label>
+          <input type="text" [(ngModel)]="formData.nitCi" class="form-control" placeholder="NIT o CI" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Producto *</label>
+            <select [(ngModel)]="formData.productId" class="form-control">
+              <option [value]="null">-- Seleccione un producto --</option>
+              @for (p of products(); track p.idProducto) {
+                <option [value]="p.idProducto">
+                  {{ p.articulo }} - Stock: {{ p.unidad || 0 }}
+                </option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cantidad *</label>
+            <input type="number" [(ngModel)]="formData.cantidad" class="form-control" min="1" step="1" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Precio Unitario</label>
+            <input type="number" [(ngModel)]="formData.precio" class="form-control" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Total</label>
+            <input type="text" class="form-control" [value]="formatCurrency(formData.precio * formData.cantidad)" disabled readonly />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Forma de Pago *</label>
+            <select [(ngModel)]="formData.formaPago" class="form-control">
+              @for (fp of formasPago; track fp) {
+                <option [value]="fp">{{ fp | titlecase }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado de Pago *</label>
+            <select [(ngModel)]="formData.estadoPago" class="form-control">
+              @for (ep of estadosPago; track ep) {
+                <option [value]="ep">{{ ep | titlecase }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Observaciones</label>
+          <textarea [(ngModel)]="formData.observaciones" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeForm()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button class="btn-save" (click)="guardar()" [disabled]="loading()">
+          @if (loading()) {
+            <i class="fas fa-spinner fa-spin"></i> Guardando...
+          } @else {
+            <i class="fas fa-save"></i> {{ isEditMode ? 'Actualizar' : 'Guardar' }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

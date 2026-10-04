@@ -1,0 +1,100 @@
+<div class="form-wrapper">
+  <div class="form-header">
+    <h2 class="form-title">
+      <i class="fas fa-user-cog"></i>
+      {{ isEditMode() ? 'Editar Usuario' : 'Nuevo Usuario' }}
+    </h2>
+    <button type="button" class="btn-close" (click)="cancel()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="form-body">
+    <div class="form-grid">
+
+      <!-- Nombre -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-user"></i> Nombre *</label>
+        <input type="text" formControlName="name" placeholder="Ej: Juan"
+               class="field-input" [class.error]="hasError('name','required')" />
+        @if (hasError('name','required')) { <span class="field-error">Obligatorio</span> }
+      </div>
+
+      <!-- Apellido -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-user"></i> Apellido *</label>
+        <input type="text" formControlName="lastName" placeholder="Ej: Pérez"
+               class="field-input" [class.error]="hasError('lastName','required')" />
+        @if (hasError('lastName','required')) { <span class="field-error">Obligatorio</span> }
+      </div>
+
+      <!-- Email -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-envelope"></i> Email *</label>
+        <input type="email" formControlName="email" placeholder="correo@ejemplo.com"
+               class="field-input" [class.error]="hasError('email','required') || hasError('email','email')" />
+        @if (hasError('email','required') || hasError('email','email')) {
+          <span class="field-error">Email inválido</span>
+        }
+      </div>
+
+      <!-- Contraseña -->
+      <div class="field">
+        <label class="field-label">
+          <i class="fas fa-lock"></i>
+          Contraseña {{ isEditMode() ? '(vacío = sin cambio)' : '' }}
+        </label>
+        <input type="password" formControlName="password"
+               [placeholder]="isEditMode() ? 'Sin cambios' : 'Nueva contraseña'"
+               class="field-input" />
+      </div>
+
+      <!-- Rol (desde BD) -->
+      <div class="field full">
+        <label class="field-label"><i class="fas fa-shield-alt"></i> Rol *</label>
+        @if (loadingRoles()) {
+          <div class="field-input" style="color:#9ca3af;cursor:default">
+            <i class="fas fa-spinner fa-spin"></i> Cargando roles...
+          </div>
+        } @else if (roles().length === 0) {
+          <div class="field-input" style="color:#ef4444;cursor:default">
+            Sin roles en la BD — ejecuta: INSERT INTO rol (cargo) VALUES ('Administrador'),('Técnico'),('Operador'),('Usuario')
+          </div>
+        } @else {
+          <select formControlName="rolId" class="field-input" [class.error]="hasError('rolId','required')">
+            <option [ngValue]="null">— Selecciona un rol —</option>
+            @for (r of roles(); track r.id) {
+              <option [ngValue]="r.id">{{ r.cargo }}</option>
+            }
+          </select>
+          @if (hasError('rolId','required')) {
+            <span class="field-error">Selecciona un rol</span>
+          }
+        }
+      </div>
+
+      <!-- CI -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-id-card"></i> CI</label>
+        <input type="number" formControlName="ci" placeholder="Ej: 1234567" class="field-input" />
+      </div>
+
+      <!-- Teléfono -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-phone"></i> Teléfono</label>
+        <input type="number" formControlName="telefono" placeholder="Ej: 76543210" class="field-input" />
+      </div>
+
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="cancel()" [disabled]="loading()" class="btn-cancel">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button type="submit" [disabled]="loading() || userForm.invalid" class="btn-save">
+        @if (loading()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
+        @else { <i class="fas fa-save"></i> {{ isEditMode() ? 'Actualizar' : 'Guardar' }} }
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,321 @@
+<!-- features/reports/report-dashboard/report-dashboard.component.html -->
+<div class="report-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-chart-line"></i>
+        Dashboard de Reportes
+      </h1>
+      <p class="page-subtitle">
+        Analiza el rendimiento y métricas del inventario
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <div class="date-range">
+        <i class="fas fa-calendar-alt"></i>
+        <select [(ngModel)]="selectedPeriod" (change)="onPeriodChange()">
+          <option value="today">Hoy</option>
+          <option value="week">Esta semana</option>
+          <option value="month" selected>Este mes</option>
+          <option value="quarter">Este trimestre</option>
+          <option value="year">Este año</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+
+      <button class="btn-export" (click)="exportDashboard()">
+        <i class="fas fa-file-export"></i>
+        Exportar PDF
+      </button>
+
+      <button class="btn-refresh" (click)="refreshData()">
+        <i class="fas fa-sync-alt"></i>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas Principales -->
+  <div class="main-stats">
+    <div class="stat-card total-sales">
+      <div class="stat-icon">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">{{ totalSales() | currency:'BOB ' }}</h3>
+        <p class="stat-label">Ventas Totales</p>
+        <div class="stat-change" [ngClass]="{'positive': salesChange() >= 0, 'negative': salesChange() < 0}">
+          <i class="fas" [class.fa-arrow-up]="salesChange() >= 0" [class.fa-arrow-down]="salesChange() < 0"></i>
+          {{ Math.abs(salesChange()) }}%
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card total-movements">
+      <div class="stat-icon">
+        <i class="fas fa-exchange-alt"></i>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">{{ totalMovements() }}</h3>
+        <p class="stat-label">Movimientos</p>
+        <div class="stat-change" [ngClass]="{'positive': movementsChange() >= 0, 'negative': movementsChange() < 0}">
+          <i class="fas" [class.fa-arrow-up]="movementsChange() >= 0" [class.fa-arrow-down]="movementsChange() < 0"></i>
+          {{ Math.abs(movementsChange()) }}%
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card low-stock">
+      <div class="stat-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">{{ lowStockItems() }}</h3>
+        <p class="stat-label">Bajo Stock</p>
+        <div class="stat-change" [ngClass]="{'positive': lowStockChange() <= 0, 'negative': lowStockChange() > 0}">
+          <i class="fas" [class.fa-arrow-up]="lowStockChange() <= 0" [class.fa-arrow-down]="lowStockChange() > 0"></i>
+          {{ Math.abs(lowStockChange()) }}%
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card top-product">
+      <div class="stat-icon">
+        <i class="fas fa-star"></i>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">{{ topProduct().name || 'N/A' }}</h3>
+        <p class="stat-label">Producto Más Vendido</p>
+        <div class="stat-detail">
+          {{ topProduct().quantity || 0 }} unidades
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos Principales -->
+  <div class="main-charts">
+    <!-- Gráfico de Ventas vs Movimientos -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="fas fa-chart-bar"></i> Ventas vs Movimientos</h3>
+        <div class="chart-legend">
+          <span class="legend-item sales">
+            <i class="fas fa-circle"></i> Ventas
+          </span>
+          <span class="legend-item movements">
+            <i class="fas fa-circle"></i> Movimientos
+          </span>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas #salesChart width="400" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfico de Categorías -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="fas fa-chart-pie"></i> Distribución por Categoría</h3>
+        <select [(ngModel)]="categoryFilter" (change)="updateCategoryChart()">
+          <option value="value">Por Valor</option>
+          <option value="quantity">Por Cantidad</option>
+          <option value="movements">Por Movimientos</option>
+        </select>
+      </div>
+      <div class="chart-container">
+        <canvas #categoryChart width="400" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tablas de Detalle -->
+  <div class="detail-tables">
+    <!-- Top 10 Productos -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3><i class="fas fa-trophy"></i> Top 10 Productos Más Vendidos</h3>
+        <button class="btn-view-all" (click)="viewAllProducts()">
+          Ver todos <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="top-products-table">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Cantidad</th>
+            <th>Total Vendido</th>
+            <th>Tendencia</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (product of topProducts(); track product.id; let i = $index) {
+              <tr>
+                <td class="rank">
+                  <span class="rank-badge" [ngClass]="'rank-' + (i + 1)">
+                    {{ i + 1 }}
+                  </span>
+                </td>
+                <td>
+                  <div class="product-cell">
+                    <div class="product-name">{{ product.name }}</div>
+                    <div class="product-code">{{ product.code }}</div>
+                  </div>
+                </td>
+                <td>{{ product.category }}</td>
+                <td class="quantity">{{ product.quantity }}</td>
+                <td class="amount">{{ product.total | currency:'BOB ' }}</td>
+                <td>
+                  <div class="trend" [ngClass]="{'up': product.trend > 0, 'down': product.trend < 0, 'stable': product.trend === 0}">
+                    <i class="fas" [class.fa-arrow-up]="product.trend > 0"
+                       [class.fa-arrow-down]="product.trend < 0"
+                       [class.fa-minus]="product.trend === 0"></i>
+                    {{ Math.abs(product.trend) }}%
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Movimientos Recientes -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3><i class="fas fa-history"></i> Movimientos Recientes</h3>
+        <button class="btn-view-all" (click)="viewAllMovements()">
+          Ver todos <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="recent-movements-table">
+          <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (movement of recentMovements(); track movement.id) {
+              <tr>
+                <td class="date">{{ formatDateShort(movement.date) }}</td>
+                <td>{{ movement.product }}</td>
+                <td>
+                  <span class="movement-type" [ngClass]="movement.type">
+                    {{ movement.type === 'entrada' ? 'Entrada' : 'Salida' }}
+                  </span>
+                </td>
+                <td class="quantity">{{ movement.quantity }}</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar">
+                      {{ getUserInitials(movement.user) }}
+                    </div>
+                    <span class="user-name">{{ movement.user }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="'status-' + movement.status">
+                    {{ movement.status === 'completed' ? 'Completado' :
+                    movement.status === 'pending' ? 'Pendiente' : 'Cancelado' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Métricas Adicionales -->
+  <div class="additional-metrics">
+    <!-- Métricas de Inventario -->
+    <div class="metrics-card inventory-metrics">
+      <h3><i class="fas fa-boxes"></i> Métricas de Inventario</h3>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-value">{{ inventoryMetrics().turnover }}</div>
+          <div class="metric-label">Rotación</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ inventoryMetrics().accuracy }}%</div>
+          <div class="metric-label">Precisión</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ inventoryMetrics().fillRate }}%</div>
+          <div class="metric-label">Tasa de Llenado</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ inventoryMetrics().carryingCost | currency:'BOB ' }}</div>
+          <div class="metric-label">Costo de Mantenimiento</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas y Notificaciones -->
+    <div class="metrics-card alerts">
+      <h3><i class="fas fa-bell"></i> Alertas Recientes</h3>
+      <div class="alerts-list">
+        @for (alert of recentAlerts(); track alert.id) {
+          <div class="alert-item" [ngClass]="'alert-' + alert.level">
+            <div class="alert-icon">
+              <i class="fas" [class.fa-exclamation-circle]="alert.level === 'high'"
+                 [class.fa-exclamation-triangle]="alert.level === 'medium'"
+                 [class.fa-info-circle]="alert.level === 'low'"></i>
+            </div>
+            <div class="alert-content">
+              <div class="alert-title">{{ alert.title }}</div>
+              <div class="alert-time">{{ formatTimeAgo(alert.timestamp) }}</div>
+            </div>
+            <button class="btn-alert-action" (click)="handleAlert(alert)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen Mensual -->
+  <div class="monthly-summary">
+    <div class="summary-header">
+      <h3><i class="fas fa-calendar-check"></i> Resumen Mensual</h3>
+      <div class="month-selector">
+        <button (click)="previousMonth()"><i class="fas fa-chevron-left"></i></button>
+        <span>{{ currentMonth() | date:'MMMM yyyy' }}</span>
+        <button (click)="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="summary-stat">
+        <div class="summary-value">{{ monthlySummary().totalEntries }}</div>
+        <div class="summary-label">Entradas</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-value">{{ monthlySummary().totalExits }}</div>
+        <div class="summary-label">Salidas</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-value">{{ monthlySummary().netChange }}</div>
+        <div class="summary-label">Cambio Neto</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-value">{{ monthlySummary().totalValue | currency:'BOB ' }}</div>
+        <div class="summary-label">Valor Total</div>
+      </div>
+    </div>
+  </div>
+</div>
+report-dashboard.component.ts,report.service.ts

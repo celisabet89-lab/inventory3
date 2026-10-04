@@ -1,0 +1,204 @@
+<div class="dash-page">
+
+  <!-- HEADER -->
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">
+        👋 Bienvenido, {{ currentUser()?.profile?.name ?? currentUser()?.email ?? 'Usuario' }}
+      </h1>
+      <p class="dash-fecha">{{ hoy }}</p>
+    </div>
+    <div class="dash-header-right">
+      <span class="version-badge">SIN LIMITE v1.0</span>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-dash">
+      <div class="spinner"></div>
+      <p>Cargando datos del sistema...</p>
+    </div>
+  } @else {
+
+    <!-- ══ TARJETAS PRINCIPALES ════════════════════════════════ -->
+    <div class="kpi-grid">
+
+      <!-- Productos -->
+      <a routerLink="/products" class="kpi-card k-blue">
+        <div class="kpi-icon"><i class="fas fa-box"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ totalProductos() }}</span>
+          <span class="kpi-lbl">Productos</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-exclamation-triangle" style="color:#f59e0b"></i>
+          {{ stockCritico() }} stock crítico
+        </div>
+      </a>
+
+      <!-- Valor inventario -->
+      <a routerLink="/reports" class="kpi-card k-teal">
+        <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val" style="font-size:18px">{{ formatMoneda(valorInventario()) }}</span>
+          <span class="kpi-lbl">Valor Inventario</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-layer-group"></i> Stock en existencia
+        </div>
+      </a>
+
+      <!-- Clientes -->
+      <a routerLink="/clients" class="kpi-card k-purple">
+        <div class="kpi-icon"><i class="fas fa-users"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ totalClientes() }}</span>
+          <span class="kpi-lbl">Clientes</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-check-circle" style="color:#10b981"></i>
+          {{ clientesActivos() }} activos
+        </div>
+      </a>
+
+      <!-- ONUs -->
+      <a routerLink="/onus" class="kpi-card k-indigo">
+        <div class="kpi-icon"><i class="fas fa-wifi"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ totalOnus() }}</span>
+          <span class="kpi-lbl">ONUs</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-circle" style="color:#10b981"></i>
+          {{ onusDisponibles() }} disponibles
+        </div>
+      </a>
+
+      <!-- Alertas -->
+      <a routerLink="/alerts" class="kpi-card k-red" [class.k-pulsa]="alertasCriticas() > 0">
+        <div class="kpi-icon"><i class="fas fa-bell"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ alertasPendientes() }}</span>
+          <span class="kpi-lbl">Alertas Pendientes</span>
+        </div>
+        <div class="kpi-sub">
+          @if (alertasCriticas() > 0) {
+            <i class="fas fa-fire" style="color:#ef4444"></i>
+            {{ alertasCriticas() }} críticas
+          } @else {
+            <i class="fas fa-check" style="color:#10b981"></i> Sin críticas
+          }
+        </div>
+      </a>
+
+      <!-- Movimientos -->
+      <a routerLink="/stock/movements" class="kpi-card k-green">
+        <div class="kpi-icon"><i class="fas fa-exchange-alt"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ totalMovimientos() }}</span>
+          <span class="kpi-lbl">Movimientos</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-calendar-day"></i> {{ movimientosHoy() }} hoy
+        </div>
+      </a>
+
+      <!-- Entregas -->
+      <a routerLink="/deliveries" class="kpi-card k-orange">
+        <div class="kpi-icon"><i class="fas fa-truck"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ entregasPendientes() }}</span>
+          <span class="kpi-lbl">Entregas Pendientes</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-calendar-day"></i> {{ entregasHoy() }} hoy
+        </div>
+      </a>
+
+      <!-- Equipo -->
+      <a routerLink="/users" class="kpi-card k-gray">
+        <div class="kpi-icon"><i class="fas fa-user-cog"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ totalUsuarios() }}</span>
+          <span class="kpi-lbl">Usuarios del Sistema</span>
+        </div>
+        <div class="kpi-sub">
+          <i class="fas fa-hard-hat" style="color:#f59e0b"></i>
+          {{ totalTecnicos() }} técnicos
+        </div>
+      </a>
+
+    </div>
+
+    <!-- ══ FILA: ACTIVIDAD + ACCIONES RÁPIDAS ══════════════════ -->
+    <div class="dash-row">
+
+      <!-- Actividad reciente -->
+      <div class="dash-card act-card">
+        <div class="card-header">
+          <h3><i class="fas fa-history"></i> Actividad Reciente</h3>
+          <a routerLink="/stock/movements" class="ver-todo">Ver todo →</a>
+        </div>
+        @if (actividadReciente().length === 0) {
+          <div class="act-empty">
+            <i class="fas fa-inbox" style="font-size:32px;color:#d1d5db"></i>
+            <p>Sin movimientos registrados</p>
+          </div>
+        }
+        @for (a of actividadReciente(); track a.id) {
+          <div class="act-item">
+            <div class="act-icon" [style.background]="a.bg" [style.color]="a.color">
+              <i [class]="'fas ' + a.icon"></i>
+            </div>
+            <div class="act-info">
+              <span class="act-title">{{ a.title }}</span>
+              <span class="act-desc">{{ a.desc }}</span>
+            </div>
+            <div class="act-meta">
+              <span class="act-user">{{ a.user }}</span>
+              <span class="act-fecha">{{ a.fecha | date:'dd/MM HH:mm' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="dash-card quick-card">
+        <div class="card-header">
+          <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+        </div>
+        <div class="quick-grid">
+          @for (q of quickActions; track $index) {
+            <a [routerLink]="q.route" class="quick-btn" [style.--qc]="q.color">
+              <i [class]="'fas ' + q.icon"></i>
+              <span>{{ q.label }}</span>
+            </a>
+          }
+        </div>
+
+        <!-- Resumen de estado -->
+        <div class="estado-resumen">
+          <h4>Estado del Sistema</h4>
+          <div class="estado-item" [class.alerta]="stockCritico() > 0">
+            <span>📦 Stock crítico</span>
+            <strong>{{ stockCritico() }}</strong>
+          </div>
+          <div class="estado-item" [class.alerta]="alertasPendientes() > 0">
+            <span>🔔 Alertas pendientes</span>
+            <strong>{{ alertasPendientes() }}</strong>
+          </div>
+          <div class="estado-item" [class.alerta]="entregasPendientes() > 0">
+            <span>🚚 Entregas pendientes</span>
+            <strong>{{ entregasPendientes() }}</strong>
+          </div>
+          <div class="estado-item ok">
+            <span>👤 Clientes activos</span>
+            <strong>{{ clientesActivos() }}</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  } <!-- end !loading -->
+</div>

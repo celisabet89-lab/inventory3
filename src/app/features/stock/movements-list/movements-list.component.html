@@ -1,0 +1,318 @@
+<div class="mov-page" [class.mode-salida]="tipoMovimiento === 'salida'">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-exchange-alt header-icon"></i>
+      <div>
+        <h2 class="header-title">Movimientos</h2>
+        <span class="header-sub">Registro de Entradas y Salidas</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-report" (click)="abrirReporteGeneral()">
+        <i class="fas fa-file-alt"></i> Reporte
+      </button>
+
+      <div class="breadcrumb">
+        <i class="fas fa-home"></i> Inicio /
+        <span class="bc-active">Movimientos</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tipo-selector-bar">
+    <button
+      class="tipo-btn"
+      [class.active-entrada]="tipoMovimiento === 'entrada'"
+      (click)="setTipo('entrada')">
+      <i class="fas fa-arrow-down"></i> Entrada / Compra
+    </button>
+    <button
+      class="tipo-btn"
+      [class.active-salida]="tipoMovimiento === 'salida'"
+      (click)="setTipo('salida')">
+      <i class="fas fa-arrow-up"></i> Salida / Venta
+    </button>
+    <div class="tipo-indicator">
+      <span class="indicator-dot"></span>
+      Modo: <strong>{{ tipoMovimiento === 'entrada' ? 'Entrada' : 'Salida' }}</strong>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID (Datos + Productos) ═════════════════════════ -->
+  <div class="main-grid">
+
+    <!-- ── Panel Izquierdo: Datos ──────────────────────────── -->
+    <div class="panel">
+      <div class="panel-header">
+        <i class="fas fa-file-invoice"></i>
+        Datos del Movimiento
+      </div>
+      <form [formGroup]="movForm" class="mov-form">
+
+        <div class="form-field">
+          <label>Código</label>
+          <input type="text" formControlName="codigo" class="f-ctrl f-disabled" readonly />
+        </div>
+
+        <div class="form-field">
+          <label>Fecha <span class="req">*</span></label>
+          <input type="date" formControlName="fecha" class="f-ctrl" />
+        </div>
+
+        <!-- Entrada: proveedor | Salida: cliente + nit -->
+        @if (tipoMovimiento === 'entrada') {
+          <div class="form-field">
+            <label>Proveedor <span class="req">*</span></label>
+            <input type="text" formControlName="contraparte"
+                   placeholder="Nombre del proveedor" class="f-ctrl"
+                   [class.f-error]="hasError('contraparte','required')" />
+            @if (hasError('contraparte','required')) {
+              <span class="f-err-msg">Requerido</span>
+            }
+          </div>
+          <div class="form-field">
+            <label>Fecha Límite</label>
+            <input type="date" formControlName="fechaLimite" class="f-ctrl" />
+          </div>
+        } @else {
+          <div class="form-row-2">
+            <div class="form-field">
+              <label>Cliente <span class="req">*</span></label>
+              <input type="text" formControlName="contraparte"
+                     placeholder="Nombre del cliente" class="f-ctrl"
+                     [class.f-error]="hasError('contraparte','required')" />
+              @if (hasError('contraparte','required')) {
+                <span class="f-err-msg">Requerido</span>
+              }
+            </div>
+            <div class="form-field">
+              <label>NIT / CI</label>
+              <input type="text" formControlName="nitCi"
+                     placeholder="0000000" class="f-ctrl" />
+            </div>
+          </div>
+        }
+
+        <div class="form-field">
+          <label>Forma de Pago</label>
+          <select formControlName="formaPago" class="f-ctrl">
+            @if (tipoMovimiento === 'entrada') {
+              <option value="CRÉDITO">CRÉDITO</option>
+            }
+            <option value="CONTADO">CONTADO</option>
+            <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+            @if (tipoMovimiento === 'salida') {
+              <option value="QR">QR</option>
+            } @else {
+              <option value="CHEQUE">CHEQUE</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label>Tipo de Moneda</label>
+          <select formControlName="tipoMoneda" class="f-ctrl">
+            <option value="BOLIVIANOS">BOLIVIANOS</option>
+            <option value="DÓLARES">DÓLARES</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label>{{ tipoMovimiento === 'entrada' ? 'Glosa' : 'Observaciones' }}</label>
+          <textarea formControlName="glosa" rows="3"
+                    placeholder="Notas adicionales..." class="f-ctrl f-textarea"></textarea>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ── Panel Derecho: Productos ────────────────────────── -->
+    <div class="panel">
+      <div class="panel-header">
+        <i class="fas fa-boxes"></i>
+        Productos
+        <div class="search-inline">
+          <i class="fas fa-search"></i>
+          <input type="text" [(ngModel)]="productSearch"
+                 (input)="onProductSearch()"
+                 placeholder="Buscar..." class="search-mini" />
+        </div>
+      </div>
+
+      <div class="prod-table-wrap">
+        <div class="prod-scroll">
+          <table class="prod-table">
+            <thead>
+            <tr>
+              <th style="width:36%">Artículo</th>
+              <th>Descripción</th>
+              <th style="width:13%">U.Medida</th>
+              @if (tipoMovimiento === 'salida') {
+                <th style="width:10%">Stock</th>
+              } @else {
+                <th style="width:10%">C.Barra</th>
+              }
+              <th style="width:54px">Foto</th>
+            </tr>
+            </thead>
+            <tbody>
+              @if (loadingProducts()) {
+                <tr>
+                  <td colspan="5" class="td-empty">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando...
+                  </td>
+                </tr>
+              } @else if (filteredProducts().length === 0) {
+                <tr>
+                  <td colspan="5" class="td-empty">
+                    <i class="fas fa-search"></i> Sin resultados
+                  </td>
+                </tr>
+              } @else {
+                @for (p of filteredProducts(); track p.idProducto) {
+                  <tr
+                    class="prod-row"
+                    [class.prod-agotado]="tipoMovimiento === 'salida' && (p.unidad ?? 0) <= 0"
+                    (click)="addProducto(p)"
+                    title="{{ tipoMovimiento === 'salida' && (p.unidad ?? 0) <= 0 ? 'Sin stock' : 'Clic para agregar' }}">
+                    <td class="td-art">{{ p.articulo }}</td>
+                    <td class="td-desc">{{ p.descripcion || p.articulo }}</td>
+                    <td>Unidad</td>
+                    <td>
+                      @if (tipoMovimiento === 'salida') {
+                        <span [class]="getStockClass(p)">{{ p.unidad ?? 0 }}</span>
+                      } @else {
+                        <span class="td-code">{{ p.codigoBarras || '—' }}</span>
+                      }
+                    </td>
+                    <td class="td-foto">
+                      @if (p.foto) {
+                        <img [src]="p.foto" [alt]="p.articulo" class="prod-img" />
+                      } @else {
+                        <div class="prod-no-img"><i class="fas fa-image"></i></div>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="scroll-col">
+          <button class="arr">▲</button>
+          <button class="arr">▼</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DETALLE ═══════════════════════════════════════════════ -->
+  <div class="detalle-wrap">
+    <div class="detalle-head">
+      <span>
+        <i class="fas fa-list-alt"></i>
+        Detalle de {{ tipoMovimiento === 'entrada' ? 'Compra' : 'Venta' }}
+      </span>
+      <span class="detalle-total">
+        Total: <strong>{{ formatCurrency(getTotal()) }}</strong>
+      </span>
+    </div>
+
+    <div class="detalle-scroll">
+      <table class="det-table">
+        <thead>
+        <tr>
+          <th style="width:44px">N°</th>
+          <th>Artículo</th>
+          <th>Descripción</th>
+          <th style="width:54px">Foto</th>
+          <th style="width:80px">U.Medida</th>
+          @if (tipoMovimiento === 'entrada') {
+            <th style="width:100px">Almacén</th>
+          } @else {
+            <th style="width:80px">Disponible</th>
+          }
+          <th style="width:80px">Cantidad</th>
+          <th style="width:90px">Precio</th>
+          <th style="width:80px">Desc.(%)</th>
+          <th style="width:80px">Líquido</th>
+          <th style="width:90px">Subtotal</th>
+          <th style="width:44px">Del.</th>
+        </tr>
+        </thead>
+        <tbody>
+          @if (detalle.length === 0) {
+            <tr>
+              <td colspan="12" class="det-empty">
+                <i class="fas fa-hand-pointer"></i>
+                Haz clic en un producto para agregarlo
+              </td>
+            </tr>
+          }
+          @for (item of detalle; track item.seq) {
+            <tr [class.row-warn]="tipoMovimiento === 'salida' && item.cantidad > (item._product.unidad ?? 0)">
+              <td class="td-seq">{{ item.seq }}</td>
+              <td class="td-art-det">{{ item.articulo }}</td>
+              <td class="td-desc-det">{{ item.descripcion }}</td>
+              <td class="td-foto">
+                @if (item.foto) {
+                  <img [src]="item.foto" [alt]="item.articulo" class="prod-img-sm" />
+                } @else {
+                  <div class="prod-no-img-sm"><i class="fas fa-image"></i></div>
+                }
+              </td>
+              <td class="tc">{{ item.uMedida }}</td>
+              <td>
+                @if (tipoMovimiento === 'entrada') {
+                  <input type="text" [(ngModel)]="item.almacen"
+                         class="i-inline" style="width:90px" />
+                } @else {
+                  <span [class]="getStockClass(item._product)">
+                    {{ item._product.unidad ?? 0 }}
+                  </span>
+                }
+              </td>
+              <td>
+                <input type="number" [(ngModel)]="item.cantidad" min="1"
+                       class="i-inline i-num" (change)="recalcItem(item)" />
+              </td>
+              <td>
+                <input type="number" [(ngModel)]="item.precio" min="0" step="0.01"
+                       class="i-inline i-num" (change)="recalcItem(item)" />
+              </td>
+              <td>
+                <input type="number" [(ngModel)]="item.descuento" min="0" max="100"
+                       class="i-inline i-num" (change)="recalcItem(item)" />
+              </td>
+              <td class="tc num-val">{{ item.liquido.toFixed(2) }}</td>
+              <td class="tc num-val accent-num">{{ item.subtotal.toFixed(2) }}</td>
+              <td class="tc">
+                <button (click)="removeItem(item.seq)" class="btn-del" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="detalle-foot">
+      <button (click)="cancelar()" class="btn-cancel">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button (click)="guardar()" class="btn-guardar" [disabled]="loading()">
+        @if (loading()) {
+          <i class="fas fa-spinner fa-spin"></i> Guardando...
+        } @else {
+          <i class="fas fa-save"></i>
+          {{ tipoMovimiento === 'entrada' ? 'Guardar Compra' : 'Registrar Venta' }}
+        }
+      </button>
+    </div>
+  </div>
+
+</div>

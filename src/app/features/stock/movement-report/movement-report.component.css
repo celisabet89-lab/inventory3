@@ -1,0 +1,113 @@
+.report-page {
+  padding: 24px;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.report-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.btn-back, .btn-print, .btn-mini, .btn-report {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-back {
+  background: #ffffff;
+}
+
+.btn-print, .btn-report {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.recibo-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.recibo-col p,
+.recibo-footer p {
+  margin: 10px 0;
+  font-size: 15px;
+}
+
+.tipo-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: bold;
+  background: #e2e8f0;
+}
+
+.recibo-entrada .tipo-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.recibo-salida .tipo-badge {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.recibo-footer {
+  margin-top: 24px;
+  border-top: 2px dashed #cbd5e1;
+  padding-top: 14px;
+}
+
+.reporte-lista {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-reporte th,
+.tabla-reporte td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px;
+  text-align: left;
+}
+
+.btn-mini {
+  background: #1d4ed8;
+  color: white;
+  text-decoration: none;
+}
+
+.act-click {
+  cursor: pointer;
+  transition: .2s;
+}
+
+.act-click:hover {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .report-page {
+    background: white;
+    padding: 0;
+  }
+
+  .recibo {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

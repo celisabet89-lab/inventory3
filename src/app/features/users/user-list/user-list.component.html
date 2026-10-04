@@ -1,0 +1,117 @@
+<div class="users-page">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-user-cog header-icon"></i>
+      <div>
+        <h2>Usuarios</h2>
+        <span class="header-sub">Gestión de usuarios del sistema</span>
+      </div>
+    </div>
+    <button class="btn-nuevo" (click)="openNew()">
+      <i class="fas fa-plus"></i> Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card s-total">
+      <i class="fas fa-users stat-icon"></i>
+      <div><p class="stat-val">{{ stats().total }}</p><p class="stat-lbl">Total</p></div>
+    </div>
+    <div class="stat-card s-admin">
+      <i class="fas fa-crown stat-icon"></i>
+      <div><p class="stat-val">{{ stats().admins }}</p><p class="stat-lbl">Administradores</p></div>
+    </div>
+    <div class="stat-card s-tec">
+      <i class="fas fa-hard-hat stat-icon"></i>
+      <div><p class="stat-val">{{ stats().tecnicos }}</p><p class="stat-lbl">Técnicos</p></div>
+    </div>
+    <div class="stat-card s-enc">
+      <i class="fas fa-clipboard-list stat-icon"></i>
+      <div><p class="stat-val">{{ stats().encargados }}</p><p class="stat-lbl">Encargados</p></div>
+    </div>
+  </div>
+
+  <!-- BARRA DE FILTROS -->
+  <div class="bar-filtros">
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input [(ngModel)]="searchTerm" (input)="applyFilters()"
+             placeholder="Buscar por nombre, email o rol..." class="search-in" />
+    </div>
+
+    <select [(ngModel)]="filtroRol" (change)="applyFilters()" class="f-sel">
+      <option value="TODOS">Todos los roles</option>
+      @for (rol of rolesDisponibles(); track rol) {
+        <option [value]="rol">{{ rol }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    @if (loading()) {
+      <div class="empty-st"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+    } @else if (filteredUsers().length === 0) {
+      <div class="empty-st">
+        <i class="fas fa-user-slash"></i>
+        <p>Sin usuarios{{ filtroRol !== 'TODOS' ? ' con rol: ' + filtroRol : '' }}</p>
+      </div>
+    } @else {
+      <table class="usr-table">
+        <thead>
+        <tr>
+          <th>#</th><th>Nombre</th><th>Email</th><th>CI</th>
+          <th>Teléfono</th><th>Rol</th><th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (u of filteredUsers(); track u.idUser; let i=$index) {
+            <tr>
+              <td class="tc gray">{{ i+1 }}</td>
+              <td>
+                <div class="usr-cell">
+                  <div class="usr-avatar">{{ getIniciales(u) }}</div>
+                  <span class="usr-nombre">{{ getNombre(u) }}</span>
+                </div>
+              </td>
+              <td class="gray">{{ u.email }}</td>
+              <td>{{ u.profile?.ci || '—' }}</td>
+              <td>{{ u.profile?.telefono || '—' }}</td>
+              <td>
+                <span [class]="'rol-badge ' + getRolBadgeClass(getCargo(u))">
+                  {{ getCargo(u) || '—' }}
+                </span>
+              </td>
+              <td class="acc-cell">
+                <button (click)="openEdit(u)" class="btn-ac edit" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button (click)="deleteUser(u)" class="btn-ac del" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+</div>
+
+<!-- MODAL -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <app-user-form
+        [userId]="selectedUser"
+        [isEdit]="isEditMode"
+        (saved)="onSaved()"
+        (cancelled)="closeForm()">
+      </app-user-form>
+    </div>
+  </div>
+}

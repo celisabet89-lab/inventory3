@@ -1,0 +1,226 @@
+<div class="pf-wrap">
+  <div class="pf-header">
+    <div class="header-left">
+      <div class="header-icon-wrap">
+        <i class="fas fa-box"></i>
+      </div>
+      <div>
+        <h3>{{ isEdit ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
+        <span class="header-sub">
+          {{ isEdit ? 'Modifica los datos del producto' : 'Completa los datos del nuevo producto' }}
+        </span>
+      </div>
+    </div>
+    <button class="btn-close" (click)="cancelar()" type="button" [disabled]="saving()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  @if (loadingProduct()) {
+    <div class="pf-body" style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+      <div style="text-align: center;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #1b6f6f;"></i>
+        <p style="margin-top: 16px; color: #6b7280;">Cargando datos del producto...</p>
+      </div>
+    </div>
+  } @else {
+    <form [formGroup]="form" class="pf-body">
+      <div class="pf-grid">
+        <div class="col-main">
+          <div class="section-card">
+            <h4 class="section-t">
+              <i class="fas fa-tag"></i> Información General
+            </h4>
+
+            <div class="fld">
+              <label>
+                Nombre del Artículo <span class="required">*</span>
+              </label>
+              <input
+                formControlName="articulo"
+                class="f-in"
+                [class.error]="hasError('articulo', 'required') || hasError('articulo', 'minlength')"
+                placeholder="Ej: Router HG8245H"
+              />
+              @if (hasError('articulo','required')) {
+                <span class="ferr">{{ getFieldError('articulo') }}</span>
+              }
+              @if (hasError('articulo','minlength')) {
+                <span class="ferr">{{ getFieldError('articulo') }}</span>
+              }
+            </div>
+
+            <div class="fld">
+              <label>Descripción</label>
+              <textarea
+                formControlName="descripcion"
+                class="f-in f-ta"
+                rows="3"
+                placeholder="Descripción del producto..."
+              ></textarea>
+            </div>
+
+            <div class="row-2">
+              <div class="fld">
+                <label>
+                  <i class="fas fa-folder"></i> Categoría <span class="required">*</span>
+                </label>
+                @if (loadingCatalogs()) {
+                  <div class="f-hint">⏳ Cargando categorías...</div>
+                } @else if (categorias().length > 0) {
+                  <select formControlName="categoria" class="f-in f-sel" [class.error]="hasError('categoria','required')">
+                    <option [value]="null">— Selecciona una categoría —</option>
+                    @for (c of categorias(); track c.idCategoria) {
+                      <option [value]="c.idCategoria">
+                        {{ c.nombre }}
+                      </option>
+                    }
+                  </select>
+                } @else {
+                  <div class="f-hint error">⚠️ No hay categorías disponibles</div>
+                }
+                @if (hasError('categoria','required')) {
+                  <span class="ferr">{{ getFieldError('categoria') }}</span>
+                }
+              </div>
+
+              <div class="fld">
+                <label>
+                  <i class="fas fa-ruler"></i> Unidad de Medida <span class="required">*</span>
+                </label>
+                @if (loadingCatalogs()) {
+                  <div class="f-hint">⏳ Cargando unidades...</div>
+                } @else if (unidades().length > 0) {
+                  <select formControlName="unidadMedida" class="f-in f-sel" [class.error]="hasError('unidadMedida','required')">
+                    <option [value]="null">— Selecciona una unidad —</option>
+                    @for (u of unidades(); track u.idUnidad) {
+                      <option [value]="u.idUnidad">
+                        {{ u.nombre }} ({{ u.abreviatura }})
+                      </option>
+                    }
+                  </select>
+                } @else {
+                  <div class="f-hint error">⚠️ No hay unidades disponibles</div>
+                }
+                @if (hasError('unidadMedida','required')) {
+                  <span class="ferr">{{ getFieldError('unidadMedida') }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="row-2">
+              <div class="fld">
+                <label>
+                  <i class="fas fa-dollar-sign"></i> Precio (Bs) <span class="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  formControlName="precio"
+                  class="f-in"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div class="fld">
+                <label><i class="fas fa-boxes"></i> Stock</label>
+                <input
+                  type="number"
+                  formControlName="unidad"
+                  class="f-in"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <h4 class="section-t">
+              <i class="fas fa-barcode"></i> Códigos
+            </h4>
+            <div class="row-2">
+              <div class="fld">
+                <label>Código de Barras</label>
+                <input
+                  formControlName="codigoBarras"
+                  class="f-in"
+                  [class.error]="hasError('codigoBarras','pattern')"
+                  placeholder="123456789"
+                />
+                @if (hasError('codigoBarras','pattern')) {
+                  <span class="ferr">Solo números permitidos</span>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="section-card">
+            <h4 class="section-t">
+              <i class="fas fa-image"></i> Foto del Producto
+            </h4>
+
+            @if (fotoPreview()) {
+              <div class="foto-preview">
+                <img [src]="fotoPreview()" alt="Vista previa del producto" />
+                <button type="button" class="btn-quitar" (click)="quitarFoto()" [disabled]="saving()">
+                  <i class="fas fa-trash-alt"></i> Eliminar imagen
+                </button>
+              </div>
+            } @else {
+              <label class="foto-upload" [class.disabled]="saving()">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  (change)="onFotoChange($event)"
+                  hidden
+                />
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Subir imagen</span>
+                <small>PNG, JPG · Máx 2MB</small>
+              </label>
+            }
+          </div>
+
+          <!-- Preview categoría seleccionada -->
+          @if (getCategoriaSeleccionada()) {
+            <div class="section-card cat-preview-card">
+              <p class="preview-lbl">
+                <i class="fas fa-check-circle"></i> Categoría seleccionada:
+              </p>
+              <div class="cat-chip-lg" [style]="getCategoriaStyle()">
+                <i class="fas {{ getCategoriaSeleccionada()?.icono || 'fa-folder' }}"></i>
+                {{ getCategoriaSeleccionada()?.nombre }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+
+    <div class="pf-footer">
+      <button
+        type="button"
+        class="btn-cancel"
+        (click)="cancelar()"
+        [disabled]="saving()"
+      >
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn-save"
+        (click)="guardar()"
+        [disabled]="saving() || form.invalid"
+      >
+        @if (saving()) {
+          <i class="fas fa-spinner fa-spin"></i> Guardando...
+        } @else {
+          <i class="fas fa-save"></i> {{ isEdit ? 'Actualizar' : 'Guardar Producto' }}
+        }
+      </button>
+    </div>
+  }
+</div>

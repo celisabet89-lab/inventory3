@@ -1,0 +1,86 @@
+<div class="um-page">
+  <!-- FORM INLINE (igual que rol) -->
+  @if (showForm) {
+    <div class="form-card">
+      <h3 class="form-title">
+        <i class="fas" [class.fa-plus-circle]="!isEdit" [class.fa-edit]="isEdit"></i>
+        {{ isEdit ? 'Editar Unidad' : 'Nueva Unidad de Medida' }}
+      </h3>
+
+      <div class="form-row">
+        <div class="field-wrap">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="nombre"
+                 class="f-input" [class.f-error]="errorMsg"
+                 placeholder="Ej: Metro, Kilogramo, Unidad..."
+                 (keyup.enter)="guardar()" />
+        </div>
+        <div class="field-wrap field-sm">
+          <label>Abreviatura *</label>
+          <input type="text" [(ngModel)]="abreviatura"
+                 class="f-input" [class.f-error]="errorMsg"
+                 placeholder="Ej: m, kg, u, L..."
+                 maxlength="5"
+                 (keyup.enter)="guardar()" />
+        </div>
+        <div class="form-btns">
+          <button class="btn-cancel" (click)="cancel()" [disabled]="saving()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button class="btn-save" (click)="guardar()"
+                  [disabled]="saving() || !nombre.trim() || !abreviatura.trim()">
+            @if (saving()) { <i class="fas fa-spinner fa-spin"></i> }
+            @else { <i class="fas fa-save"></i> }
+            {{ isEdit ? 'Actualizar' : 'Guardar' }}
+          </button>
+        </div>
+      </div>
+
+      @if (errorMsg) {
+        <span class="f-err">{{ errorMsg }}</span>
+      }
+    </div>
+  }
+
+  <!-- LOADING -->
+  @if (loading()) {
+    <div class="loading-wrap"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+  }
+
+  <!-- GRID DE TARJETAS (igual que rol) -->
+  @if (!loading()) {
+    @if (unidades().length === 0) {
+      <div class="empty-wrap">
+        <i class="fas fa-ruler" style="font-size:48px;color:#d1d5db"></i>
+        <p>No hay unidades registradas</p>
+        <button class="btn-nuevo" (click)="openNew()">
+          <i class="fas fa-plus"></i> Crear primera unidad
+        </button>
+      </div>
+    } @else {
+      <div class="roles-grid">
+        <div class="rol-card-new" (click)="openNew()">
+        <i class="fas fa-plus-circle"></i>
+        <span>Nueva Unidad</span>
+      </div>
+        @for (u of unidades(); track u.id) {
+          <div class="rol-card" >
+            <div class="rol-body">
+              <h3 class="rol-nombre">{{ u.nombre }}</h3>
+              <span class="rol-id">Abrev: <strong>{{ u.abreviatura }}</strong></span>
+            </div>
+            <div class="rol-actions">
+              <button class="btn-ac edit" (click)="openEdit(u)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-ac del" (click)="eliminar(u)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+  }
+</div>

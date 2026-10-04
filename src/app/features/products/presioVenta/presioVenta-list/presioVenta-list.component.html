@@ -1,0 +1,163 @@
+<div class="products-page">
+  <!-- FILTROS -->
+  <div class="bar-filtros">
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input
+        [(ngModel)]="searchTerm"
+        (input)="onSearchInput()"
+        placeholder="Buscar por nombre, código, categoría..."
+        class="search-in"
+        [disabled]="loading()"
+      />
+    </div>
+
+    <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="f-sel" [disabled]="loadingCatalogs()">
+      <option value="Todas">📁 Todas las categorías</option>
+      @for (c of categoriasDB(); track c.idCategoria) {
+        <option [value]="c.nombre">
+          {{ c.nombre }}
+        </option>
+      }
+    </select>
+
+    <select [(ngModel)]="selectedUnidad" (change)="applyFilters()" class="f-sel" [disabled]="loadingCatalogs()">
+      <option value="Todas">📏 Todas las unidades</option>
+      @for (u of unidadesDB(); track u.idUnidad) {
+        <option [value]="u.nombre">
+          {{ u.nombre }} ({{ u.abreviatura }})
+        </option>
+      }
+    </select>
+
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    @if (loading()) {
+      <div class="empty-st">
+        <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+        <p>Cargando productos...</p>
+      </div>
+    } @else if (filteredProducts().length === 0) {
+      <div class="empty-st">
+        <i class="fas fa-box-open" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px; display: block"></i>
+        <h3 style="margin: 0 0 8px 0; color: #6b7280;">No hay productos</h3>
+        <p style="margin: 0; color: #9ca3af;">{{ searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Comienza agregando tu primer producto' }}</p>
+        @if (!searchTerm && selectedCategory === 'Todas' && selectedUnidad === 'Todas') {
+          <button class="btn-nuevo" (click)="openNew()" style="margin-top: 16px;">
+            <i class="fas fa-plus"></i> Agregar producto
+          </button>
+        }
+      </div>
+    } @else {
+      <table class="prod-table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Unidad medida</th>
+          <th>cantidad</th>
+          <th>precio</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (product of getPaginatedProducts(); track product.idProducto; let i = $index) {
+            <tr [class.fila-critica]="(product.unidad ?? 0) === 0"
+                [class.fila-baja]="(product.unidad ?? 0) > 0 && (product.unidad ?? 0) < 5">
+
+              <td class="tc gray">
+                {{ (currentPage - 1) * itemsPerPage + i + 1 }}
+              </td>
+
+              <td>
+                <div class="prod-cell">
+                  @if (product.foto) {
+                    <img [src]="product.foto" class="prod-thumb" alt="{{ product.articulo }}" />
+                  } @else {
+                    <div class="prod-avatar"
+                         [style.background]="getCategoriaColor(product) + '22'"
+                         [style.color]="getCategoriaColor(product)">
+                      <i class="fas {{ getCategoriaIcono(product) }}"></i>
+                    </div>
+                  }
+                  <div>
+                    <span class="prod-nombre">{{ product.articulo }}</span>
+                    @if (product.descripcion) {
+                      <span class="prod-desc" title="{{ product.descripcion }}">
+                        {{ product.descripcion | slice:0:50 }}{{ product.descripcion.length > 50 ? '...' : '' }}
+                      </span>
+                    }
+                    @if (product.codigoBarras) {
+                      <span class="prod-desc">
+                        <i class="fas fa-barcode"></i> {{ product.codigoBarras }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                @if (product.categoria) {
+                  <span class="cat-chip"
+                        [style.background]="getCategoriaColor(product) + '22'"
+                        [style.color]="getCategoriaColor(product)"
+                        [style.borderColor]="getCategoriaColor(product) + '55'">
+                    <i class="fas {{ getCategoriaIcono(product) }}"></i>
+                    {{ product.categoria.nombre }}
+                  </span>
+                } @else {
+                  <span class="gray">—</span>
+                }
+              </td>
+
+              <td>
+                <span class="unidad-badge" title="{{ getUnidadNombre(product) }}">
+                  <i class="fas fa-ruler"></i> {{ getUnidadNombre(product) }}
+                </span>
+              </td>
+              <td class="tc">
+                <div class="stock-ctrl">
+                  <span class="stock-num" [class]="getStockClass(product.unidad ?? 0)">
+                    {{ product.unidad ?? 0 }}
+                  </span>
+                </div>
+              </td>
+              <td class="tc">
+                <span class="precio-val">{{ formatCurrency(product.precio ?? 0) }}</span>
+              </td>
+          }
+        </tbody>
+      </table>
+
+      <!-- PAGINACIÓN -->
+      @if (totalPages() > 1) {
+        <div class="paginacion">
+          <button class="pg-btn" (click)="previousPage()" [disabled]="currentPage === 1 || loading()">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+
+          @for (pg of getPageNumbers(); track pg) {
+            <button class="pg-btn"
+                    [class.active]="pg === currentPage"
+                    (click)="goToPage(pg)"
+                    [disabled]="loading()">
+              {{ pg }}
+            </button>
+          }
+
+          <button class="pg-btn" (click)="nextPage()" [disabled]="currentPage === totalPages() || loading()">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+
+          <span class="pg-info">
+            Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} -
+            {{ Math.min(currentPage * itemsPerPage, filteredProducts().length) }} de
+            {{ filteredProducts().length }} productos
+          </span>
+        </div>
+      }
+    }
+  </div>
+</div>

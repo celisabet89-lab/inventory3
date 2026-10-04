@@ -1,0 +1,157 @@
+<div class="proveedores-container">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-truck header-icon"></i>
+      <div>
+        <h2>Proveedores</h2>
+        <span class="header-sub">Gestión de proveedores del sistema</span>
+      </div>
+    </div>
+    <button class="btn-nuevo" (click)="openNew()">
+      <i class="fas fa-plus"></i> Nuevo Proveedor
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card s-total">
+      <i class="fas fa-building stat-icon"></i>
+      <div><p class="stat-val">{{ stats().total }}</p><p class="stat-lbl">Total</p></div>
+    </div>
+    <div class="stat-card s-activo">
+      <i class="fas fa-check-circle stat-icon"></i>
+      <div><p class="stat-val">{{ stats().activos }}</p><p class="stat-lbl">Activos</p></div>
+    </div>
+    <div class="stat-card s-inactivo">
+      <i class="fas fa-ban stat-icon"></i>
+      <div><p class="stat-val">{{ stats().inactivos }}</p><p class="stat-lbl">Inactivos</p></div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="bar-filtros">
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input [(ngModel)]="searchTerm" (input)="onSearchChange()"
+             placeholder="Buscar por empresa, contacto, email..." class="search-in" />
+    </div>
+    <select [(ngModel)]="filtroPais" (change)="onPaisChange()" class="f-sel">
+      <option value="TODOS">Todos los países</option>
+      @for (p of paisesDisponibles(); track p) {
+        <option [value]="p">{{ p }}</option>
+      }
+    </select>
+    <select [(ngModel)]="filtroEstado" (change)="onEstadoChange()" class="f-sel">
+      <option value="TODOS">Todos los estados</option>
+      <option value="ACTIVO">Activos</option>
+      <option value="INACTIVO">Inactivos</option>
+    </select>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    @if (loading()) {
+      <div class="empty-st"><i class="fas fa-spinner fa-spin"></i> Cargando proveedores...</div>
+    } @else if (filteredProveedores().length === 0) {
+      <div class="empty-st">
+        <i class="fas fa-truck"></i>
+        <p>No se encontraron proveedores</p>
+      </div>
+    } @else {
+      <table class="prov-table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Email</th>
+          <th>País</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (p of getPaginatedProveedores(); track p.idProveedor; let i = $index) {
+            <tr>
+              <td class="tc gray">{{ (currentPage-1)*itemsPerPage + i + 1 }}</td>
+              <td>
+                <div class="prov-cell">
+                  <i class="fas fa-building prov-icon"></i>
+                  <div>
+                    <div class="prov-nombre">{{ p.empresa }}</div>
+                    @if (p.ruc) {
+                      <div class="prov-ruc">RUC: {{ p.ruc }}</div>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td>{{ p.contacto }}</td>
+              <td class="gray">{{ p.email }}</td>
+              <td><span class="pais-badge">{{ p.pais }}</span></td>
+              <td>
+                <span [class]="'status-badge ' + getStatusClass(p.estado)">
+                  {{ p.estado }}
+                </span>
+              </td>
+              <td class="acc-cell">
+                <button (click)="verDetalle(p)" class="btn-ac view" title="Ver">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button (click)="openEdit(p)" class="btn-ac edit" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <!-- Cambiar esta línea
+                <button (click)="changeStatus(p, p.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO')"
+                        class="btn-ac state" title="Cambiar estado">
+                  <i class="fas fa-exchange-alt"></i>
+                </button> -->
+                <button (click)="deleteProveedor(p)" class="btn-ac delete" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Mostrando {{ (currentPage-1)*itemsPerPage+1 }}--{{ Math.min(currentPage*itemsPerPage, filteredProveedores().length) }}
+      de {{ filteredProveedores().length }} proveedores
+    </div>
+    <div class="pagination-controls">
+      <button (click)="previousPage()" [disabled]="currentPage===1" class="page-btn">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      @for (page of getPageNumbers(); track page) {
+        <button (click)="goToPage(page)" [class.active]="currentPage===page" class="page-btn">{{ page }}</button>
+      }
+      <button (click)="nextPage()" [disabled]="currentPage===totalPages()" class="page-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <select [(ngModel)]="itemsPerPage" (change)="applyFilters()" class="items-select">
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORMULARIO -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <app-proveedor-form
+        [proveedorId]="selectedProveedor?.idProveedor ?? null"
+        [isEdit]="isEditMode"
+        (saved)="onSaved()"
+        (cancelled)="closeForm()">
+      </app-proveedor-form>
+    </div>
+  </div>
+}

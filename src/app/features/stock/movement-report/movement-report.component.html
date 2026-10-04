@@ -1,0 +1,91 @@
+<div class="report-page">
+
+  <div class="report-top no-print">
+    <button class="btn-back" (click)="volver()">
+      <i class="fas fa-arrow-left"></i> Volver
+    </button>
+
+    <button class="btn-print" (click)="imprimir()">
+      <i class="fas fa-print"></i> Imprimir
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="report-loading">Cargando reporte...</div>
+  } @else {
+
+    @if (movimiento()) {
+      <div class="recibo" [class.recibo-salida]="movimiento()?.tipo === 'SALIDA'" [class.recibo-entrada]="movimiento()?.tipo === 'ENTRADA'">
+
+        <div class="recibo-header">
+          <h2>
+            {{ movimiento()?.tipo === 'ENTRADA' ? 'RECIBO DE ENTRADA' : 'RECIBO DE SALIDA' }}
+          </h2>
+          <span class="tipo-badge">
+            {{ movimiento()?.tipo }}
+          </span>
+        </div>
+
+        <div class="recibo-body">
+
+          <div class="recibo-col">
+            <p><strong>Código:</strong> {{ movimiento()?.idMovimiento }}</p>
+            <p><strong>Fecha:</strong> {{ movimiento()?.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p><strong>{{ movimiento()?.tipo === 'ENTRADA' ? 'Proveedor' : 'Cliente' }}:</strong> {{ movimiento()?.responsable }}</p>
+            <p><strong>NIT/CI:</strong> {{ movimiento()?.nitCi || 'S/N' }}</p>
+          </div>
+
+          <div class="recibo-col">
+            <p><strong>Producto:</strong> {{ movimiento()?.product?.articulo || 'Producto' }}</p>
+            <p><strong>Descripción:</strong> {{ movimiento()?.product?.descripcion || 'Sin descripción' }}</p>
+            <p><strong>Cantidad:</strong> {{ movimiento()?.cantidad }}</p>
+            <p><strong>Fecha:</strong> {{ movimiento()?.fecha | date:'dd/MM/yyyy' }}</p>
+          </div>
+
+        </div>
+
+        <div class="recibo-footer">
+          <p><strong>Observación:</strong> {{ movimiento()?.observaciones || 'Sin observaciones' }}</p>
+        </div>
+      </div>
+    } @else {
+      <div class="reporte-lista">
+        <div class="lista-head">
+          <h2>Reporte de Movimientos</h2>
+        </div>
+
+        <table class="tabla-reporte">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (m of movimientos(); track m.idMovimiento) {
+              <tr>
+                <td>{{ m.idMovimiento }}</td>
+                <td>{{ m.tipo }}</td>
+                <td>{{ m.responsable }}</td>
+                <td>{{ m.product?.articulo || 'Producto' }}</td>
+                <td>{{ m.cantidad }}</td>
+                <td>{{ m.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <a class="btn-mini" [routerLink]="['/stock/movements/report', m.idMovimiento]">
+                    Ver recibo
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  }
+</div>

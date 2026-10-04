@@ -1,0 +1,190 @@
+/* ============================================
+   ONU LIST — estilo tarjetas coloridas
+   ============================================ */
+* { box-sizing: border-box; }
+
+.onus-container {
+  padding: 20px;
+  background: #f0f2f5;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* TÍTULO */
+.page-title-bar {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-title-bar i { color: #1b6f6f; }
+
+/* TARJETAS ESTADÍSTICAS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+
+.stat-icon-box {
+  width: 90px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: white;
+  flex-shrink: 0;
+}
+.stat-card.c-blue   .stat-icon-box { background: #3b82f6; }
+.stat-card.c-teal   .stat-icon-box { background: #0d9488; }
+.stat-card.c-green  .stat-icon-box { background: #10b981; }
+.stat-card.c-yellow .stat-icon-box { background: #f59e0b; }
+.stat-card.c-red    .stat-icon-box { background: #ef4444; }
+.stat-card.c-orange .stat-icon-box { background: #f97316; }
+.stat-card.c-purple .stat-icon-box { background: #8b5cf6; }
+.stat-card.c-rose   .stat-icon-box { background: #e11d48; }
+
+.stat-body { padding: 14px 16px; flex: 1; }
+.stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0;
+}
+.stat-card.c-blue   .stat-value { color: #3b82f6; }
+.stat-card.c-teal   .stat-value { color: #0d9488; }
+.stat-card.c-green  .stat-value { color: #10b981; }
+.stat-card.c-yellow .stat-value { color: #f59e0b; }
+.stat-card.c-red    .stat-value { color: #ef4444; }
+.stat-card.c-orange .stat-value { color: #f97316; }
+.stat-card.c-purple .stat-value { color: #8b5cf6; }
+.stat-card.c-rose   .stat-value { color: #e11d48; }
+
+/* BARRA DE ACCIONES */
+.actions-bar {
+  background: white;
+  padding: 14px 18px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.btn-nuevo {
+  background: #1b6f6f; color: white; border: none;
+  padding: 10px 20px; border-radius: 6px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s; white-space: nowrap; font-size: 14px;
+}
+.btn-nuevo:hover { background: #155f5f; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(27,111,111,0.3); }
+
+.search-box { position: relative; flex: 1; max-width: 360px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+.search-input { width: 100%; padding: 10px 12px 10px 38px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; outline: none; }
+.search-input:focus { border-color: #1b6f6f; }
+
+.filter-select { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; cursor: pointer; background: white; outline: none; }
+.filter-select:focus { border-color: #1b6f6f; }
+
+.items-select-bar { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; cursor: pointer; background: white; }
+
+/* TABLA */
+.table-container { background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 18px; }
+.onus-table { width: 100%; border-collapse: collapse; }
+.onus-table thead tr { background: #1b6f6f; }
+.onus-table th {
+  padding: 13px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.onus-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+.onus-table tbody tr:hover { background: #f8fafc; }
+.onus-table td { padding: 13px 14px; font-size: 13px; color: #374151; vertical-align: middle; }
+.loading-row, .empty-row { text-align: center; padding: 50px !important; color: #9ca3af; font-size: 15px; }
+
+/* Celdas */
+.marca-name { font-weight: 600; color: #1e293b; }
+.modelo-name { font-size: 12px; color: #64748b; }
+code { background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; color: #334155; }
+.serial-badge { background: #f1f5f9; color: #334155; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; font-family: monospace; }
+.contrato-badge { background: #e0e7ff; color: #3730a3; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; }
+.text-muted { color: #9ca3af; font-size: 12px; }
+
+/* Badges estado */
+.badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.badge-success  { background: #dcfce7; color: #16a34a; }
+.badge-info     { background: #dbeafe; color: #1d4ed8; }
+.badge-warning  { background: #fef9c3; color: #ca8a04; }
+.badge-secondary{ background: #f1f5f9; color: #475569; }
+
+/* Botones acción */
+.actions-cell { display: flex; gap: 5px; }
+.btn-action { width: 30px; height: 30px; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; }
+.btn-action.view   { background: #dcfce7; color: #16a34a; }
+.btn-action.view:hover { background: #16a34a; color: white; }
+.btn-action.edit   { background: #fef9c3; color: #ca8a04; }
+.btn-action.edit:hover { background: #ca8a04; color: white; }
+.btn-action.state  { background: #dbeafe; color: #1d4ed8; }
+.btn-action.state:hover { background: #1d4ed8; color: white; }
+.btn-action.delete { background: #fee2e2; color: #dc2626; }
+.btn-action.delete:hover { background: #dc2626; color: white; }
+
+/* PAGINACIÓN */
+.pagination-bar {
+  background: white; padding: 12px 18px; border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.pagination-info { font-size: 13px; color: #64748b; }
+.pagination-controls { display: flex; gap: 5px; align-items: center; }
+.page-btn { min-width: 32px; height: 32px; border: 1px solid #e2e8f0; background: white; border-radius: 5px; cursor: pointer; font-size: 13px; color: #374151; transition: all 0.2s; }
+.page-btn:hover:not(:disabled) { border-color: #1b6f6f; color: #1b6f6f; }
+.page-btn.active { background: #1b6f6f; color: white; border-color: #1b6f6f; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s; }
+.modal-container { border-radius: 14px; width: 90%; max-width: 580px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: slideUp 0.25s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .stats-grid { grid-template-columns: 1fr 1fr; } .actions-bar { flex-wrap: wrap; } }
+
+/* Badges tipo portador */
+.tipo-badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; }
+.tipo-cliente  { background:#dbeafe; color:#1d4ed8; }
+.tipo-usuario  { background:#f3e8ff; color:#7c3aed; }
+.tipo-almacén  { background:#dcfce7; color:#16a34a; }
+.tipo-técnico  { background:#fef9c3; color:#ca8a04; }

@@ -1,0 +1,211 @@
+.delivery-form-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  background-color: var(--light-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-title {
+  color: var(--dark-color);
+  font-size: 2rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 15px;
+}
+
+legend {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--secondary-color);
+  padding: 0 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  color: var(--dark-color);
+  margin-bottom: 5px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 1rem;
+  color: var(--dark-color);
+  background-color: var(--light-color);
+  transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="datetime-local"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.materials-table-container {
+  overflow-x: auto;
+  margin-bottom: 15px;
+}
+
+.materials-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.materials-table th,
+.materials-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.materials-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
+.materials-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.add-material-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.add-material-section label {
+  font-weight: bold;
+  color: var(--dark-color);
+}
+
+/* Estilos para los botones */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-guardar,
+.btn-cancelar {
+  border: none;
+  border-radius: 5px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-guardar {
+  background-color: var(--success-color);
+  color: var(--light-color);
+}
+
+.btn-guardar:hover {
+  background-color: #15803d;
+}
+
+.btn-cancelar {
+  background-color: var(--secondary-color);
+  color: var(--light-color);
+}
+
+.btn-cancelar:hover {
+  background-color: #4a5568;
+}
+
+/* Estilos para el modal (opcional) */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--light-color);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--secondary-color);
+}
+
+/* Estilos para botones adicionales */
+.btn-add-client,
+.btn-add-material,
+.btn-delete-material {
+  background-color: var(--primary-color);
+  color: var(--light-color);
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.3s ease;
+  font-size: 0.9rem; /* Reducir el tamaño de la fuente */
+  margin-left: 5px; /* Espacio entre el select y el botón */
+}
+
+.btn-add-client:hover,
+.btn-add-material:hover,
+.btn-delete-material:hover {
+  background-color: #1e40af;
+}
+
+/* Media Queries para hacerlo responsivo */
+@media (max-width: 768px) {
+  .add-material-section {
+    grid-template-columns: 1fr; }
+}

@@ -1,0 +1,130 @@
+<div class="layout-container">
+  <!-- Sidebar -->
+  <aside
+    [class.sidebar-open]="sidebarOpen()"
+    [class.sidebar-closed]="!sidebarOpen()"
+    class="sidebar"
+  >
+    <!-- Logo y Toggle -->
+    <div class="sidebar-header">
+      @if (sidebarOpen()) {
+        <div class="header-left">
+          <h1 class="dashboard-title">
+            <div class="header-logo"><i class="fas fa-infinity"></i></div>
+            <div class="header-title-content"><span class="logo-text">SÍN LIMITE</span></div>
+          </h1>
+        </div>
+      } @else {
+        <div class="logo-icon-small"><i class="fas fa-infinity"></i></div>
+      }
+      <button (click)="toggleSidebar()" class="sidebar-toggle">
+        <i [class]="sidebarOpen() ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"></i>
+      </button>
+    </div>
+
+    <!-- Menu Items -->
+    <nav class="sidebar-nav">
+      @for (item of menuItems; track item.path) {
+        @if (isMenuItemVisible(item)) {
+          @if (item.subItems && item.subItems.length > 0) {
+            <!-- Item con submenú -->
+            <div class="menu-item-container">
+              <a (click)="toggleSubmenu(item)"
+                 [class.active]="isActive(item.path) || isSubmenuActive(item.subItems)"
+                 class="menu-item">
+                <i [class]="'fas ' + item.icon"></i>
+                @if (sidebarOpen()) {
+                  <span class="menu-label">{{ item.label }}</span>
+                  <i [class]="'fas ' + (item.isOpen ? 'fa-chevron-down' : 'fa-chevron-right')" class="submenu-arrow"></i>
+                }
+              </a>
+              @if (sidebarOpen() && item.isOpen) {
+                <div class="submenu">
+                  @for (subItem of item.subItems; track subItem.path) {
+                    <a [routerLink]="subItem.path"
+                       routerLinkActive="active"
+                       [routerLinkActiveOptions]="{exact: false}"
+                       class="submenu-item">
+                      <i [class]="'fas ' + subItem.icon"></i>
+                      <span class="menu-label">{{ subItem.label }}</span>
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <!-- Item sin submenú -->
+            <a [routerLink]="item.path"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{exact: false}"
+               class="menu-item">
+              <i [class]="'fas ' + item.icon"></i>
+              @if (sidebarOpen()) {
+                <span class="menu-label">{{ item.label }}</span>
+                @if (item.badge && item.badge > 0) {
+                  <span class="menu-badge">{{ item.badge }}</span>
+                }
+              }
+            </a>
+          }
+        }
+      }
+    </nav>
+
+    <!-- User Section -->
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ getUserInitials() }}</div>
+        @if (sidebarOpen()) {
+          <div class="user-details">
+            <p class="user-name">{{ currentUser()?.profile?.name }} {{ currentUser()?.profile?.lastName }}</p>
+            <p class="user-role">{{ currentUser()?.profile?.cargo || 'Usuario' }}</p>
+          </div>
+        }
+      </div>
+      @if (sidebarOpen()) {
+        <button (click)="logout()" class="logout-button-full">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      } @else {
+        <button (click)="logout()" class="logout-button-mini" title="Cerrar Sesión">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      }
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header class="main-header">
+      <div class="header-left">
+        <button (click)="toggleSidebar()" class="mobile-menu-toggle">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="header-title">Sistema de Gestión de Inventario</h1>
+      </div>
+      <div class="header-right">
+        <button class="notification-button">
+          <i class="fas fa-bell"></i>
+          @if (alertCount() > 0) {
+            <span class="notification-badge">{{ alertCount() }}</span>
+          }
+        </button>
+      </div>
+    </header>
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Loading Overlay -->
+  @if (loadingService.isLoading()) {
+    <div class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Cargando...</p>
+      </div>
+    </div>
+  }
+</div>

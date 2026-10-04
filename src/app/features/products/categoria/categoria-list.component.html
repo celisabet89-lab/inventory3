@@ -1,0 +1,86 @@
+<div class="cat-page">
+  <!-- FORM INLINE -->
+  @if (showForm) {
+    <div class="form-card">
+      <h3 class="form-title">
+        <i class="fas" [class.fa-plus-circle]="!isEdit" [class.fa-edit]="isEdit"></i>
+        {{ isEdit ? 'Editar Categoría' : 'Nueva Categoría' }}
+      </h3>
+
+      <div class="form-row">
+        <div class="field-wrap">
+          <label>Nombre *</label>
+          <input [(ngModel)]="nombre" class="f-input" [class.f-error]="errorMsg"
+                 placeholder="Ej: Router, Cable, ONU..." (keyup.enter)="guardar()" />
+        </div>
+        <div class="field-wrap">
+          <label>Descripción</label>
+          <input [(ngModel)]="descripcion" class="f-input" placeholder="Descripción opcional..." />
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="preview-row">
+        <span class="preview-lbl">Vista previa:</span>
+        <div class="preview-chip" [style.background]="color+'22'" [style.color]="color" [style.border-color]="color">
+          <i class="fas {{ icono }}"></i>
+          {{ nombre || 'Nombre de categoría' }}
+        </div>
+      </div>
+
+      @if (errorMsg) { <span class="f-err">{{ errorMsg }}</span> }
+
+      <div class="form-btns">
+        <button class="btn-cancel" (click)="cancel()" [disabled]="saving()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button class="btn-save" (click)="guardar()" [disabled]="saving() || !nombre.trim()">
+          @if (saving()) { <i class="fas fa-spinner fa-spin"></i> } @else { <i class="fas fa-save"></i> }
+          {{ isEdit ? 'Actualizar' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- LOADING -->
+  @if (loading()) {
+    <div class="loading-wrap"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+  }
+
+  <!-- GRID -->
+  @if (!loading()) {
+    @if (categorias().length === 0) {
+      <div class="empty-wrap">
+        <i class="fas fa-folder-open" style="font-size:48px;color:#d1d5db"></i>
+        <p>No hay categorías registradas</p>
+        <button class="btn-nuevo" (click)="openNew()">
+          <i class="fas fa-plus"></i> Crear primera categoría
+        </button>
+      </div>
+    } @else {
+      <div class="roles-grid">
+        <div class="rol-card-new" (click)="openNew()">
+        <i class="fas fa-plus-circle"></i>
+        <span>Nueva Categoría</span>
+      </div>
+        @for (c of categorias(); track c.id) {
+          <div class="rol-card" >
+            <div class="rol-body">
+              <h3 class="rol-nombre">{{ c.nombre }}</h3>
+            </div>
+            <div class="rol-actions">
+              <button class="btn-ac edit" (click)="openEdit(c)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-ac del" (click)="eliminar(c)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+  }
+
+</div>

@@ -1,0 +1,192 @@
+<div class="form-wrapper">
+  <div class="form-header">
+    <h2 class="form-title">
+      <i class="fas fa-wifi"></i>
+      {{ isEditMode() ? 'Editar ONU' : 'Nueva ONU' }}
+    </h2>
+    <button type="button" class="btn-close" (click)="cancel()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <form [formGroup]="onuForm" (ngSubmit)="onSubmit()" class="form-body">
+    <div class="form-grid">
+
+      <!-- Marca -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-tag"></i> Marca *</label>
+        <select formControlName="marca" class="field-input" [class.error]="hasError('marca','required')">
+          @for (m of marcas; track m) { <option [value]="m">{{ m }}</option> }
+        </select>
+        @if (hasError('marca','required')) { <span class="field-error">Obligatorio</span> }
+      </div>
+
+      <!-- Modelo -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-microchip"></i> Modelo *</label>
+        <input type="text" formControlName="modelo" placeholder="Ej: HG8245H"
+               class="field-input" [class.error]="hasError('modelo','required')" />
+        @if (hasError('modelo','required')) { <span class="field-error">Obligatorio</span> }
+      </div>
+
+      <!-- Serial + escáner -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-barcode"></i> Serial *</label>
+        <div class="input-with-scanner">
+          <input type="text" formControlName="serial" placeholder="Ej: 48575443E10D"
+                 class="field-input" [class.error]="hasError('serial','required')" />
+          <button type="button" class="btn-scanner" (click)="openScanner('serial')" title="Escanear">
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+        @if (hasError('serial','required')) { <span class="field-error">Obligatorio</span> }
+      </div>
+
+      <!-- MAC + escáner -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-network-wired"></i> Dirección MAC *</label>
+        <div class="input-with-scanner">
+          <div class="mac-input-container">
+            <input type="text" maxlength="2" class="mac-part" placeholder="48" (input)="onMacPartInput($event, 0)" />
+            <span class="mac-separator">:</span>
+            <input type="text" maxlength="2" class="mac-part" placeholder="57" (input)="onMacPartInput($event, 1)" />
+            <span class="mac-separator">:</span>
+            <input type="text" maxlength="2" class="mac-part" placeholder="02" (input)="onMacPartInput($event, 2)" />
+            <span class="mac-separator">:</span>
+            <input type="text" maxlength="2" class="mac-part" placeholder="AB" (input)="onMacPartInput($event, 3)" />
+            <span class="mac-separator">:</span>
+            <input type="text" maxlength="2" class="mac-part" placeholder="CD" (input)="onMacPartInput($event, 4)" />
+            <span class="mac-separator">:</span>
+            <input type="text" maxlength="2" class="mac-part" placeholder="EF" (input)="onMacPartInput($event, 5)" />
+          </div>
+          <input type="hidden" formControlName="mac" [value]="getFullMac()" />
+          <button type="button" class="btn-scanner" (click)="openScanner('mac')" title="Escanear">
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+        @if (hasError('mac','required')) { <span class="field-error">Obligatorio</span> }
+        @if (hasError('mac','pattern')) { <span class="field-error">Formato: XX:XX:XX:XX:XX:XX</span> }
+      </div>
+      <!-- Estado -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-toggle-on"></i> Estado *</label>
+        <select formControlName="estado" class="field-input">
+          @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+        </select>
+      </div>
+
+      <!-- Tipo Portador -->
+      <div class="field">
+        <label class="field-label"><i class="fas fa-id-badge"></i> Tipo Portador</label>
+        <select formControlName="tipoPortador" class="field-input" (change)="onTipoPortadorChange()">
+          <option value="">— Sin portador —</option>
+          @for (t of tiposPortador; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- ══ PORTADOR: CLIENTE (con contrato automático) ══ -->
+      @if (mostrarClientes) {
+        <div class="field cliente-portador-field">
+          <label class="field-label">
+            <i class="fas fa-user"></i> Cliente
+            <span class="auto-badge">Contrato automático</span>
+          </label>
+          <select class="field-input" (change)="onClienteChange($event)">
+            <option value="">— Seleccionar cliente —</option>
+            @for (c of clientesOptions(); track c.id) {
+              <option [value]="c.id">
+                📋 #{{ c.nContrato }} — {{ c.nombre }}
+              </option>
+            }
+          </select>
+          <!-- Campo portador oculto que se llena automáticamente -->
+          <input type="hidden" formControlName="portador" />
+        </div>
+
+        <!-- N° Contrato — auto-llenado al elegir cliente, readonly -->
+        <div class="field">
+          <label class="field-label">
+            <i class="fas fa-file-contract"></i> N° Contrato
+          </label>
+          <div class="contrato-wrap">
+            <input type="text" formControlName="contrato"
+                   class="field-input f-contract" readonly
+                   placeholder="Se llena al elegir cliente" />
+            <span class="contrato-hint">📋 Vinculado al cliente</span>
+          </div>
+        </div>
+
+      } @else {
+        <!-- PORTADOR: Usuario / Técnico / Almacén -->
+        <div class="field">
+          <label class="field-label"><i class="fas fa-user"></i> Portador</label>
+          @if (portadorOptions().length > 0) {
+            <select formControlName="portador" class="field-input">
+              <option value="">— Seleccionar —</option>
+              @for (p of portadorOptions(); track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          } @else {
+            <input type="text" formControlName="portador" placeholder="Nombre del portador"
+                   class="field-input" />
+          }
+        </div>
+
+        <!-- N° Contrato manual (cuando no es cliente) -->
+        <div class="field">
+          <label class="field-label"><i class="fas fa-file-contract"></i> N° Contrato</label>
+          <input type="text" formControlName="contrato" placeholder="Opcional" class="field-input" />
+        </div>
+      }
+
+      <!-- Observaciones -->
+      <div class="field full">
+        <label class="field-label"><i class="fas fa-comment"></i> Observaciones</label>
+        <textarea formControlName="observaciones" rows="2"
+                  placeholder="Notas adicionales..." class="field-input"></textarea>
+      </div>
+
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="cancel()" [disabled]="loading()" class="btn-cancel">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button type="submit" [disabled]="loading() || onuForm.invalid" class="btn-save">
+        @if (loading()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
+        @else { <i class="fas fa-save"></i> {{ isEditMode() ? 'Actualizar' : 'Guardar' }} }
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL ESCÁNER -->
+@if (scannerOpen()) {
+  <div class="scanner-overlay" (click)="closeScanner()">
+    <div class="scanner-modal" (click)="$event.stopPropagation()">
+      <div class="scanner-header">
+        <span><i class="fas fa-camera"></i> Escaneando {{ scannerField === 'serial' ? 'Serial' : 'MAC' }}</span>
+        <button type="button" (click)="closeScanner()" class="btn-close-scanner">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="scanner-body">
+        <video #videoEl class="scanner-video" autoplay playsinline></video>
+        <div class="scanner-frame">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="scan-line"></div>
+        </div>
+        <p class="scanner-hint"><i class="fas fa-info-circle"></i> Apunta el código al centro</p>
+        @if (scanResult()) {
+          <div class="scan-success">
+            <i class="fas fa-check-circle"></i> {{ scanResult() }}
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

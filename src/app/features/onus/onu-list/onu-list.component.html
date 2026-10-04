@@ -1,0 +1,198 @@
+<div class="onus-container">
+
+  <!-- TÍTULO -->
+  <div class="page-title-bar">
+    <i class="fas fa-wifi"></i> Gestión de ONU
+  </div>
+
+  <!-- TARJETAS ESTADÍSTICAS -->
+  <div class="stats-grid">
+    <div class="stat-card c-blue">
+      <div class="stat-icon-box"><i class="fas fa-layer-group"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">Total ONU's</p>
+        <p class="stat-value">{{ stats().total }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-teal">
+      <div class="stat-icon-box"><i class="fas fa-check-square"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Disponibles</p>
+        <p class="stat-value">{{ stats().disponibles }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-icon-box"><i class="fas fa-user-check"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Asignados</p>
+        <p class="stat-value">{{ stats().asignadas }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-yellow">
+      <div class="stat-icon-box"><i class="fas fa-cogs"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's en Mantenimiento</p>
+        <p class="stat-value">{{ stats().enReparacion }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-icon-box"><i class="fas fa-bug"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Observados</p>
+        <p class="stat-value">{{ stats().observados }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-teal">
+      <div class="stat-icon-box"><i class="fas fa-clone"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Instalados</p>
+        <p class="stat-value">{{ stats().instalados }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-orange">
+      <div class="stat-icon-box"><i class="fas fa-truck"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Recogidos</p>
+        <p class="stat-value">{{ stats().recogidos }}</p>
+      </div>
+    </div>
+    <div class="stat-card c-rose">
+      <div class="stat-icon-box"><i class="fas fa-trash-alt"></i></div>
+      <div class="stat-body">
+        <p class="stat-label">ONU's Defectuosos</p>
+        <p class="stat-value">{{ stats().defectuosos }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE ACCIONES -->
+  <div class="actions-bar">
+    <button (click)="openNew()" class="btn-nuevo">
+      <i class="fas fa-plus"></i> Nueva ONU
+    </button>
+    <label style="font-size:13px;color:#64748b;display:flex;align-items:center;gap:6px">
+      Mostrar
+      <select [(ngModel)]="itemsPerPage" (change)="applyFilters()" class="items-select-bar">
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      registros por página
+    </label>
+    <div style="flex:1"></div>
+    <select [(ngModel)]="selectedEstado" (change)="onEstadoChange()" class="filter-select">
+      @for (e of estadoOptions; track e.value) {
+        <option [value]="e.value">{{ e.label }}</option>
+      }
+    </select>
+    <select [(ngModel)]="selectedMarca" (change)="onMarcaChange()" class="filter-select">
+      @for (m of marcaOptions; track m) { <option [value]="m">{{ m }}</option> }
+    </select>
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearchChange()"
+             placeholder="Buscar..." class="search-input" />
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-container">
+    <table class="onus-table">
+      <thead>
+      <tr>
+        <th>N°</th>
+        <th>Marca</th>
+        <th>Modelo</th>
+        <th>Serial</th>
+        <th>MAC</th>
+        <th>Observaciones</th>
+        <th>Estado</th>
+        <th>Nro Contrato</th>
+        <th>Tipo Portador</th>
+        <th>Portador</th>
+        <th>Opciones</th>
+      </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          <tr><td colspan="10" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando ONUs...</td></tr>
+        } @else if (getPaginatedOnus().length === 0) {
+          <tr><td colspan="10" class="empty-row"><i class="fas fa-inbox"></i><br/>No se encontraron ONUs</td></tr>
+        } @else {
+          @for (onu of getPaginatedOnus(); track onu.id; let i = $index) {
+            <tr>
+              <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+              <td><div class="marca-name">{{ onu.marca }}</div></td>
+              <td><div class="modelo-name">{{ onu.modelo }}</div></td>
+              <td><span class="serial-badge">{{ onu.serial }}</span></td>
+              <td><code>{{ onu.mac }}</code></td>
+              <td style="max-width:140px;font-size:12px;color:#64748b">{{ onu.observaciones || '—' }}</td>
+              <td>
+                <span [class]="'badge ' + getEstadoBadgeClass(onu.estado)">{{ onu.estado }}</span>
+              </td>
+              <td>
+                @if (onu.contrato) { <span class="contrato-badge">#{{ onu.contrato }}</span> }
+                @else { <span class="text-muted">—</span> }
+              </td>
+              <td>
+                @if ((onu)?.tipoPortador) {
+                  <span class="tipo-badge tipo-{{ (onu)?.tipoPortador?.toLowerCase() }}">{{ (onu)?.tipoPortador }}</span>
+                } @else { <span class="text-muted">—</span> }
+              </td>
+              <td style="font-size:13px">{{ (onu)?.portador || '—' }}</td>
+              <td class="actions-cell">
+                <button (click)="viewDetails(onu)" class="btn-action view" title="Ver">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button (click)="openEdit(onu)" class="btn-action edit" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button (click)="cambiarEstado(onu)" class="btn-action state" title="Estado">
+                  <i class="fas fa-exchange-alt"></i>
+                </button>
+                <button (click)="deleteOnu(onu)" class="btn-action delete" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Mostrando {{ (currentPage-1)*itemsPerPage+1 }}–{{ Math.min(currentPage*itemsPerPage, filteredOnus().length) }}
+      de {{ filteredOnus().length }} registros
+    </div>
+    <div class="pagination-controls">
+      <button (click)="previousPage()" [disabled]="currentPage===1" class="page-btn">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      @for (page of getPageNumbers(); track page) {
+        <button (click)="goToPage(page)" [class.active]="currentPage===page" class="page-btn">{{ page }}</button>
+      }
+      <button (click)="nextPage()" [disabled]="currentPage===totalPages()" class="page-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <app-onu-form
+        [onuId]="selectedOnu?.id ?? null"
+        [isEdit]="isEditMode"
+        (saved)="onSaved()"
+        (cancelled)="closeForm()"
+      ></app-onu-form>
+    </div>
+  </div>
+}

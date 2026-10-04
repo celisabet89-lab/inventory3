@@ -1,0 +1,457 @@
+/*
+  src/app/features/products/product-scanner/product-scanner.component.css
+*/
+
+.scanner-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================
+   ENCABEZADO
+   ============================================ */
+.scanner-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.scanner-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.btn-close:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* ============================================
+   CÁMARA
+   ============================================ */
+.camera-container {
+  margin: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  aspect-ratio: 4/3;
+  max-height: 60vh;
+}
+
+.camera-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: center;
+  padding: 40px;
+}
+
+.camera-icon {
+  font-size: 80px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+}
+
+.camera-placeholder h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.camera-placeholder p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 30px;
+}
+
+.btn-start {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s;
+}
+
+.btn-start:hover {
+  background: #1d4ed8;
+  transform: scale(1.05);
+}
+
+/* Video */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-canvas {
+  display: none;
+}
+
+/* Overlay de escaneo */
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scan-box {
+  width: 250px;
+  height: 250px;
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: 16px;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #10b981;
+}
+
+.corner-tl {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+}
+
+.corner-tr {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 8px;
+}
+
+.corner-bl {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 8px;
+}
+
+.corner-br {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 8px;
+}
+
+.scan-instruction {
+  margin-top: 30px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 12px 24px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================================
+   PRODUCTO ACTUAL
+   ============================================ */
+.product-info {
+  margin: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s;
+}
+
+.product-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-details {
+  padding: 16px;
+}
+
+.product-details h3 {
+  font-size: 18px;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stock {
+  color: #059669;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ============================================
+   HISTORIAL
+   ============================================ */
+.scan-history {
+  margin: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.history-header {
+  background: #f8fafc;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-header h3 {
+  font-size: 16px;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-clear {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.history-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.history-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.history-item:hover {
+  background: #f8fafc;
+}
+
+.history-icon {
+  width: 40px;
+  height: 40px;
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-code {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-time {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.history-format {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================
+   BOTONES DE ACCIÓN
+   ============================================ */
+.action-buttons {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-start-scan {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.btn-start-scan:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.btn-stop {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-stop:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .scanner-header h1 {
+    font-size: 18px;
+  }
+
+  .camera-container {
+    margin: 10px;
+  }
+
+  .scan-box {
+    width: 200px;
+    height: 200px;
+  }
+}

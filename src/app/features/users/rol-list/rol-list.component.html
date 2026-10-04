@@ -1,0 +1,97 @@
+<div class="roles-page">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-user-tag header-icon"></i>
+      <div>
+        <h2>Roles del Sistema</h2>
+        <span class="header-sub">Gestiona los permisos por rol</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FORMULARIO INLINE -->
+  @if (showForm) {
+    <div class="form-card">
+
+
+      <div class="form-row">
+        <div class="field-wrap">
+          <label>Nombre del Rol *</label>
+          <input type="text"
+                 [(ngModel)]="cargo"
+                 placeholder="Ej: Técnico, Administrador, Encargado..."
+                 class="f-input"
+                 [class.f-error]="errorMsg"
+                 (keyup.enter)="guardar()" />
+          @if (errorMsg) {
+            <span class="f-err">{{ errorMsg }}</span>
+          }
+        </div>
+
+        <div class="form-btns">
+          <button class="btn-cancel" (click)="cancelForm()" [disabled]="saving()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button class="btn-save" (click)="guardar()" [disabled]="saving() || !cargo.trim()">
+            @if (saving()) { <i class="fas fa-spinner fa-spin"></i> }
+            @else { <i class="fas fa-save"></i> }
+            {{ isEdit ? 'Actualizar' : 'Guardar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- LOADING -->
+  @if (loading()) {
+    <div class="loading-wrap">
+      <i class="fas fa-spinner fa-spin"></i> Cargando roles...
+    </div>
+  }
+
+  <!-- GRID DE ROLES -->
+  @if (!loading()) {
+    @if (roles().length === 0) {
+      <div class="empty-wrap">
+        <i class="fas fa-user-tag" style="font-size:48px;color:#d1d5db"></i>
+        <p>No hay roles registrados</p>
+        <button class="btn-nuevo" (click)="openNew()">
+          <i class="fas fa-plus"></i> Crear primer rol
+        </button>
+      </div>
+    } @else {
+      <div class="roles-grid"><!-- Tarjeta "Agregar nuevo" -->
+        <div class="rol-card-new" (click)="openNew()">
+          <i class="fas fa-plus-circle"></i>
+          <span>Nuevo Rol</span>
+        </div>
+        @for (rol of roles(); track rol.id) {
+          <div class="rol-card" [style.border-top-color]="getRolColor(rol.cargo)">
+            <div class="rol-icon" [style.background]="getRolColor(rol.cargo) + '22'" [style.color]="getRolColor(rol.cargo)">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="rol-body">
+              <h3 class="rol-nombre">{{ rol.cargo }}</h3>
+              <span class="rol-id">ID: {{ rol.id }}</span>
+            </div>
+            <div class="rol-actions">
+              <button class="btn-ac edit" (click)="openEdit(rol)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-ac del" (click)="eliminar(rol)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        }
+
+
+      </div>
+    }
+  }
+
+
+</div>
