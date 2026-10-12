@@ -1,23 +1,36 @@
-export type Rol = 'admin' | 'supervisor' | 'operador';
-
-export interface User {
-  activo: boolean;
-  email: string;
-  name: string;
-  export: any;
-  fechaCreacion?: Date;
+export interface Rol {
   id?: number;
-  interface: any;
-  password?: string;
-
-  // @ts-ignore
-  profile?: Profile
-  rol?: Rol
-  ultimoAcceso?: Date
+  nombre?: string;
+  cargo?: string;
 }
 
-export class Profile {
-    name: any;
-  lastName: any;
-  cargo: any;
+export interface User {
+  idUsuario: number | undefined;
+  idUser: number | undefined;
+  userId: number | undefined;
+  activo?: boolean;
+  email: string;
+
+  name?: string;
+  lastName?: string;
+
+  telefono?: number;
+  ci?: number;
+
+  fechaCreacion?: Date;
+  id?: number;
+
+  password?: string;
+
+  profile?: Profile;
+  rol?: Rol;
+
+  ultimoAcceso?: Date;
+}
+
+export interface Profile {
+  id?: number;
+  name?: string;
+  lastName?: string;
+  cargo?: string;
 }

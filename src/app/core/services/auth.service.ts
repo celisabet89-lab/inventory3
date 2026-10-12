@@ -1,70 +1,129 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { User } from '../../models/user.model';
+import { LoginRequest } from '../../models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private usersUrl = `${environment.apiUrl}/user`;
+  private readonly loginUrl = `${environment.apiUrl}/auth/login`;
 
-  private _currentUser = new BehaviorSubject<any>(null);
-  currentUser$ = this._currentUser.asObservable();
+  private readonly _currentUser = new BehaviorSubject<User | null>(null);
 
-  currentUserSignal = signal<any>(null);
+  readonly currentUser$ = this._currentUser.asObservable();
+  readonly currentUserSignal = signal<User | null>(null);
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private readonly http: HttpClient,
+    private readonly router: Router
+  ) {
     this.loadUserFromStorage();
-    // Sincronizar BehaviorSubject con signal
-    this._currentUser.subscribe(user => this.currentUserSignal.set(user));
+
+    this._currentUser.subscribe(user => {
+      this.currentUserSignal.set(user);
+    });
   }
 
   private loadUserFromStorage(): void {
+    const stored = localStorage.getItem('user');
+
+    if (!stored) {
+      return;
+    }
+
     try {
-      const stored = localStorage.getItem('user');
-      if (stored) this._currentUser.next(JSON.parse(stored));
+      this._currentUser.next(JSON.parse(stored) as User);
     } catch {
       localStorage.removeItem('user');
+      this._currentUser.next(null);
     }
   }
 
-  login(email: string, password: string): Observable<any> {
-    return this.http.get<any[]>(this.usersUrl).pipe(
-      tap((users: any[]) => {
-        const found = users.find(u =>
-          u.email?.toLowerCase() === String(email).toLowerCase() &&
-          u.password === String(password)
+  login(email: string, password: string): Observable<User> {
+    const request: LoginRequest = {
+      email: email.trim(),
+      password
+    };
+
+    return this.http.post<User>(this.loginUrl, request).pipe(
+      tap(user => {
+        // El backend devuelve directamente el usuario.
+        // Nunca guardamos la contraseña en localStorage.
+        const authenticatedUser: User = { ...user };
+
+        delete authenticatedUser.password;
+
+        localStorage.setItem(
+          'user',
+          JSON.stringify(authenticatedUser)
         );
-        if (!found) throw new Error('Credenciales incorrectas');
-        found.password = null;
-        localStorage.setItem('user', JSON.stringify(found));
-        this._currentUser.next(found);
+
+        this._currentUser.next(authenticatedUser);
       }),
-      catchError(err => {
-        const msg = err?.message ?? 'Error al iniciar sesión';
-        return throwError(() => new Error(msg));
+
+      catchError((error: HttpErrorResponse) => {
+        return throwError(
+          () => new Error(this.getLoginErrorMessage(error))
+        );
       })
     );
   }
 
+  private getLoginErrorMessage(error: HttpErrorResponse): string {
+    if (error.status === 401) {
+      return error.error?.message ||
+        'Correo o contraseña incorrectos';
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor';
+    }
+
+    return error.error?.message ||
+      error.message ||
+      'Error al iniciar sesión';
+  }
+
   logout(): void {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+
+    sessionStorage.removeItem('token');
+
     this._currentUser.next(null);
+
     this.router.navigate(['/login']);
   }
 
-  // FIX: getCurrentUser() que usa onu-assignment
-  getCurrentUser(): any { return this._currentUser.getValue(); }
-
-  isAuthenticated(): boolean { return this._currentUser.getValue() !== null; }
-  isLoggedIn():      boolean { return this.isAuthenticated(); }
-
-  isAdmin(): boolean {
-    const user  = this._currentUser.getValue();
-    const cargo = user?.profile?.cargo ?? user?.rol?.cargo ?? '';
-    return cargo.toLowerCase().includes('admin');
+  getCurrentUser(): User | null {
+    return this._currentUser.getValue();
   }
 
-  getUserFromStorage(): any { return this._currentUser.getValue(); }
+  getUserFromStorage(): User | null {
+    return this.getCurrentUser();
+  }
+
+  isAuthenticated(): boolean {
+    return this._currentUser.getValue() !== null;
+  }
+
+  isLoggedIn(): boolean {
+    return this.isAuthenticated();
+  }
+
+  isAdmin(): boolean {
+    const user = this._currentUser.getValue();
+
+    const cargo  =
+      user?.profile?.cargo ??
+      user?.rol?.cargo ??
+      '';
+
+    return String(cargo)
+      .toLowerCase()
+      .includes('admin');
+  }
 }

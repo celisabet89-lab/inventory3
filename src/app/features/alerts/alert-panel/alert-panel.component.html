@@ -1,171 +1,419 @@
 <div class="alert-panel">
 
-  @if (toastVisible) {
-    <div class="toast" [class.toast-error]="toastError" [class.toast-ok]="!toastError">
-      {{ toastMsg }}
-    </div>
-  }
+  <section class="panel-header">
+    <div class="header-content">
+      <div class="header-icon">🔔</div>
 
-  <div class="panel-header">
-    <div class="header-left">
-      <h2>🔔 Alertas de Stock</h2>
-      <span class="subtitle">Monitoreo automático · actualiza cada 60s</span>
+      <div>
+        <h1>Alertas de Stock</h1>
+        <p>Monitoreo y control del inventario</p>
+
+        <span class="header-status">
+          <span class="status-dot"></span>
+          Actualización automática cada 60 segundos
+        </span>
+      </div>
     </div>
-    <button class="btn-verificar" (click)="checkStock()" [disabled]="verificando">
-      <span *ngIf="!verificando">🔍 Verificar Stock</span>
-      <span *ngIf="verificando" class="spin">⟳ Verificando...</span>
+
+    <button
+      class="btn-verificar"
+      type="button"
+      (click)="checkStock()"
+      [disabled]="verificando">
+
+      <span *ngIf="!verificando">
+        🔄 Verificar stock
+      </span>
+
+      <span *ngIf="verificando" class="loading-content">
+        <span class="spin">⟳</span>
+        Verificando...
+      </span>
+    </button>
+  </section>
+
+
+  <section class="stats-grid">
+
+    <div class="stat-card stat-total">
+      <div class="stat-icon">📊</div>
+      <div>
+        <span class="stat-number">{{ totalAlertas }}</span>
+        <span class="stat-label">Total de alertas</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-pendiente">
+      <div class="stat-icon">⏳</div>
+      <div>
+        <span class="stat-number">{{ pendientes }}</span>
+        <span class="stat-label">Pendientes</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-critica">
+      <div class="stat-icon">🚨</div>
+      <div>
+        <span class="stat-number">{{ criticas }}</span>
+        <span class="stat-label">Críticas</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-gestionada">
+      <div class="stat-icon">✅</div>
+      <div>
+        <span class="stat-number">{{ gestionadas }}</span>
+        <span class="stat-label">Gestionadas</span>
+      </div>
+    </div>
+
+  </section>
+
+
+  <section class="controls-card">
+    <div class="search-box">
+      <span class="search-icon">🔎</span>
+
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="aplicarFiltro(filtroActivo)"
+        placeholder="Buscar producto, categoría o descripción..." />
+
+      <button
+        *ngIf="searchTerm"
+        type="button"
+        class="clear-search"
+        (click)="limpiarBusqueda">
+        ✕
+      </button>
+    </div>
+
+    <div class="filters">
+      <button
+        type="button"
+        [class.activo]="filtroActivo === 'TODAS'"
+        (click)="aplicarFiltro('TODAS')">
+        Todas
+        <span>{{ totalAlertas }}</span>
+      </button>
+
+      <button
+        type="button"
+        [class.activo]="filtroActivo === 'PENDIENTES'"
+        (click)="aplicarFiltro('PENDIENTES')">
+        Pendientes
+        <span>{{ pendientes }}</span>
+      </button>
+
+      <button
+        type="button"
+        [class.activo]="filtroActivo === 'CRÍTICAS'"
+        (click)="aplicarFiltro('CRÍTICAS')">
+        Críticas
+        <span>{{ criticas }}</span>
+      </button>
+
+      <button
+        type="button"
+        [class.activo]="filtroActivo === 'GESTIONADAS'"
+        (click)="aplicarFiltro('GESTIONADAS')">
+        Gestionadas
+        <span>{{ gestionadas }}</span>
+      </button>
+    </div>
+  </section>
+
+
+  <div *ngIf="cargando" class="estado-vacio">
+    <div class="loading-circle">⟳</div>
+    <h3>Cargando alertas</h3>
+    <p>Consultando el estado del inventario...</p>
+  </div>
+
+
+  <div
+    *ngIf="!cargando && filteredAlerts.length === 0"
+    class="estado-vacio">
+
+    <div class="empty-icon">✅</div>
+    <h3>No hay alertas</h3>
+    <p>No existen alertas que coincidan con los filtros seleccionados.</p>
+
+    <button
+      type="button"
+      class="btn-limpiar"
+      (click)="limpiarBusqueda(); aplicarFiltro('TODAS')">
+      Ver todas las alertas
     </button>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card total">   <span class="stat-number">{{ totalAlertas }}</span>   <span class="stat-label">Total</span></div>
-    <div class="stat-card pendiente"><span class="stat-number">{{ pendientes }}</span>     <span class="stat-label">Pendientes</span></div>
-    <div class="stat-card critica"> <span class="stat-number">{{ criticas }}</span>        <span class="stat-label">Críticas</span></div>
-    <div class="stat-card gestionada"><span class="stat-number">{{ gestionadas }}</span>  <span class="stat-label">Gestionadas</span></div>
-    <div class="stat-card email">   <span class="stat-number">{{ emailsEnviados }}</span> <span class="stat-label">✉️ Emails</span></div>
-  </div>
 
-  <div class="filtros">
-    <button [class.activo]="filtroActivo==='TODAS'"       (click)="aplicarFiltro('TODAS')">Todas</button>
-    <button [class.activo]="filtroActivo==='PENDIENTES'"  (click)="aplicarFiltro('PENDIENTES')">Pendientes</button>
-    <button [class.activo]="filtroActivo==='CRÍTICAS'"    (click)="aplicarFiltro('CRÍTICAS')">Críticas</button>
-    <button [class.activo]="filtroActivo==='GESTIONADAS'" (click)="aplicarFiltro('GESTIONADAS')">Gestionadas</button>
-    <button [class.activo]="filtroActivo==='EMAIL'"       (click)="aplicarFiltro('EMAIL')">✉️ Con email</button>
-  </div>
+  <section
+    *ngIf="!cargando && filteredAlerts.length > 0"
+    class="alerts-grid">
 
-  <div *ngIf="cargando" class="estado-vacio"><span class="spin">⟳</span> Cargando alertas...</div>
-  <div *ngIf="!cargando && filteredAlerts.length === 0" class="estado-vacio">
-    <span style="font-size:48px">✅</span><p>No hay alertas en esta categoría</p>
-  </div>
+    <article
+      class="alert-card"
+      *ngFor="let alert of filteredAlerts"
+      [class.critica]="alert.resultado === 'CRÍTICO'"
+      [class.gestionada]="alert.estado === 'GESTIONADA'">
 
-  <div class="alerts-grid" *ngIf="!cargando && filteredAlerts.length > 0">
-    <div class="alert-card"
-         *ngFor="let alert of filteredAlerts"
-         [class.critica]="alert.resultado === 'CRÍTICO'"
-         [class.gestionada]="alert.estado === 'GESTIONADA'">
+      <div
+        class="alert-band"
+        [class.band-critical]="alert.resultado === 'CRÍTICO'"
+        [class.band-low]="alert.resultado !== 'CRÍTICO'"
+        [class.band-managed]="alert.estado === 'GESTIONADA'">
+      </div>
 
-      <div class="banda" [class.roja]="alert.resultado==='CRÍTICO'" [class.amarilla]="alert.resultado!=='CRÍTICO'"></div>
+      <div class="card-content">
 
-      <div class="card-body">
-        <div class="card-top">
-          <div class="producto-info">
-            <span class="icono-cat">{{ getIconoProducto(alert.product?.categoria || '') }}</span>
-            <div>
-              <h3 class="producto-nombre">{{ alert.product?.articulo || 'Producto' }}</h3>
-              <span class="categoria-chip">{{ alert.product?.categoria }}</span>
+        <div class="card-header">
+
+          <div class="product-data">
+            <div class="product-icon">
+              {{ getIconoProducto(alert.product?.categoria?.nombre || '') }}
+            </div>
+
+            <div class="product-text">
+              <h2>{{ alert.product?.articulo || 'Producto' }}</h2>
+
+              <span class="category">
+                {{ alert.product?.categoria?.nombre || 'Sin categoría' }}
+              </span>
             </div>
           </div>
+
           <div class="badges">
-            <span class="badge" [class.badge-critico]="alert.resultado==='CRÍTICO'" [class.badge-bajo]="alert.resultado!=='CRÍTICO'">
-              {{ alert.resultado === 'CRÍTICO' ? '🔴 CRÍTICO' : '🟡 BAJO' }}
+            <span
+              class="badge"
+              [class.badge-critical]="alert.resultado === 'CRÍTICO'"
+              [class.badge-low]="alert.resultado !== 'CRÍTICO'">
+
+              {{ alert.resultado === 'CRÍTICO' ? '🔴 CRÍTICO' : '🟡 STOCK BAJO' }}
             </span>
-            <span class="badge badge-gestionada" *ngIf="alert.estado==='GESTIONADA'">✅ Gestionada</span>
-            <span class="badge badge-email"    *ngIf="alert.emailEnviado">✉️ Email enviado</span>
-            <span class="badge badge-email-no" *ngIf="!alert.emailEnviado">📭 Sin email</span>
+
+            <span
+              *ngIf="alert.estado === 'GESTIONADA'"
+              class="badge badge-managed">
+              ✅ Gestionada
+            </span>
           </div>
         </div>
 
-        <div class="stock-info">
-          <div class="stock-num">
-            <span class="num-actual" [style.color]="getBarraColor(alert)">{{ alert.stockActual }}</span>
-            <span class="num-sep">/</span>
-            <span class="num-minimo">{{ alert.stockMinimo }}</span>
-            <span class="num-label">unidades (mín)</span>
+
+        <div class="stock-section">
+          <div class="stock-header">
+
+            <div>
+              <span class="stock-label">Stock actual</span>
+
+              <div class="stock-values">
+                <strong [style.color]="getBarraColor(alert)">
+                  {{ alert.stockActual }}
+                </strong>
+
+                <span>/ {{ alert.stockMinimo }}</span>
+              </div>
+            </div>
+
+            <div class="percentage">
+              <strong [style.color]="getBarraColor(alert)">
+                {{ getStockPorcentaje(alert) }}%
+              </strong>
+
+              <span>del mínimo</span>
+            </div>
           </div>
-          <span class="pct" [style.color]="getBarraColor(alert)">{{ getStockPorcentaje(alert) }}%</span>
+
+          <div class="progress">
+            <div
+              class="progress-fill"
+              [style.width.%]="getStockPorcentaje(alert)"
+              [style.background]="getBarraColor(alert)">
+            </div>
+          </div>
+
+          <div class="stock-description">
+            <span
+              *ngIf="alert.estado === 'GESTIONADA'"
+              class="description-managed">
+              Stock gestionado
+            </span>
+
+            <span
+              *ngIf="alert.estado !== 'GESTIONADA' && alert.resultado === 'CRÍTICO'"
+              class="description-critical">
+              Nivel crítico de inventario
+            </span>
+
+            <span
+              *ngIf="alert.estado !== 'GESTIONADA' && alert.resultado !== 'CRÍTICO'"
+              class="description-low">
+              El producto está por debajo del nivel recomendado
+            </span>
+          </div>
         </div>
 
-        <div class="barra-bg">
-          <div class="barra-fill" [style.width.%]="getStockPorcentaje(alert)" [style.background]="getBarraColor(alert)"></div>
+
+        <div class="description-box">
+          <span class="description-title">Descripción</span>
+          <p>{{ alert.descripcion || 'Sin descripción disponible.' }}</p>
         </div>
 
-        <p class="descripcion">{{ alert.descripcion }}</p>
 
         <div class="card-footer">
-          <span class="fecha">📅 {{ alert.fecha | date:'dd/MM/yyyy' }}</span>
-          <div class="footer-btns">
-            <button class="btn-pedir"
-                    *ngIf="alert.estado === 'PENDIENTE'"
-                    (click)="abrirPedido(alert)">
-              📦 Pedir al Proveedor
+          <div class="date-info">
+            <span>📅</span>
+            <span>{{ alert.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+
+          <div class="footer-actions">
+            <button
+              *ngIf="alert.estado === 'PENDIENTE'"
+              type="button"
+              class="btn-pedir"
+              (click)="abrirPedido(alert)">
+              📦 Pedir proveedor
             </button>
-            <button class="btn-gestionar"
-                    *ngIf="alert.estado === 'PENDIENTE'"
-                    (click)="marcarGestionada(alert)">
-              ✅ Gestionada
+
+            <button
+              *ngIf="alert.estado === 'PENDIENTE'"
+              type="button"
+              class="btn-gestionar"
+              (click)="marcarGestionada(alert)">
+              ✅ Gestionar
             </button>
           </div>
         </div>
+
       </div>
-    </div>
-  </div>
+    </article>
+  </section>
+
 </div>
 
-<!-- ══ MODAL PEDIDO ══════════════════════════════════════════ -->
-@if (showPedidoModal) {
-  <div class="modal-overlay" (click)="cerrarPedido()">
-    <div class="modal-pedido" (click)="$event.stopPropagation()">
 
-      <div class="modal-header">
-        <div class="modal-title">
-          <span class="modal-icon">📦</span>
-          <div>
-            <h3>Pedido al Proveedor</h3>
-            <!-- FIX: pedido.alerta nunca es null, sin ?. -->
-            <span class="modal-sub">{{ pedido.alerta.product?.articulo }}</span>
-          </div>
-        </div>
-        <button class="btn-close-modal" (click)="cerrarPedido()">✕</button>
-      </div>
+<div
+  *ngIf="showPedidoModal"
+  class="modal-overlay"
+  (click)="cerrarPedido()">
 
-      <div class="stock-resumen">
-        <!-- FIX: sin ?. en pedido.alerta -->
-        <div class="stock-item">
-          <span class="stock-lbl">Stock actual</span>
-          <span class="stock-val rojo">{{ pedido.alerta.stockActual }}</span>
-        </div>
-        <div class="stock-sep">→</div>
-        <div class="stock-item">
-          <span class="stock-lbl">Stock mínimo</span>
-          <span class="stock-val">{{ pedido.alerta.stockMinimo }}</span>
-        </div>
-        <div class="stock-sep">·</div>
-        <div class="stock-item">
-          <span class="stock-lbl">Categoría</span>
-          <span class="stock-val">{{ pedido.alerta.product?.categoria }}</span>
+  <div
+    class="modal-pedido"
+    (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <div class="modal-icon">📦</div>
+
+        <div>
+          <h3>Pedido al proveedor</h3>
+          <span>{{ pedido.alerta.product?.articulo || 'Producto' }}</span>
         </div>
       </div>
 
-      <div class="modal-body">
-        <div class="field-modal">
-          <label>✉️ Email del Proveedor *</label>
-          <input type="email" [(ngModel)]="pedido.supplierEmail" placeholder="proveedor@empresa.com" class="input-modal" />
-        </div>
-        <div class="field-modal">
-          <label>🏢 Nombre del Proveedor</label>
-          <input type="text" [(ngModel)]="pedido.supplierName" placeholder="Empresa Distribuidora S.A." class="input-modal" />
-        </div>
-        <div class="field-modal">
-          <label>🔢 Cantidad a Pedir *</label>
-          <input type="number" [(ngModel)]="pedido.cantidad" min="1" class="input-modal input-num" />
-          <!-- FIX: sin ?. -->
-          <span class="field-hint">Sugerido: {{ pedido.alerta.stockMinimo * 2 }} unidades (2× el mínimo)</span>
-        </div>
-        <div class="field-modal">
-          <label>📝 Observaciones</label>
-          <textarea [(ngModel)]="pedido.observaciones" rows="3" placeholder="Especificaciones, urgencia..." class="input-modal"></textarea>
-        </div>
+      <button
+        type="button"
+        class="modal-close"
+        (click)="cerrarPedido()">
+        ✕
+      </button>
+    </div>
+
+
+    <div class="modal-stock">
+      <div class="modal-stock-item">
+        <span>Stock actual</span>
+        <strong class="danger-text">{{ pedido.alerta.stockActual }}</strong>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn-cancelar-modal" (click)="cerrarPedido()" [disabled]="enviandoPedido">Cancelar</button>
-        <button class="btn-enviar-pedido"
-                (click)="enviarPedido()"
-                [disabled]="enviandoPedido || !pedido.supplierEmail || !pedido.cantidad">
-          @if (enviandoPedido) { <span class="spin">⟳</span> Enviando... }
-          @else { 📧 Enviar Pedido }
-        </button>
+      <div class="modal-stock-item">
+        <span>Stock mínimo</span>
+        <strong>{{ pedido.alerta.stockMinimo }}</strong>
+      </div>
+
+      <div class="modal-stock-item">
+        <span>Categoría</span>
+        <strong>{{ pedido.alerta.product?.categoria?.nombre || 'Sin categoría' }}</strong>
       </div>
     </div>
+
+
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label>Nombre del proveedor</label>
+
+        <input
+          type="text"
+          [(ngModel)]="pedido.supplierName"
+          placeholder="Nombre de la empresa"
+          class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Celular del proveedor para WhatsApp *</label>
+
+        <input
+          type="tel"
+          [(ngModel)]="pedido.supplierPhone"
+          placeholder="Ej. 71234567"
+          class="form-control" />
+
+        <span class="form-hint">
+          Para Bolivia puedes ingresar los 8 dígitos del celular.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Cantidad a pedir *</label>
+
+        <input
+          type="number"
+          [(ngModel)]="pedido.cantidad"
+          min="1"
+          class="form-control quantity-input" />
+
+        <span class="form-hint">
+          Sugerido: {{ pedido.alerta.stockMinimo * 2 }} unidades.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Observaciones</label>
+
+        <textarea
+          [(ngModel)]="pedido.observaciones"
+          rows="3"
+          placeholder="Especificaciones o información adicional..."
+          class="form-control">
+        </textarea>
+      </div>
+
+      <p class="whatsapp-help">
+        El mensaje se abrirá preparado en WhatsApp. Revisa la información y pulsa Enviar en el chat.
+      </p>
+
+    </div>
+
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn-modal-cancel"
+        (click)="cerrarPedido()">
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn-whatsapp"
+        (click)="abrirWhatsAppPedido()"
+        [disabled]="!pedido.supplierPhone.trim() || !pedido.cantidad">
+        💬 Abrir WhatsApp
+      </button>
+    </div>
+
   </div>
-}
+</div>

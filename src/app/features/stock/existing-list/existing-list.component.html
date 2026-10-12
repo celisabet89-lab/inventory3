@@ -1,8 +1,14 @@
 <div class="stock-container">
+  <div class="page-title-bar">
+    <div class="title-main">
+      <span class="title-icon"><i class="fas fa-boxes"></i></span>
+      <div>
+        <h1>Inventario — Stock Actual</h1>
+        <p>Control de existencias, mínimos y movimientos registrados</p>
+      </div>
+    </div>
+  </div>
 
-  <div class="page-title-bar"><i class="fas fa-boxes"></i> Inventario — Stock Actual</div>
-
-  <!-- ESTADÍSTICAS -->
   <div class="stats-grid">
     <div class="stat-card c-blue">
       <div class="stat-icon-box"><i class="fas fa-cubes"></i></div>
@@ -36,55 +42,85 @@
       <div class="stat-icon-box"><i class="fas fa-dollar-sign"></i></div>
       <div class="stat-body">
         <p class="stat-label">Valor Total</p>
-        <p class="stat-value" style="font-size:16px;margin-top:2px">{{ formatCurrency(totalValue()) }}</p>
+        <p class="stat-value value-currency">{{ formatCurrency(totalValue()) }}</p>
       </div>
     </div>
   </div>
 
-  <!-- BARRA ACCIONES -->
   <div class="actions-bar">
-    <button (click)="openNew()" class="btn-nuevo">
-      <i class="fas fa-plus"></i> Nuevo Registro
+    <button type="button" class="btn-nuevo" (click)="openAdjustment()">
+      <i class="fas fa-sliders-h"></i> Ajuste manual
+    </button>
+    <button type="button" class="btn-secondary" (click)="openHistory()">
+      <i class="fas fa-history"></i> Historial / Reportes
+    </button>
+    <button type="button" class="btn-export" (click)="exportStockCSV()">
+      <i class="fas fa-file-export"></i> Exportar stock
     </button>
 
     <div class="search-box">
       <i class="fas fa-search search-icon"></i>
-      <input type="text" [(ngModel)]="searchTerm" (input)="onSearchChange()"
-             placeholder="Buscar producto o categoría..." class="search-input" />
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        placeholder="Buscar producto, código o categoría..."
+        class="search-input"
+        [disabled]="loading()"
+      />
     </div>
 
-    <!-- Filtros de estado -->
-    <div class="status-filter-btns">
-      <button [class.active]="statusFilter===''" (click)="statusFilter='';applyFilter()" class="sfbtn all">Todos</button>
-      <button [class.active]="statusFilter==='normal'" (click)="statusFilter='normal';applyFilter()" class="sfbtn ok"><i class="fas fa-check"></i> Normal</button>
-      <button [class.active]="statusFilter==='low'" (click)="statusFilter='low';applyFilter()" class="sfbtn low"><i class="fas fa-exclamation-triangle"></i> Bajo</button>
-      <button [class.active]="statusFilter==='critical'" (click)="statusFilter='critical';applyFilter()" class="sfbtn crit"><i class="fas fa-times-circle"></i> Sin Stock</button>
-    </div>
-
-    <div class="pagination-inline" style="margin-left:auto">
-      <button (click)="previousPage()" [disabled]="currentPage===1" class="page-btn"><i class="fas fa-chevron-left"></i></button>
-      @for (p of getPageNumbers(); track p) {
-        <button (click)="goToPage(p)" [class.active]="currentPage===p" class="page-btn">{{ p }}</button>
+    <select class="filter-select" [(ngModel)]="categoryFilter" (change)="onSearchChange()" aria-label="Filtrar por categoría">
+      <option value="Todas">Todas las categorías</option>
+      @for (category of getCategories(); track category.name) {
+        <option [value]="category.name">{{ category.name }}</option>
       }
-      <button (click)="nextPage()" [disabled]="currentPage===totalPages()" class="page-btn"><i class="fas fa-chevron-right"></i></button>
-      <select [(ngModel)]="itemsPerPage" (change)="applyFilter()" class="items-select">
-        <option [value]="10">10</option><option [value]="25">25</option><option [value]="50">50</option>
+    </select>
+
+    <div class="status-filter-btns">
+      <button [class.active]="statusFilter === ''" (click)="statusFilter = ''; onSearchChange()" class="sfbtn all">Todos</button>
+      <button [class.active]="statusFilter === 'normal'" (click)="statusFilter = 'normal'; onSearchChange()" class="sfbtn ok">
+        <i class="fas fa-check"></i> Normal
+      </button>
+      <button [class.active]="statusFilter === 'low'" (click)="statusFilter = 'low'; onSearchChange()" class="sfbtn low">
+        <i class="fas fa-exclamation-triangle"></i> Bajo
+      </button>
+      <button [class.active]="statusFilter === 'critical'" (click)="statusFilter = 'critical'; onSearchChange()" class="sfbtn crit">
+        <i class="fas fa-times-circle"></i> Sin stock
+      </button>
+    </div>
+
+    <div class="pagination-inline">
+      <button type="button" (click)="previousPage()" [disabled]="currentPage === 1" class="page-btn" aria-label="Página anterior">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      @for (page of getPageNumbers(); track page) {
+        <button type="button" (click)="goToPage(page)" [class.active]="currentPage === page" class="page-btn">{{ page }}</button>
+      }
+      <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages()" class="page-btn" aria-label="Página siguiente">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="items-select" aria-label="Productos por página">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
       </select>
     </div>
   </div>
+
   @if (getCategories().length > 0) {
     <div class="category-chips">
-      @for (cat of getCategories(); track cat.name) {
-        <div class="category-chip" (click)="searchTerm=cat.name;applyFilter()">
-          <span class="chip-dot" [style.background]="getCategoryColor(cat.name)"></span>
-          <span class="cat-name">{{ cat.name }}</span>
-          <span class="cat-count">{{ cat.count }}</span>
-          <span class="cat-value">{{ formatCurrency(cat.value) }}</span>
-        </div>
+      @for (category of getCategories(); track category.name) {
+        <button type="button" class="category-chip" (click)="categoryFilter = category.name; onSearchChange()">
+          <span class="chip-dot" [style.background]="getCategoryColor(category.name)"></span>
+          <span class="cat-name">{{ category.name }}</span>
+          <span class="cat-count">{{ category.count }}</span>
+          <span class="cat-value">{{ formatCurrency(category.value) }}</span>
+        </button>
       }
     </div>
   }
-  <!-- TABLA -->
+
   <div class="table-container">
     <table class="stock-table">
       <thead>
@@ -92,79 +128,72 @@
         <th>N°</th>
         <th>Producto</th>
         <th>Categoría</th>
-        <th style="text-align:center">Stock Actual</th>
-        <th style="text-align:center">Stock Mínimo</th>
-        <th style="text-align:right">Precio Unit.</th>
-        <th style="text-align:right">Valor Total</th>
-        <th style="text-align:center">Estado</th>
-        <th style="text-align:center">Acciones</th>
+        <th class="center">Stock actual</th>
+        <th class="center">Stock mínimo</th>
+        <th class="right">Precio unit.</th>
+        <th class="right">Valor total</th>
+        <th class="center">Estado</th>
+        <th class="center">Acciones</th>
       </tr>
       </thead>
       <tbody>
         @if (loading()) {
           <tr><td colspan="9" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando stock...</td></tr>
         } @else if (getPaginatedItems().length === 0) {
-          <tr><td colspan="9" class="empty-row"><i class="fas fa-inbox"></i><br/>No hay registros de stock</td></tr>
+          <tr><td colspan="9" class="empty-row"><i class="fas fa-inbox"></i><span>No hay productos que coincidan con los filtros.</span></td></tr>
         } @else {
-          @for (item of getPaginatedItems(); track item.idExisting; let i = $index) {
+          @for (item of getPaginatedItems(); track item.product.idProducto; let i = $index) {
             <tr [class]="'row-' + getStockStatus(item)">
-              <td style="color:#94a3b8;font-size:12px">{{ (currentPage-1)*itemsPerPage+i+1 }}</td>
-
-              <!-- Producto -->
+              <td class="row-number">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
               <td>
                 <div class="product-cell">
-                  <div class="product-icon" [style.background]="getCategoryColor(item.product?.categoria)">
+                  <div class="product-icon" [style.background]="getCategoryColor(getCategoryName(item))">
                     <i class="fas fa-box"></i>
                   </div>
-                  <div>
-                    <div class="product-name">{{ item.product?.articulo ?? '—' }}</div>
-                    <div class="product-code">{{ item.product?.codigoQR ?? '' }}</div>
+                  <div class="product-info">
+                    <div class="product-name">{{ item.product.articulo || 'Producto sin nombre' }}</div>
+                    <div class="product-code">{{ item.product.codigoBarras || ('ID: ' + item.product.idProducto) }}</div>
+                    @if (item.virtual) {
+                      <span class="pending-badge">Registro inicial pendiente</span>
+                    }
                   </div>
                 </div>
               </td>
-
-              <!-- Categoría -->
-              <td><span class="cat-badge" [style.background]="getCategoryColor(item.product?.categoria)+'22'" [style.color]="getCategoryColor(item.product?.categoria)">{{ item.product?.categoria ?? '—' }}</span></td>
-
-              <!-- Stock Actual con barra visual -->
-              <td style="text-align:center">
-                <div class="stock-cell">
-                  <span class="stock-num" [class.stock-ok]="getStockStatus(item)==='normal'" [class.stock-warn]="getStockStatus(item)==='low'" [class.stock-crit]="getStockStatus(item)==='critical'">
-                    {{ item.stockACtual ?? 0 }}
-                  </span>
-                  <div class="stock-bar-wrap">
-                    <div class="stock-bar-fill" [class]="'bar-'+getStockStatus(item)"
-                         [style.width]="getStockPercent(item) + '%'"></div>
-                  </div>
-                </div>
-              </td>
-
-              <!-- Stock Mínimo -->
-              <td style="text-align:center;color:#64748b;font-weight:600">{{ item.stockMinimo ?? 0 }}</td>
-
-              <!-- Precio -->
-              <td style="text-align:right;font-weight:600">{{ formatCurrency(item.product?.precio ?? 0) }}</td>
-
-              <!-- Valor Total -->
-              <td style="text-align:right;font-weight:700;color:#1b6f6f">
-                {{ formatCurrency((item.stockACtual ?? 0) * (item.product?.precio ?? 0)) }}
-              </td>
-
-              <!-- Estado -->
-              <td style="text-align:center">
-                <span [class]="'status-badge status-' + getStockStatus(item)">
-                  {{ getStockStatusText(item) }}
+              <td>
+                <span class="cat-badge" [style.background]="getCategoryColor(getCategoryName(item)) + '22'" [style.color]="getCategoryColor(getCategoryName(item))">
+                  {{ getCategoryName(item) }}
                 </span>
               </td>
-
-              <!-- Acciones -->
-              <td style="text-align:center">
+              <td class="center">
+                <div class="stock-cell">
+                  <span class="stock-num" [class.stock-ok]="getStockStatus(item) === 'normal'" [class.stock-warn]="getStockStatus(item) === 'low'" [class.stock-crit]="getStockStatus(item) === 'critical'">
+                    {{ item.stockACtual }}
+                  </span>
+                  <div class="stock-bar-wrap">
+                    <div class="stock-bar-fill" [class]="'bar-' + getStockStatus(item)" [style.width]="getStockPercent(item) + '%' "></div>
+                  </div>
+                </div>
+              </td>
+              <td class="center">
+                <button type="button" class="minimum-value" (click)="openEdit(item)" title="Configurar stock mínimo">
+                  {{ item.stockMinimo }} <i class="fas fa-pen"></i>
+                </button>
+              </td>
+              <td class="right">{{ formatCurrency(item.product.precio ?? 0) }}</td>
+              <td class="right value-total">{{ formatCurrency(item.stockACtual * (item.product.precio ?? 0)) }}</td>
+              <td class="center">
+                <span [class]="'status-badge status-' + getStockStatus(item)">{{ getStockStatusText(item) }}</span>
+              </td>
+              <td class="center">
                 <div class="actions-cell">
-                  <button (click)="openEdit(item)" class="btn-action edit" title="Editar stock">
-                    <i class="fas fa-edit"></i>
+                  <button type="button" (click)="openAdjustment(item)" class="btn-action adjust" title="Registrar ajuste manual">
+                    <i class="fas fa-sliders-h"></i>
                   </button>
-                  <button (click)="deleteExisting(item)" class="btn-action delete" title="Eliminar">
-                    <i class="fas fa-trash"></i>
+                  <button type="button" (click)="openEdit(item)" class="btn-action edit" title="Configurar stock mínimo">
+                    <i class="fas fa-bell"></i>
+                  </button>
+                  <button type="button" (click)="openHistory(item)" class="btn-action history" title="Ver historial de existencias">
+                    <i class="fas fa-history"></i>
                   </button>
                 </div>
               </td>
@@ -175,87 +204,172 @@
     </table>
   </div>
 
-  <!-- Info y Resumen -->
   <div class="bottom-row">
     <div class="pagination-info">
-      Mostrando {{ (currentPage-1)*itemsPerPage+1 }}–{{ Math.min(currentPage*itemsPerPage, existing().length) }}
-      de {{ existing().length }} registros
+      Mostrando {{ existing().length ? (currentPage - 1) * itemsPerPage + 1 : 0 }}–{{ Math.min(currentPage * itemsPerPage, existing().length) }}
+      de {{ existing().length }} productos filtrados
     </div>
-
-
+    <div class="report-note"><i class="fas fa-info-circle"></i> Los ajustes registrados actualizan el stock y quedan en el historial.</div>
   </div>
-
 </div>
 
-<!-- MODAL EDITAR STOCK -->
 @if (showEditModal()) {
   <div class="modal-overlay" (click)="showEditModal.set(false)">
-    <div class="modal-box" (click)="$event.stopPropagation()">
+    <section class="modal-box" role="dialog" aria-modal="true" aria-labelledby="minimum-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <span><i class="fas fa-edit"></i> Editar Stock — {{ editingItem?.product?.articulo }}</span>
-        <button (click)="showEditModal.set(false)" class="modal-close"><i class="fas fa-times"></i></button>
+        <div>
+          <span id="minimum-modal-title"><i class="fas fa-bell"></i> Configurar stock mínimo</span>
+          <small>{{ editingItem?.product?.articulo }}</small>
+        </div>
+        <button type="button" (click)="showEditModal.set(false)" class="modal-close" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body">
         <div class="stock-edit-preview">
           <div class="sep">
-            <span class="sep-label">Stock Actual</span>
-            <span class="sep-value" [class.stock-crit]="newStockActual===0" [class.stock-warn]="newStockActual>0&&newStockActual<=newStockMinimo" [class.stock-ok]="newStockActual>newStockMinimo">
-              {{ newStockActual }}
-            </span>
+            <span class="sep-label">Stock actual</span>
+            <span class="sep-value">{{ editingItem?.stockACtual ?? 0 }}</span>
           </div>
           <div class="sep">
-            <span class="sep-label">Mínimo</span>
+            <span class="sep-label">Mínimo configurado</span>
             <span class="sep-value">{{ newStockMinimo }}</span>
           </div>
         </div>
+        <p class="modal-help">Se mostrará una alerta visual cuando el stock sea igual o inferior a este valor.</p>
         <div class="field">
-          <label class="field-label">Stock Actual</label>
-          <input type="number" [(ngModel)]="newStockActual" min="0" class="field-input big-num" />
-        </div>
-        <div class="field">
-          <label class="field-label">Stock Mínimo</label>
-          <input type="number" [(ngModel)]="newStockMinimo" min="0" class="field-input" />
+          <label for="stock-minimum" class="field-label">Stock mínimo permitido</label>
+          <input id="stock-minimum" type="number" [(ngModel)]="newStockMinimo" min="0" step="1" class="field-input big-num" />
         </div>
       </div>
       <div class="modal-footer">
-        <button (click)="showEditModal.set(false)" class="btn-cancel">Cancelar</button>
-        <button (click)="saveEdit()" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+        <button type="button" (click)="showEditModal.set(false)" class="btn-cancel" [disabled]="savingMinimum()">Cancelar</button>
+        <button type="button" (click)="saveEdit()" class="btn-save" [disabled]="savingMinimum()">
+          @if (savingMinimum()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
+          @else { <i class="fas fa-save"></i> Guardar mínimo }
+        </button>
       </div>
-    </div>
+    </section>
   </div>
 }
 
-<!-- MODAL NUEVO STOCK -->
-@if (showNewModal()) {
-  <div class="modal-overlay" (click)="showNewModal.set(false)">
-    <div class="modal-box" (click)="$event.stopPropagation()">
+@if (showAdjustModal()) {
+  <div class="modal-overlay" (click)="showAdjustModal.set(false)">
+    <section class="modal-box modal-wide" role="dialog" aria-modal="true" aria-labelledby="adjust-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <span><i class="fas fa-plus"></i> Nuevo Registro de Stock</span>
-        <button (click)="showNewModal.set(false)" class="modal-close"><i class="fas fa-times"></i></button>
+        <div>
+          <span id="adjust-modal-title"><i class="fas fa-sliders-h"></i> Ajuste manual de stock</span>
+          <small>El ajuste se registrará como movimiento de entrada o salida.</small>
+        </div>
+        <button type="button" (click)="showAdjustModal.set(false)" class="modal-close" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body">
         <div class="field">
-          <label class="field-label">Producto *</label>
-          <select [(ngModel)]="selectedProductId" class="field-input">
-            <option [ngValue]="null">— Selecciona un producto —</option>
-            @for (p of products(); track p.idProducto) {
-              <option [ngValue]="p.idProducto">{{ p.articulo }} ({{ p.categoria }})</option>
+          <label for="adjust-product" class="field-label">Producto</label>
+          <select id="adjust-product" [(ngModel)]="adjustmentProductId" class="field-input">
+            <option [ngValue]="null">Selecciona un producto</option>
+            @for (item of allExisting(); track item.product.idProducto) {
+              <option [ngValue]="item.product.idProducto">{{ item.product.articulo }} — Stock: {{ item.stockACtual }}</option>
             }
           </select>
         </div>
-        <div class="field">
-          <label class="field-label">Stock Inicial</label>
-          <input type="number" [(ngModel)]="newStockValue" min="0" class="field-input big-num" />
+        <div class="field-row">
+          <div class="field">
+            <label for="adjust-type" class="field-label">Tipo de ajuste</label>
+            <select id="adjust-type" [(ngModel)]="adjustmentType" class="field-input">
+              <option value="ENTRADA">Entrada — sumar stock</option>
+              <option value="SALIDA">Salida — restar stock</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="adjust-quantity" class="field-label">Cantidad</label>
+            <input id="adjust-quantity" type="number" [(ngModel)]="adjustmentQuantity" min="1" step="1" class="field-input" />
+          </div>
         </div>
-        <div class="field">
-          <label class="field-label">Stock Mínimo</label>
-          <input type="number" [(ngModel)]="newStockMin" min="0" class="field-input" />
+        <div class="field-row">
+          <div class="field">
+            <label for="adjust-responsible" class="field-label">Responsable</label>
+            <input id="adjust-responsible" type="text" [(ngModel)]="adjustmentResponsible" maxlength="120" class="field-input" placeholder="Nombre de quien realiza el ajuste" />
+          </div>
+          <div class="field">
+            <label for="adjust-reason" class="field-label">Motivo / observación</label>
+            <input id="adjust-reason" type="text" [(ngModel)]="adjustmentReason" maxlength="500" class="field-input" placeholder="Ej. conteo físico, daño, corrección..." />
+          </div>
+        </div>
+        <div class="notice-box">
+          <i class="fas fa-clipboard-check"></i>
+          <span>El backend actualizará el stock y guardará el responsable, la fecha, el tipo, la cantidad y la observación en el historial.</span>
         </div>
       </div>
       <div class="modal-footer">
-        <button (click)="showNewModal.set(false)" class="btn-cancel">Cancelar</button>
-        <button (click)="saveNew()" class="btn-save"><i class="fas fa-save"></i> Guardar</button>
+        <button type="button" (click)="showAdjustModal.set(false)" class="btn-cancel" [disabled]="savingAdjustment()">Cancelar</button>
+        <button type="button" (click)="saveAdjustment()" class="btn-save" [disabled]="savingAdjustment()">
+          @if (savingAdjustment()) { <i class="fas fa-spinner fa-spin"></i> Registrando... }
+          @else { <i class="fas fa-check"></i> Registrar ajuste }
+        </button>
       </div>
-    </div>
+    </section>
+  </div>
+}
+
+@if (showHistoryModal()) {
+  <div class="modal-overlay history-overlay" (click)="showHistoryModal.set(false)">
+    <section class="modal-box history-modal" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <span id="history-modal-title"><i class="fas fa-history"></i> Historial de existencias</span>
+          <small>Consulta y exporta movimientos registrados.</small>
+        </div>
+        <button type="button" (click)="showHistoryModal.set(false)" class="modal-close" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="history-content">
+        <div class="history-filters">
+          <input type="text" [(ngModel)]="historySearch" class="field-input" placeholder="Buscar producto, responsable o motivo..." />
+          <select [(ngModel)]="historyType" class="field-input" aria-label="Tipo de movimiento">
+            <option value="">Todos los tipos</option>
+            <option value="ENTRADA">Entrada</option>
+            <option value="SALIDA">Salida</option>
+          </select>
+          <label class="date-filter"><span>Desde</span><input type="date" [(ngModel)]="historyFrom" class="field-input" /></label>
+          <label class="date-filter"><span>Hasta</span><input type="date" [(ngModel)]="historyTo" class="field-input" /></label>
+          @if (historyProductId !== null) {
+            <button type="button" class="btn-secondary" (click)="clearHistoryProductFilter()">Ver todos los productos</button>
+          }
+          <button type="button" class="btn-export" (click)="exportHistoryCSV()"><i class="fas fa-file-export"></i> Exportar historial</button>
+        </div>
+
+        <div class="history-table-wrap">
+          <table class="stock-table history-table">
+            <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th class="center">Cantidad</th>
+              <th>Responsable</th>
+              <th>Observaciones</th>
+            </tr>
+            </thead>
+            <tbody>
+              @if (loadingHistory()) {
+                <tr><td colspan="6" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando historial...</td></tr>
+              } @else if (getFilteredMovements().length === 0) {
+                <tr><td colspan="6" class="empty-row">No hay movimientos con esos filtros.</td></tr>
+              } @else {
+                @for (movement of getFilteredMovements(); track movement.idMovements) {
+                  <tr>
+                    <td>{{ formatDate(movement.fecha) }}</td>
+                    <td class="history-product">{{ movement.product?.articulo || 'Producto no disponible' }}</td>
+                    <td><span [class]="'movement-badge ' + ((movement.tipo || '').toUpperCase() === 'ENTRADA' ? 'movement-in' : 'movement-out')">{{ (movement.tipo || '—').toUpperCase() }}</span></td>
+                    <td class="center quantity-cell">{{ movement.cantidad ?? 0 }}</td>
+                    <td>{{ movement.responsable || 'Sin registrar' }}</td>
+                    <td class="observations-cell">{{ movement.observaciones || '—' }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="history-footer">{{ getFilteredMovements().length }} movimientos encontrados</div>
+      </div>
+    </section>
   </div>
 }

@@ -120,16 +120,12 @@ export const routes: Routes = [
           { path: 'gestion-compras',  loadComponent: () => import('./features/stock/movements-manager/movements-manager.component').then(m => m.MovementsManagerComponent) },
           { path: 'reporte-compras',  loadComponent: () => import('./features/stock/movement-report/movement-report.component').then(m => m.MovementReportComponent) },
           { path: 'movimientos',   loadComponent: () => import('./features/stock/movements-list/movements-list.component').then(m => m.MovementsListComponent) },
-          { path: 'ventas-anuladas',  loadComponent: () => import('./features/stock/movements-list/movements-list.component').then(m => m.MovementsListComponent) },
-          { path: 'reportes-ventas',  loadComponent: () => import('./features/stock/movements-list/movements-list.component').then(m => m.MovementsListComponent) },
           { path: 'alertas', loadComponent:() => import('./features/alerts/alert-panel/alert-panel.component').then(m=> m.AlertPanelComponent)},
           { path: 'existing',  loadComponent: () => import('./features/stock/existing-list/existing-list.component').then(m => m.ExistingListComponent) },
           { path: 'movements', loadComponent: () => import('./features/stock/movements-list/movements-list.component').then(m => m.MovementsListComponent) },
           { path: 'stock', loadComponent:()=> import('./features/stock/existing-list/existing-list.component').then(m=> m.ExistingListComponent)}
         ]
       },
-
-      // ── Proveedores (alias menú nuevo → redirige a productos por ahora) ─
       {
         path: 'proveedores',
         children: [
