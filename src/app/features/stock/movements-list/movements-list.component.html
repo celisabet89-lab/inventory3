@@ -357,60 +357,39 @@
         }
 
 
-        <!-- ═══════════════════════════════════════════════ -->
+
         <!-- FORMA DE PAGO -->
-        <!-- ═══════════════════════════════════════════════ -->
 
         <div class="form-field">
+          <label>Forma de Pago</label>
 
-          <label>
-            Forma de Pago
-          </label>
+          <select formControlName="formaPago" class="f-ctrl">
 
-          <select
-            formControlName="formaPago"
-            class="f-ctrl"
-          >
-
-            @if (
-              tipoMovimiento === 'entrada'
-              ) {
-
-              <option value="CRÉDITO">
-                CRÉDITO
-              </option>
-
-            }
-
-            <option value="CONTADO">
-              CONTADO
-            </option>
-
-            <option value="TRANSFERENCIA">
-              TRANSFERENCIA
-            </option>
-
-
-            @if (
-              tipoMovimiento === 'salida'
-              ) {
-
-              <option value="QR">
-                QR
-              </option>
-
-            }
-            @else {
-
-              <option value="CHEQUE">
-                CHEQUE
-              </option>
-
+            @if (tipoMovimiento === 'entrada') {
+              <option value="CRÉDITO">CRÉDITO</option>
+              <option value="CONTADO">CONTADO</option>
+              <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+              <option value="CHEQUE">CHEQUE</option>
+            } @else {
+              <option value="CONTADO">CONTADO</option>
+              <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+              <option value="QR">QR</option>
+              <option value="CRÉDITO">A PLAZOS</option>
             }
 
           </select>
 
+          @if (
+            tipoMovimiento === 'salida' &&
+            movForm.get('formaPago')?.value === 'CRÉDITO'
+            ) {
+            <small class="pago-ayuda">
+              Esta venta quedará pendiente y podrás registrar abonos
+              desde el módulo Cobros Pendientes.
+            </small>
+          }
         </div>
+
 
 
         <!-- ═══════════════════════════════════════════════ -->

@@ -139,12 +139,22 @@ export const routes: Routes = [
       {
         path: 'cobros',
         children: [
-          { path: '', redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'pendientes', redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'gestion',    redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'reporte',    redirectTo: '/reports', pathMatch: 'full' }
+          {path: '', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
+          {path: 'pendientes', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
+          {path: 'gestion', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
+          {path: 'reporte', redirectTo: '/reports', pathMatch: 'full'}
         ]
       },
+      {
+        path: 'pagos',
+        children: [
+          {path: '', redirectTo: '/cobros', pathMatch: 'full'},
+          {path: 'pendientes', redirectTo: '/cobros/pendientes', pathMatch: 'full'},
+          {path: 'gestion', redirectTo: '/cobros/gestion', pathMatch: 'full'},
+          {path: 'reporte', redirectTo: '/cobros/reporte', pathMatch: 'full'}
+        ]
+      },
+
       {
         path: 'pagos',
         children: [

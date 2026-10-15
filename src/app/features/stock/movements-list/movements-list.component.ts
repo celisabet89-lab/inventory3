@@ -1029,10 +1029,16 @@ export class MovementsListComponent implements OnInit {
       ).trim();
 
 
+
+    const esPagoAPlazos =
+      formaPago.toUpperCase() === 'CRÉDITO' ||
+      formaPago.toUpperCase() === 'A PLAZOS';
+
     const estadoPago =
-      formaPago === 'CRÉDITO'
+      this.tipoMovimiento === 'salida' && esPagoAPlazos
         ? 'PENDIENTE'
         : 'PAGADO';
+
 
 
     this.guardarSecuencial(
@@ -1083,73 +1089,41 @@ export class MovementsListComponent implements OnInit {
 
           idProducto:
           item.idProducto,
-
           cantidad:
           item.cantidad,
-
           tipo:
             this.tipoMovimiento
               .toUpperCase(),
-
           codigo:
           codigo,
-
           responsable:
           v.contraparte,
-
-          // SOLO observación real
           observaciones:
             observaciones || null,
-
-          // Usuario que creó
-          // este movimiento
           userId:
           userId,
-
           formaPago:
             formaPago || null,
-
           estadoPago:
             estadoPago || null,
-
           total:
             item.subtotal ?? 0
-
         };
-
-
         await firstValueFrom(
-
           this.movementsService
-            .create(movimiento)
-
-        );
+            .create(movimiento));
       }
-
-
       this.loading.set(false);
-
-
       Swal.fire({
-
         icon: 'success',
-
         title:
-
           this.tipoMovimiento === 'entrada'
-
             ? '¡Compra registrada!'
-
             : '¡Venta registrada!',
-
         html:
-
           `<b>${this.detalle.length}</b> ` +
-
           `producto(s) procesado(s) — ` +
-
           `Stock actualizado`,
-
         timer: 2200,
 
         showConfirmButton: false
@@ -1296,56 +1270,26 @@ export class MovementsListComponent implements OnInit {
       this.loadProducts();
     }
   }
-
-
-  // ─────────────────────────────────────────────────────────────
-  // VALIDACIONES
-  // ─────────────────────────────────────────────────────────────
-
   hasError(
-
     field: string,
-
     error: string
-
   ): boolean {
-
     const control =
       this.movForm.get(field);
-
-
     return !!(
-
       control?.hasError(error) &&
-
-      control.touched
-
-    );
+      control.touched);
   }
-
-
-  // ─────────────────────────────────────────────────────────────
-  // MONEDA
-  // ─────────────────────────────────────────────────────────────
-
   formatCurrency(
     value: number
   ): string {
-
     return new Intl.NumberFormat(
-
       'es-BO',
-
       {
-
         style: 'currency',
-
         currency: 'BOB',
-
         minimumFractionDigits: 2
-
       }
-
     ).format(value);
   }
 }

@@ -525,3 +525,15 @@
 @media (max-width: 860px) {
   .main-grid { grid-template-columns: 1fr; }
 }
+
+.pago-ayuda {
+  display: block;
+  margin-top: 7px;
+  padding: 9px 11px;
+  color: #00796b;
+  background: #e0f2f1;
+  border-left: 3px solid #009688;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+}
