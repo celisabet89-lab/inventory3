@@ -57,7 +57,7 @@ export const REPORTES: InfoReporte[] = [
   { tipo: 'CANASTILLOS', titulo: 'Reporte de Canastillos', etiquetaContraparte: 'Cliente', usaPalabra: true, etiquetaPalabra: 'Producto o categoría contiene:' },
   { tipo: 'USUARIOS', titulo: 'Reporte de Usuarios', etiquetaContraparte: 'Rol', tituloDatos: 'Datos Usuario', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (nombre, correo, CI):' },
   { tipo: 'CLIENTES', titulo: 'Reporte de Clientes', etiquetaContraparte: 'Estado', tituloDatos: 'Datos Cliente', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (nombre, CI, zona):' },
-  { tipo: 'PRODUCTOS', titulo: 'Reporte de Productos', etiquetaContraparte: 'Categoría', tituloDatos: 'Datos Producto', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (producto, código):' },
+  { tipo: 'PRODUCTOS', titulo: 'Reporte de Productos', etiquetaContraparte: 'Categoría', tituloDatos: 'Datos Producto', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar producto:' },
   { tipo: 'PROVEEDORES', titulo: 'Reporte de Proveedores', etiquetaContraparte: 'Estado', tituloDatos: 'Datos Proveedor', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (empresa, contacto, NIT):' },
   { tipo: 'ONUS', titulo: 'Reporte de ONUs', etiquetaContraparte: 'Estado', tituloDatos: 'Datos ONU', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (serial, MAC, cliente):' }
 ];
@@ -376,7 +376,11 @@ const nombreCompleto = (a?: string, b?: string) => [a, b].filter(Boolean).join('
 function listado(tipo: TipoReporte, d: DatosReporte): FilaListado[] {
   const fila = (filtro: unknown, celdas: Celda[]): FilaListado => ({
     filtro: txt(filtro),
-    texto: celdas.map(txt).join(' ').toLowerCase(),
+    texto: celdas
+      .filter(c => !String(c ?? '').startsWith('__IMAGEN_PRODUCTO__:'))
+      .map(txt)
+      .join(' ')
+      .toLowerCase(),
     celdas
   });
 
@@ -403,13 +407,15 @@ function listado(tipo: TipoReporte, d: DatosReporte): FilaListado[] {
       return (d.productos ?? []).map(p => {
         const e = stock.get(Number(p.idProducto));
         const categoria = typeof p.categoria === 'string' ? p.categoria : p.categoria?.nombre;
+        const imagen = p.foto ? `__IMAGEN_PRODUCTO__:${p.foto}` : '';
         return fila(categoria || 'Sin categoría', [
-          txt(p.articulo), txt(categoria || 'Sin categoría'),
+          imagen,
+          txt(p.articulo),
+          txt(categoria || 'Sin categoría'),
           txt(p.unidadMedida?.abreviatura ?? p.unidadMedida?.nombre),
           redondear(Number(p.precio) || 0),
           e ? Number(e.stockACtual) || 0 : '',
-          e ? Number(e.stockMinimo) || 0 : '',
-          txt(p.codigoBarras)
+          e ? Number(e.stockMinimo) || 0 : ''
         ]);
       });
     }
@@ -436,7 +442,11 @@ function listado(tipo: TipoReporte, d: DatosReporte): FilaListado[] {
 const COLUMNAS_LISTADO: Record<string, { columnas: string[]; numericas?: number[]; enteras?: number[] }> = {
   USUARIOS: { columnas: ['Nombre', 'Correo', 'CI', 'Teléfono', 'Cargo', 'Rol'] },
   CLIENTES: { columnas: ['Cliente', 'CI', 'Teléfono', 'Zona', 'Lugar de venta', 'Dirección', 'Estado', 'Registro'] },
-  PRODUCTOS: { columnas: ['Producto', 'Categoría', 'U. medida', 'Precio', 'Stock', 'Stock mín.', 'Cód. barras'], numericas: [3, 4, 5], enteras: [4, 5] },
+  PRODUCTOS: {
+    columnas: ['Imagen', 'Producto', 'Categoría', 'U. medida', 'Precio', 'Stock', 'Stock mín.'],
+    numericas: [4, 5, 6],
+    enteras: [5, 6]
+  },
   PROVEEDORES: { columnas: ['Empresa', 'Contacto', 'Correo', 'CI/NIT', 'País', 'Dirección', 'Estado', 'Registro'] },
   ONUS: { columnas: ['Marca', 'Modelo', 'Serial', 'MAC', 'Contrato', 'Cliente', 'Portador', 'Estado'] }
 };
@@ -454,7 +464,7 @@ function reporteListado(tipo: TipoReporte, d: DatosReporte, f: FiltrosReporte): 
 
   const resumen = [{ etiqueta: 'Total registros', valor: String(filas.length) }];
   if (tipo === 'PRODUCTOS') {
-    const valor = filas.reduce((s, r) => s + (Number(r.celdas[3]) || 0) * (Number(r.celdas[4]) || 0), 0);
+    const valor = filas.reduce((s, r) => s + (Number(r.celdas[4]) || 0) * (Number(r.celdas[5]) || 0), 0);
     resumen.push({ etiqueta: 'Valor del inventario', valor: moneda(valor) });
   }
 

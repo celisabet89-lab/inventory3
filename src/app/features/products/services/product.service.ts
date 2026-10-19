@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
-// FIX: categoria y unidadMedida son IDs (Long) no strings
 export interface ProductRequest {
   articulo:      string;
   descripcion?:  string;

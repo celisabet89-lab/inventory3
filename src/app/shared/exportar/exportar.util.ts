@@ -108,6 +108,10 @@ function celdaXml(col: number, fila: number, valor: Celda, estilo: number): stri
   if (valor === null || valor === undefined || valor === '') {
     return `<c r="${ref}" s="${estilo}"/>`;
   }
+  if (typeof valor === 'string' && valor.startsWith('__IMAGEN_PRODUCTO__:')) {
+    const tieneImagen = valor.substring('__IMAGEN_PRODUCTO__:'.length).length > 0;
+    return `<c r="${ref}" s="${estilo}" t="inlineStr"><is><t>${tieneImagen ? 'Con foto' : 'Sin foto'}</t></is></c>`;
+  }
   if (typeof valor === 'number' && Number.isFinite(valor)) {
     const s = estilo === 4 ? 5 : estilo === 0 ? 3 : estilo;
     return `<c r="${ref}" s="${s}"><v>${valor}</v></c>`;
@@ -244,7 +248,17 @@ export function exportarPdf(tabla: TablaExportable): boolean {
 
   const cabecera = tabla.columnas.map((c, i) => `<th${alinear(i)}>${html(c)}</th>`).join('');
   const cuerpo = tabla.filas
-    .map(f => `<tr>${f.map((v, i) => `<td${alinear(i)}>${formatoNumero(v, enteras.has(i))}</td>`).join('')}</tr>`)
+    .map(f => `<tr>${f.map((v, i) => {
+      const valor = String(v ?? '');
+      if (valor.startsWith('__IMAGEN_PRODUCTO__:')) {
+        const src = valor.substring('__IMAGEN_PRODUCTO__:'.length);
+        return `<td class="celda-imagen">${src
+          ? `<img src="${html(src)}" alt="Imagen del producto">`
+          : '<span class="sin-imagen">Sin foto</span>'
+        }</td>`;
+      }
+      return `<td${alinear(i)}>${formatoNumero(v, enteras.has(i))}</td>`;
+    }).join('')}</tr>`)
     .join('');
   const pie = tabla.totales
     ? `<tfoot><tr>${tabla.totales.map((v, i) => `<td${alinear(i)}>${formatoNumero(v, enteras.has(i))}</td>`).join('')}</tr></tfoot>`
@@ -271,6 +285,9 @@ export function exportarPdf(tabla: TablaExportable): boolean {
   tbody tr:nth-child(even) td{background:#d9d9d9}
   tr{page-break-inside:avoid} thead{display:table-header-group}
   .num{text-align:right;white-space:nowrap} tfoot td{font-weight:700;background:#c9c9c9}
+  .celda-imagen{text-align:center;width:70px;min-width:70px}
+  .celda-imagen img{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto}
+  .sin-imagen{color:#777;font-size:9px}
   .resumen{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:11px}
   footer{margin-top:10px;color:#666;font-size:9px;text-align:right}
   @page{size:A4 portrait;margin:10mm} @media print{body{padding:0}}
