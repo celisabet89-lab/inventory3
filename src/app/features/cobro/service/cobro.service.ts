@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -12,7 +11,10 @@ export interface Cobro {
   formaPago: string;
   observaciones?: string;
   clienteNombre?: string;
-  estado?: string;
+  /** Los cobros antiguos pueden venir sin estado: se consideran ACTIVO. */
+  estado?: 'ACTIVO' | 'ANULADO';
+  motivoAnulacion?: string;
+  fechaAnulacion?: string;
 }
 
 export interface CobroRequest {
@@ -47,10 +49,7 @@ export class CobroService {
     return this.http.post<Cobro>(this.apiUrl, request);
   }
 
-  anular(id: number): Observable<Cobro> {
-    return this.http.patch<Cobro>(
-      `${this.apiUrl}/${id}/anular`,
-      {}
-    );
+  anular(id: number, motivo?: string): Observable<Cobro> {
+    return this.http.patch<Cobro>(`${this.apiUrl}/${id}/anular`, { motivo });
   }
 }

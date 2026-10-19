@@ -1,49 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title><div class="dash">
-    <header class="dash-head">
-    <div>
-    <h1>Resumen de Reportes</h1>
-    <small>Datos en vivo de ventas, cobros, pagos y stock</small>
-    </div>
-    <a routerLink="/reportes/cobranzas" class="dash-btn"><i class="fas fa-file-alt"></i> Generar reporte</a>
-    </header>
+<div class="rep-page">
+  <header class="rep-head">
+    <h1><i class="fas fa-newspaper"></i> Reportes</h1>
+    <small>{{ info.titulo }}</small>
+  </header>
 
-    @if (cargando) { <p class="dash-cargando">Cargando datos...</p> }
-
-    <section class="dash-kpis">
-    @for (k of kpis; track k.etiqueta) {
-    <article class="kpi" [class]="'kpi ' + k.clase">
-    <i class="fas" [class]="'fas ' + k.icono"></i>
-    <div><span>{{ k.etiqueta }}</span><strong>{{ moneda(k.valor) }}</strong></div>
-    </article>
-    }
-    </section>
-
-    <section class="dash-grid">
-    <article class="dash-card wide"><h2>Ventas últimos 6 meses</h2><div class="chart"><canvas #ventasChart></canvas></div></article>
-    <article class="dash-card"><h2>Ventas por categoría</h2><div class="chart"><canvas #categoriaChart></canvas></div></article>
-
-    <article class="dash-card">
-    <h2>Top 5 productos</h2>
-    @for (p of topProductos; track p.nombre) {
-    <div class="fila"><span>{{ p.nombre }} <small>({{ p.unidades }} u.)</small></span><strong>{{ moneda(p.total) }}</strong></div>
-    } @empty { <p class="vacio">Sin ventas registradas</p> }
+  <section class="rep-grid">
+    <article class="rep-card">
+      <h2>Período del Reporte</h2>
+      @if (info.esListado) {
+        <p class="rep-hint">Este reporte es un listado completo; no depende de fechas.</p>
+      } @else if (info.soloHasta) {
+        <label for="desde">Hasta:</label>
+        <input id="desde" type="month" [(ngModel)]="filtros.hasta" name="hasta" />
+        <p class="rep-hint">Se listan todas las deudas pendientes hasta este mes.</p>
+      } @else {
+        <label for="desde">Desde:</label>
+        <input id="desde" type="month" [(ngModel)]="filtros.desde" name="desde" />
+        <label for="hasta">Hasta:</label>
+        <input id="hasta" type="month" [(ngModel)]="filtros.hasta" name="hasta" />
+      }
     </article>
 
-    <article class="dash-card">
-    <h2>Stock bajo</h2>
-    @for (s of stockBajo; track s.nombre) {
-    <div class="fila"><span>{{ s.nombre }}</span><strong class="alerta">{{ s.actual }} / mín. {{ s.minimo }}</strong></div>
-    } @empty { <p class="vacio">Todo el stock está sobre el mínimo</p> }
+    <article class="rep-card">
+      <h2>Elija Reporte</h2>
+      @for (r of lista; track r.tipo) {
+        <label class="rep-radio">
+          <input type="radio" name="tipo" [checked]="tipo === r.tipo" (change)="elegir(r.tipo)" />
+          <span>{{ r.titulo }}</span>
+        </label>
+      }
     </article>
-    </section>
-    </div>
-  </title>
-</head>
-<body>
 
-</body>
-</html>
+    <article class="rep-card">
+      <h2>{{ info.tituloDatos ?? 'Datos ' + info.etiquetaContraparte }}</h2>
+      <label for="contra">{{ info.etiquetaContraparte }}:</label>
+      <select id="contra" [(ngModel)]="filtros.contraparte" name="contra">
+        <option value="">Todos</option>
+        @for (c of contrapartes; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+
+      @if (!info.esListado) {
+        <label for="forma">Forma de pago:</label>
+        <select id="forma" [(ngModel)]="filtros.formaPago" name="forma">
+          <option value="">Todas</option>
+          @for (f of formasPago; track f) {
+            <option [value]="f">{{ f }}</option>
+          }
+        </select>
+      }
+
+      @if (info.usaPalabra) {
+        <label for="palabra">{{ info.etiquetaPalabra }}</label>
+        <input id="palabra" type="text" [(ngModel)]="filtros.palabra" name="palabra" placeholder="Escribe para buscar" />
+      }
+    </article>
+
+    <article class="rep-card">
+      <h2>Formato del Reporte</h2>
+      <label class="rep-radio">
+        <input type="radio" name="formato" [checked]="formato === 'PDF'" (change)="formato = 'PDF'" />
+        <span>PDF</span>
+      </label>
+      <label class="rep-radio">
+        <input type="radio" name="formato" [checked]="formato === 'EXCEL'" (change)="formato = 'EXCEL'" />
+        <span>EXCEL</span>
+      </label>
+    </article>
+  </section>
+
+  <section class="rep-accion">
+    <button type="button" class="rep-btn" (click)="generar()" [disabled]="cargando">
+      <i class="fas fa-file-alt"></i>
+      {{ cargando ? 'Generando...' : 'Generar Reporte' }}
+    </button>
+  </section>
+</div>

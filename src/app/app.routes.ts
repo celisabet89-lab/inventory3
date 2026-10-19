@@ -105,10 +105,15 @@ export const routes: Routes = [
         path: 'reportes',
         children: [
           { path: '', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
-          { path: 'ventas',      loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
-          { path: 'ingresos',    loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
-          { path: 'cobranzas',   loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
-          { path: 'canastillos', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) }
+          { path: 'ventas', data: { reporte: 'VENTAS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'ingresos', data: { reporte: 'INGRESOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'cobranzas', data: { reporte: 'COBRANZAS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'canastillos', data: { reporte: 'CANASTILLOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'usuarios', data: { reporte: 'USUARIOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'clientes', data: { reporte: 'CLIENTES' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'productos', data: { reporte: 'PRODUCTOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'proveedores', data: { reporte: 'PROVEEDORES' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'onus', data: { reporte: 'ONUS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) }
         ]
       },
 
@@ -142,7 +147,7 @@ export const routes: Routes = [
           {path: '', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
           {path: 'pendientes', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
           {path: 'gestion', loadComponent: () => import('./features/cobro/cobros-list/cobros-list.component').then(m => m.CobrosListComponent)},
-          {path: 'reporte', redirectTo: '/reports', pathMatch: 'full'}
+          { path: 'reporte', data: { reporte: 'COBROS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) }
         ]
       },
 
@@ -164,7 +169,7 @@ export const routes: Routes = [
             data: { vista: 'GESTION' },
             loadComponent: () => import('./features/pago/pago-list/pago-list.component').then(m => m.PagoListComponent)
           },
-          { path: 'reporte', redirectTo: '/reports', pathMatch: 'full' }
+          { path: 'reporte', data: { reporte: 'PAGOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) }
         ]
       },
 
