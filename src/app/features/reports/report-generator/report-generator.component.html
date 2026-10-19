@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><div class="dash">
+    <header class="dash-head">
+    <div>
+    <h1>Resumen de Reportes</h1>
+    <small>Datos en vivo de ventas, cobros, pagos y stock</small>
+    </div>
+    <a routerLink="/reportes/cobranzas" class="dash-btn"><i class="fas fa-file-alt"></i> Generar reporte</a>
+    </header>
+
+    @if (cargando) { <p class="dash-cargando">Cargando datos...</p> }
+
+    <section class="dash-kpis">
+    @for (k of kpis; track k.etiqueta) {
+    <article class="kpi" [class]="'kpi ' + k.clase">
+    <i class="fas" [class]="'fas ' + k.icono"></i>
+    <div><span>{{ k.etiqueta }}</span><strong>{{ moneda(k.valor) }}</strong></div>
+    </article>
+    }
+    </section>
+
+    <section class="dash-grid">
+    <article class="dash-card wide"><h2>Ventas últimos 6 meses</h2><div class="chart"><canvas #ventasChart></canvas></div></article>
+    <article class="dash-card"><h2>Ventas por categoría</h2><div class="chart"><canvas #categoriaChart></canvas></div></article>
+
+    <article class="dash-card">
+    <h2>Top 5 productos</h2>
+    @for (p of topProductos; track p.nombre) {
+    <div class="fila"><span>{{ p.nombre }} <small>({{ p.unidades }} u.)</small></span><strong>{{ moneda(p.total) }}</strong></div>
+    } @empty { <p class="vacio">Sin ventas registradas</p> }
+    </article>
+
+    <article class="dash-card">
+    <h2>Stock bajo</h2>
+    @for (s of stockBajo; track s.nombre) {
+    <div class="fila"><span>{{ s.nombre }}</span><strong class="alerta">{{ s.actual }} / mín. {{ s.minimo }}</strong></div>
+    } @empty { <p class="vacio">Todo el stock está sobre el mínimo</p> }
+    </article>
+    </section>
+    </div>
+  </title>
+</head>
+<body>
+
+</body>
+</html>

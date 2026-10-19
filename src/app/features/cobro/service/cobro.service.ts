@@ -12,6 +12,7 @@ export interface Cobro {
   formaPago: string;
   observaciones?: string;
   clienteNombre?: string;
+  estado?: string;
 }
 
 export interface CobroRequest {
@@ -44,5 +45,12 @@ export class CobroService {
 
   create(request: CobroRequest): Observable<Cobro> {
     return this.http.post<Cobro>(this.apiUrl, request);
+  }
+
+  anular(id: number): Observable<Cobro> {
+    return this.http.patch<Cobro>(
+      `${this.apiUrl}/${id}/anular`,
+      {}
+    );
   }
 }

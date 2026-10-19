@@ -104,8 +104,8 @@ export const routes: Routes = [
       {
         path: 'reportes',
         children: [
-         { path: '', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
-         { path: 'ventas',      loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
+          { path: '', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
+          { path: 'ventas',      loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
           { path: 'ingresos',    loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
           { path: 'cobranzas',   loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
           { path: 'canastillos', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) }
@@ -135,7 +135,7 @@ export const routes: Routes = [
         ]
       },
 
-      // ── Cobros / Pagos (alias menú nuevo → redirige a reportes) ─
+      // ── Cobros ──────────────────────────────────────────────────
       {
         path: 'cobros',
         children: [
@@ -145,23 +145,26 @@ export const routes: Routes = [
           {path: 'reporte', redirectTo: '/reports', pathMatch: 'full'}
         ]
       },
-      {
-        path: 'pagos',
-        children: [
-          {path: '', redirectTo: '/cobros', pathMatch: 'full'},
-          {path: 'pendientes', redirectTo: '/cobros/pendientes', pathMatch: 'full'},
-          {path: 'gestion', redirectTo: '/cobros/gestion', pathMatch: 'full'},
-          {path: 'reporte', redirectTo: '/cobros/reporte', pathMatch: 'full'}
-        ]
-      },
 
+      // ── Pagos ───────────────────────────────────────────────────
+      // Un solo componente para las dos pantallas: `data.vista` indica cuál es.
+      //   pendientes → compras con saldo por pagar
+      //   gestion    → compras pagadas por completo (historial, recibo, anular)
       {
         path: 'pagos',
         children: [
-          { path: '', redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'pendientes', redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'gestion',    redirectTo: '/reports', pathMatch: 'full' },
-          { path: 'reporte',    redirectTo: '/reports', pathMatch: 'full' }
+          { path: '', redirectTo: 'pendientes', pathMatch: 'full' },
+          {
+            path: 'pendientes',
+            data: { vista: 'PENDIENTES' },
+            loadComponent: () => import('./features/pago/pago-list/pago-list.component').then(m => m.PagoListComponent)
+          },
+          {
+            path: 'gestion',
+            data: { vista: 'GESTION' },
+            loadComponent: () => import('./features/pago/pago-list/pago-list.component').then(m => m.PagoListComponent)
+          },
+          { path: 'reporte', redirectTo: '/reports', pathMatch: 'full' }
         ]
       },
 

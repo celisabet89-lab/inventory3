@@ -1,0 +1,408 @@
+<div class="pagos-page">
+
+  <header class="hero">
+    <div class="hero-content">
+      <div class="hero-icon">🧾</div>
+      <div>
+        <span class="hero-eyebrow">GESTIÓN FINANCIERA</span>
+        <h1>{{ titulo }}</h1>
+        <p>{{ subtitulo }}</p>
+      </div>
+    </div>
+
+    <button class="btn-refresh" type="button"
+            (click)="cargarDatos()" [disabled]="cargando">
+      <span>{{ cargando ? '⏳' : '↻' }}</span>
+      {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <section class="stats-grid">
+    <article class="stat-card" *ngFor="let t of tarjetas" [ngClass]="t.clase">
+      <div class="stat-top">
+        <span class="stat-icon">{{ t.icono }}</span>
+        <span class="stat-label">{{ t.etiqueta }}</span>
+      </div>
+      <h2>{{ t.valor }}</h2>
+      <p>{{ t.detalle }}</p>
+    </article>
+  </section>
+
+  <section class="content-card">
+    <div class="section-heading">
+      <div>
+        <h2>📋 {{ vista === 'PENDIENTES' ? 'Compras con saldo' : 'Compras pagadas' }}</h2>
+        <p>
+          {{ vista === 'PENDIENTES'
+          ? 'Busca una compra y registra su pago.'
+          : 'Opciones: historial, recibo y anulación.' }}
+        </p>
+      </div>
+      <span class="result-count">{{ comprasFiltradas.length }} resultados</span>
+    </div>
+
+    <div class="filters" [class.filters-single]="vista === 'GESTION'">
+      <div class="search-box">
+        <span>🔎</span>
+        <input
+          type="text"
+          [(ngModel)]="busqueda"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por código, proveedor o producto..."
+          aria-label="Buscar compra"
+        />
+        <button *ngIf="busqueda" type="button"
+                class="clear-search" (click)="busqueda=''; aplicarFiltros()">
+          ✕
+        </button>
+      </div>
+
+      <select *ngIf="vista === 'PENDIENTES'"
+              [(ngModel)]="filtroEstado"
+              (ngModelChange)="aplicarFiltros()"
+              aria-label="Filtrar por estado de pago">
+        <option value="TODOS">Todos los estados</option>
+        <option value="PENDIENTE">🔴 Pendientes</option>
+        <option value="PARCIAL">🟡 Parciales</option>
+      </select>
+    </div>
+
+    <div *ngIf="cargando" class="loading-state">
+      <div class="spinner"></div>
+      <h3>Cargando pagos...</h3>
+      <p>Estamos consultando las compras y los pagos registrados.</p>
+    </div>
+
+    <div *ngIf="!cargando && errorCarga" class="empty-state error-state">
+      <div class="empty-icon">⚠️</div>
+      <h3>No se pudieron cargar los datos</h3>
+      <p>Comprueba la conexión con el servidor.</p>
+      <button class="btn-primary" type="button" (click)="cargarDatos()">
+        Intentar nuevamente
+      </button>
+    </div>
+
+    <div *ngIf="!cargando && !errorCarga && comprasFiltradas.length === 0"
+         class="empty-state">
+      <div class="empty-icon">{{ vista === 'PENDIENTES' ? '🎉' : '📭' }}</div>
+      <h3>{{ vista === 'PENDIENTES' ? 'No hay pagos pendientes' : 'No hay compras pagadas' }}</h3>
+      <p>
+        {{ busqueda || filtroEstado !== 'TODOS'
+        ? 'Prueba con otro texto o cambia el filtro.'
+        : (vista === 'PENDIENTES'
+          ? 'Todas las compras están pagadas.'
+          : 'Aún no hay compras pagadas por completo.') }}
+      </p>
+      <button *ngIf="busqueda || filtroEstado !== 'TODOS'"
+              class="btn-secondary" type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <div class="table-wrapper"
+         *ngIf="!cargando && !errorCarga && comprasFiltradas.length > 0">
+      <table>
+        <thead>
+        <tr>
+          <th>Compra</th>
+          <th>Proveedor</th>
+          <th>Fecha y hora</th>
+          <th>Productos</th>
+          <th>Total</th>
+          <th>Pagado</th>
+          <th *ngIf="vista === 'PENDIENTES'">Saldo pendiente</th>
+          <th>Estado</th>
+          <th class="actions-column">{{ vista === 'PENDIENTES' ? 'Acciones' : 'Opciones' }}</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let compra of comprasFiltradas">
+          <td><span class="sale-code">{{ compra.codigoCompra }}</span></td>
+
+          <td>
+            <div class="client-cell">
+              <span class="client-avatar">
+                {{ (compra.proveedorNombre || '?').charAt(0).toUpperCase() }}
+              </span>
+              <span class="client-name">{{ compra.proveedorNombre }}</span>
+            </div>
+          </td>
+
+          <td class="date-cell">{{ fechaFormato(compra.fecha) }}</td>
+
+          <td class="products-cell">
+            <ul class="product-list">
+              <li *ngFor="let p of compra.productos">
+                <strong>{{ p.cantidad }} ×</strong> {{ p.articulo }}
+              </li>
+            </ul>
+          </td>
+
+          <td class="money-cell">{{ moneda(compra.totalCompra) }}</td>
+          <td class="money-cell paid-money">{{ moneda(compra.totalPagado) }}</td>
+
+          <td *ngIf="vista === 'PENDIENTES'" class="money-cell pending-money">
+            {{ moneda(compra.saldoPendiente) }}
+          </td>
+
+          <td>
+            <span class="status-badge"
+                  [ngClass]="{
+                    'status-paid': compra.estadoPago === 'PAGADO',
+                    'status-pending': compra.estadoPago === 'PENDIENTE',
+                    'status-partial': compra.estadoPago === 'PARCIAL'
+                  }">
+              <span class="status-dot"></span>
+              {{ compra.estadoPago }}
+            </span>
+            <span *ngIf="vista === 'GESTION' && esContado(compra)" class="cash-tag">Contado</span>
+          </td>
+
+          <td>
+            <div class="action-buttons">
+              <button *ngIf="vista === 'PENDIENTES'"
+                      type="button" class="btn-collect"
+                      title="Registrar un pago"
+                      (click)="abrirPago(compra)">
+                💰 Pagar
+              </button>
+
+              <button type="button" class="btn-history"
+                      title="Ver historial de pagos"
+                      (click)="verHistorial(compra)">
+                🕘 Historial
+              </button>
+
+              <ng-container *ngIf="vista === 'GESTION'">
+                <button type="button" class="btn-receipt"
+                        title="Imprimir recibo"
+                        (click)="imprimirCompra(compra)">
+                  🖨️ Recibo
+                </button>
+
+                <button type="button" class="btn-annul"
+                        title="Anular pago"
+                        (click)="anularCompra(compra)">
+                  🚫 Anular
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <span>💜 Sistema de gestión de pagos</span>
+    <span>Los saldos se calculan con los pagos activos: los anulados no cuentan.</span>
+  </footer>
+</div>
+
+<!-- MODAL: REGISTRAR PAGO -->
+<div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+  <section class="modal-card" role="dialog" aria-modal="true"
+           aria-labelledby="pago-modal-title"
+           (click)="$event.stopPropagation()">
+
+    <header class="modal-header">
+      <div class="modal-heading-icon">💸</div>
+      <div class="modal-heading-text">
+        <h2 id="pago-modal-title">Registrar pago</h2>
+        <p>Compra a {{ compraSeleccionada?.proveedorNombre }}</p>
+      </div>
+      <button type="button" class="modal-close"
+              [disabled]="guardando" (click)="cerrarFormulario()"
+              aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="modal-body" *ngIf="compraSeleccionada as compra">
+      <div class="selected-sale">
+        <div>
+          <span class="field-caption">Código de compra</span>
+          <strong>{{ compra.codigoCompra }}</strong>
+        </div>
+        <span class="status-badge"
+              [ngClass]="{
+                'status-paid': compra.estadoPago === 'PAGADO',
+                'status-pending': compra.estadoPago === 'PENDIENTE',
+                'status-partial': compra.estadoPago === 'PARCIAL'
+              }">
+          {{ compra.estadoPago }}
+        </span>
+      </div>
+
+      <h3 class="block-title">Productos</h3>
+      <table class="product-table">
+        <thead>
+        <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th></tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let p of compra.productos">
+          <td>{{ p.articulo }}</td>
+          <td class="num">{{ p.cantidad }}</td>
+          <td class="num">{{ moneda(p.subtotal) }}</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="balance-grid">
+        <div class="balance-box balance-total">
+          <span>Total de compra</span>
+          <strong>{{ moneda(compra.totalCompra) }}</strong>
+        </div>
+        <div class="balance-box balance-paid">
+          <span>Ya pagado</span>
+          <strong>{{ moneda(compra.totalPagado) }}</strong>
+        </div>
+        <div class="balance-box balance-due">
+          <span>Saldo pendiente</span>
+          <strong>{{ moneda(compra.saldoPendiente) }}</strong>
+        </div>
+      </div>
+
+      <form (ngSubmit)="registrarPago()">
+        <label class="form-label" for="montoPago">Monto a pagar (Bs)</label>
+        <div class="amount-input-wrap">
+          <span>Bs</span>
+          <input id="montoPago" type="number" name="monto"
+                 [(ngModel)]="monto" min="0.01" [max]="compra.saldoPendiente"
+                 step="0.01" required [disabled]="guardando" placeholder="0.00" />
+        </div>
+        <small class="field-help">
+          Máximo permitido: {{ moneda(compra.saldoPendiente) }}
+        </small>
+
+        <label class="form-label" for="formaPago">Forma de pago</label>
+        <select id="formaPago" name="formaPago"
+                [(ngModel)]="formaPago" required [disabled]="guardando">
+          <option value="EFECTIVO">💵 Efectivo</option>
+          <option value="TRANSFERENCIA">🏦 Transferencia bancaria</option>
+          <option value="QR">📱 Pago por QR</option>
+          <option value="TARJETA">💳 Tarjeta</option>
+          <option value="DEPOSITO">🏧 Depósito bancario</option>
+          <option value="OTRO">🧾 Otro</option>
+        </select>
+
+        <label class="form-label" for="observaciones">
+          Observaciones <span class="optional-label">(opcional)</span>
+        </label>
+        <textarea id="observaciones" name="observaciones"
+                  [(ngModel)]="observaciones" rows="3" maxlength="500"
+                  [disabled]="guardando"
+                  placeholder="Número de comprobante u otro detalle..."></textarea>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary"
+                  [disabled]="guardando" (click)="cerrarFormulario()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando">
+            {{ guardando ? 'Guardando...' : '✓ Confirmar pago' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL: HISTORIAL DE PAGOS -->
+<div class="modal-overlay" *ngIf="mostrandoHistorial" (click)="cerrarHistorial()">
+  <section class="modal-card history-modal" role="dialog" aria-modal="true"
+           aria-labelledby="historial-modal-title"
+           (click)="$event.stopPropagation()">
+
+    <header class="modal-header modal-header-blue">
+      <div class="modal-heading-icon">🕘</div>
+      <div class="modal-heading-text">
+        <h2 id="historial-modal-title">Historial de pagos</h2>
+        <p *ngIf="compraSeleccionada">
+          Compra {{ compraSeleccionada.codigoCompra }}
+          · {{ compraSeleccionada.proveedorNombre }}
+        </p>
+      </div>
+      <button type="button" class="modal-close"
+              (click)="cerrarHistorial()" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="modal-body">
+      <div *ngIf="compraSeleccionada" class="history-summary">
+        <div>
+          <span>Total compra</span>
+          <strong>{{ moneda(compraSeleccionada.totalCompra) }}</strong>
+        </div>
+        <div>
+          <span>Total pagado</span>
+          <strong class="paid-money">{{ moneda(compraSeleccionada.totalPagado) }}</strong>
+        </div>
+        <div>
+          <span>Saldo</span>
+          <strong class="pending-money">{{ moneda(compraSeleccionada.saldoPendiente) }}</strong>
+        </div>
+      </div>
+
+      <div *ngIf="compraSeleccionada && compraSeleccionada.productos.length"
+           class="history-products">
+        <h3 class="block-title">Productos</h3>
+        <ul class="product-list">
+          <li *ngFor="let p of compraSeleccionada.productos">
+            <strong>{{ p.cantidad }} ×</strong> {{ p.articulo }}
+            <span class="product-subtotal">{{ moneda(p.subtotal) }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="cargandoHistorial" class="loading-state compact-loading">
+        <div class="spinner"></div>
+        <p>Cargando historial...</p>
+      </div>
+
+      <div *ngIf="!cargandoHistorial && historial.length === 0"
+           class="empty-state compact-empty">
+        <div class="empty-icon">📭</div>
+        <h3>Sin pagos registrados</h3>
+        <p>
+          {{ compraSeleccionada && compraSeleccionada.totalPagado > 0
+          ? 'Esta compra se pagó al contado, por eso no tiene registros.'
+          : 'Todavía no hay pagos en el historial.' }}
+        </p>
+      </div>
+
+      <div *ngIf="!cargandoHistorial && historial.length > 0" class="history-list">
+        <article class="history-item" *ngFor="let pago of historial"
+                 [class.annulled]="!esActivo(pago)">
+          <div class="history-icon">{{ esActivo(pago) ? '✓' : '✕' }}</div>
+
+          <div class="history-info">
+            <strong>{{ moneda(pago.monto) }}</strong>
+            <span>{{ pago.formaPago || 'Forma de pago no especificada' }}</span>
+            <small>{{ fechaFormato(pago.fecha) }}</small>
+            <p *ngIf="pago.observaciones">{{ pago.observaciones }}</p>
+            <p *ngIf="!esActivo(pago)" class="annul-note">
+              Anulado el {{ fechaFormato(pago.fechaAnulacion) }}<span *ngIf="pago.motivoAnulacion"> · {{ pago.motivoAnulacion }}</span>
+            </p>
+
+            <div class="history-actions" *ngIf="esActivo(pago)">
+              <button type="button" class="btn-receipt" (click)="imprimirPago(pago)">
+                🖨️ Imprimir recibo
+              </button>
+              <button *ngIf="vista === 'GESTION'" type="button" class="btn-annul"
+                      (click)="anularPago(pago)">
+                🚫 Anular
+              </button>
+            </div>
+          </div>
+
+          <span class="history-status"
+                [class.history-status-annulled]="!esActivo(pago)">
+            {{ esActivo(pago) ? 'Registrado' : 'Anulado' }}
+          </span>
+        </article>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cerrarHistorial()">Cerrar</button>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,463 +1,333 @@
-// features/reports/report-dashboard/report-dashboard.component.ts
-import { Component, OnInit, inject, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import {ReportsService} from '../services/report.service';
-import Chart from 'chart.js/auto';
-import Swal from 'sweetalert2';
+import { TablaExportable, Celda } from '../../../shared/exportar/exportar.util';
+import { construirDocumentos, Documento, esRegistroActivo } from '../../../shared/documentos/documento.model';
+import { Cobro } from '../../cobro/service/cobro.service';
+import { Pago } from '../../pago/service/pago.service';
 
-@Component({
-  selector: 'app-report-dashboard',
-  standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './report-dashboard.component.html',
-  styleUrls: ['./report-dashboard.component.css']
-})
-export class ReportDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
-  private reportService = inject(ReportsService);
-  private router = inject(Router);
+export type TipoReporte = 'COBRANZAS' | 'VENTAS' | 'INGRESOS' | 'COBROS' | 'PAGOS' | 'CANASTILLOS';
 
-  // Referencias a los gráficos
-  @ViewChild('salesChart') salesChartRef!: ElementRef;
-  @ViewChild('categoryChart') categoryChartRef!: ElementRef;
+export interface DatosReporte {
+  movs: any[];
+  cobros: Cobro[];
+  pagos: Pago[];
+}
 
-  // Gráficos
-  private salesChart: Chart | null = null;
-  private categoryChart: Chart | null = null;
+export interface FiltrosReporte {
+  /** Mes inicial, formato YYYY-MM. */
+  desde: string;
+  /** Mes final, formato YYYY-MM. */
+  hasta: string;
+  /** Cliente o proveedor; '' = todos. */
+  contraparte: string;
+  /** '' = todas. */
+  formaPago: string;
+  /** Solo canastillos: texto a buscar en categoría o nombre del producto. */
+  palabra: string;
+}
 
-  // Señales para datos
-  totalSales = signal(0);
-  totalMovements = signal(0);
-  lowStockItems = signal(0);
-  topProduct = signal<any>({});
-  topProducts = signal<any[]>([]);
-  recentMovements = signal<any[]>([]);
-  inventoryMetrics = signal<any>({});
-  recentAlerts = signal<any[]>([]);
-  currentMonth = signal(new Date());
-  monthlySummary = signal<any>({});
+export interface InfoReporte {
+  tipo: TipoReporte;
+  titulo: string;
+  etiquetaContraparte: 'Cliente' | 'Proveedor';
+  /** Cobranzas: se listan TODAS las deudas hasta el mes final, sin mes inicial. */
+  soloHasta?: boolean;
+  usaPalabra?: boolean;
+}
 
-  // Señales para cambios porcentuales
-  salesChange = signal(0);
-  movementsChange = signal(0);
-  lowStockChange = signal(0);
+export const REPORTES: InfoReporte[] = [
+  { tipo: 'COBRANZAS', titulo: 'Reporte Cobranzas Pendientes', etiquetaContraparte: 'Cliente', soloHasta: true },
+  { tipo: 'VENTAS', titulo: 'Reporte de Ventas', etiquetaContraparte: 'Cliente' },
+  { tipo: 'INGRESOS', titulo: 'Reporte de Ingresos', etiquetaContraparte: 'Cliente' },
+  { tipo: 'COBROS', titulo: 'Reporte de Cobros', etiquetaContraparte: 'Cliente' },
+  { tipo: 'PAGOS', titulo: 'Reporte de Pagos', etiquetaContraparte: 'Proveedor' },
+  { tipo: 'CANASTILLOS', titulo: 'Reporte de Canastillos', etiquetaContraparte: 'Cliente', usaPalabra: true }
+];
 
-  // Filtros
-  selectedPeriod = 'month';
-  categoryFilter = 'value';
+export function infoDe(tipo: TipoReporte): InfoReporte {
+  return REPORTES.find(r => r.tipo === tipo) ?? REPORTES[0];
+}
 
-  // Utilidad para Math
-  Math = Math;
+/* ───────────── utilidades ───────────── */
 
-  constructor() {}
+const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 
-  ngOnInit(): void {
-    this.loadDashboardData();
+export function mesActual(): string {
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function etiquetaMes(ym: string): string {
+  const [a, m] = ym.split('-');
+  return `${MESES[Number(m) - 1] ?? ym}/${a}`;
+}
+
+export function etiquetaPeriodo(f: FiltrosReporte, soloHasta = false): string {
+  if (soloHasta) return `HASTA ${etiquetaMes(f.hasta)}`;
+  return f.desde === f.hasta ? etiquetaMes(f.desde) : `${etiquetaMes(f.desde)} - ${etiquetaMes(f.hasta)}`;
+}
+
+function enPeriodo(fecha: string | undefined, f: FiltrosReporte, soloHasta = false): boolean {
+  if (!fecha) return true;
+  const ym = String(fecha).slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(ym)) return true;
+  if (ym > f.hasta) return false;
+  return soloHasta || ym >= f.desde;
+}
+
+export function dia(fecha?: string): string {
+  if (!fecha) return '';
+  const d = new Date(fecha);
+  if (Number.isNaN(d.getTime())) return String(fecha);
+  return new Intl.DateTimeFormat('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+}
+
+const redondear = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+const suma = (valores: number[]) => redondear(valores.reduce((s, v) => s + v, 0));
+const moneda = (n: number) =>
+  new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB', minimumFractionDigits: 2 }).format(n || 0);
+
+const esSalida = (m: any) => String(m.tipo ?? m.tipoMovimiento ?? '').toUpperCase() === 'SALIDA';
+const esActivo = (m: any) => !m.estadoMovimiento || String(m.estadoMovimiento).toUpperCase() === 'ACTIVO';
+const contrapartesDe = (m: any) => m.responsable ?? m.clienteNombre ?? m.proveedorNombre ?? 'Sin registrar';
+
+function nombreCategoria(m: any): string {
+  const c = m.product?.categoria ?? m.producto?.categoria;
+  return typeof c === 'string' ? c : c?.nombre ?? '';
+}
+
+function subtotalLinea(m: any): number {
+  const guardado = Number(m.total ?? m.subtotal ?? m.liquido ?? 0);
+  if (guardado > 0) return guardado;
+  return Number(m.cantidad ?? 0) * Number(m.product?.precio ?? m.producto?.precio ?? 0);
+}
+
+const estadoTexto = (e: string) => (e === 'PAGADO' ? 'Pagado' : e === 'PARCIAL' ? 'Parcial' : 'Pendiente');
+
+export function ventasDe(d: DatosReporte): Documento[] {
+  return construirDocumentos(d.movs, 'SALIDA', d.cobros.map(c => ({ codigo: c.codigoVenta, monto: c.monto, estado: c.estado })));
+}
+
+export function comprasDe(d: DatosReporte): Documento[] {
+  return construirDocumentos(d.movs, 'ENTRADA', d.pagos.map(p => ({ codigo: p.codigoCompra, monto: p.monto, estado: p.estado })));
+}
+
+/** Nombres para el filtro Cliente / Proveedor. */
+export function opcionesContraparte(tipo: TipoReporte, d: DatosReporte): string[] {
+  const docs = infoDe(tipo).etiquetaContraparte === 'Proveedor' ? comprasDe(d) : ventasDe(d);
+  return Array.from(new Set(docs.map(x => x.contraparte))).sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+export function opcionesFormaPago(d: DatosReporte): string[] {
+  const todas = [
+    ...d.cobros.map(c => c.formaPago),
+    ...d.pagos.map(p => p.formaPago),
+    ...d.movs.map(m => m.formaPago)
+  ].filter(Boolean);
+  return Array.from(new Set(todas)).sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/* ───────────── constructor de cada reporte ───────────── */
+
+export function construirReporte(tipo: TipoReporte, d: DatosReporte, f: FiltrosReporte): TablaExportable {
+  switch (tipo) {
+    case 'VENTAS': return reporteVentas(d, f);
+    case 'INGRESOS': return reporteIngresos(d, f);
+    case 'COBROS': return reporteRegistros(d, f, 'COBROS');
+    case 'PAGOS': return reporteRegistros(d, f, 'PAGOS');
+    case 'CANASTILLOS': return reporteCanastillos(d, f);
+    default: return reporteCobranzas(d, f);
   }
+}
 
-  ngAfterViewInit(): void {
-    // Los gráficos se inicializan después de cargar los datos
-    setTimeout(() => {
-      this.initializeCharts();
-    }, 100);
-  }
+function pasaFiltros(contraparte: string, forma: string, f: FiltrosReporte): boolean {
+  if (f.contraparte && contraparte !== f.contraparte) return false;
+  if (f.formaPago && forma !== f.formaPago) return false;
+  return true;
+}
 
-  ngOnDestroy(): void {
-    // Destruir gráficos para evitar fugas de memoria
-    if (this.salesChart) {
-      this.salesChart.destroy();
-    }
-    if (this.categoryChart) {
-      this.categoryChart.destroy();
-    }
-  }
+function reporteCobranzas(d: DatosReporte, f: FiltrosReporte): TablaExportable {
+  const hoy = Date.now();
+  const filas = ventasDe(d)
+    .filter(v => v.saldo > 0.01 && enPeriodo(v.fecha, f, true) && pasaFiltros(v.contraparte, v.formaPago, f))
+    .sort((a, b) => a.contraparte.localeCompare(b.contraparte, 'es') || String(a.fecha).localeCompare(String(b.fecha)));
 
-  loadDashboardData(): void {
-    // Cargar datos principales
-    // @ts-ignore
-    this.reportService.getSalesSummary(this.selectedPeriod).subscribe({
-      next: (data: { total: any; change: any; }) => {
-        this.totalSales.set(data.total || 0);
-        this.salesChange.set(data.change || 0);
-      }
-    });
+  const dias = (v: Documento) => {
+    const t = new Date(v.fecha ?? '').getTime();
+    return Number.isNaN(t) ? 0 : Math.max(0, Math.floor((hoy - t) / 86400000));
+  };
 
-    // @ts-ignore
-    this.reportService.getMovementsSummary(this.selectedPeriod).subscribe({
-      next: (data: { total: any; change: any; }) => {
-        this.totalMovements.set(data.total || 0);
-        this.movementsChange.set(data.change || 0);
-      }
-    });
+  const clientes = new Set(filas.map(v => v.contraparte)).size;
+  const vencido = suma(filas.filter(v => dias(v) > 30).map(v => v.saldo));
 
-    // @ts-ignore
-    this.reportService.getLowStockReport().subscribe({
-      next: (data: { count: any; change: any; }) => {
-        this.lowStockItems.set(data.count || 0);
-        this.lowStockChange.set(data.change || 0);
-      }
-    });
-// @ts-ignore
-    this.reportService.getTopProducts(10).subscribe({
-      next: (data: string | any[]) => {
-        // @ts-ignore
-        this.topProducts.set(data);
-        if (data.length > 0) {
-          this.topProduct.set(data[0]);
-        }
-      }
-    });
+  return {
+    titulo: 'Reporte Cobranzas Pendientes',
+    subtitulo: [etiquetaPeriodo(f, true)],
+    resumen: [
+      { etiqueta: 'Clientes con deuda', valor: String(clientes) },
+      { etiqueta: 'Saldo mayor a 30 días', valor: moneda(vencido) }
+    ],
+    columnas: ['Cliente', 'Venta', 'Fecha', 'Días', 'Total', 'Cobrado', 'Saldo', 'Estado'],
+    columnasNumericas: [3, 4, 5, 6],
+    columnasEnteras: [3],
+    filas: filas.map(v => [v.contraparte, v.codigo, dia(v.fecha), dias(v), redondear(v.total), redondear(v.pagado), redondear(v.saldo), estadoTexto(v.estadoPago)]),
+    totales: ['TOTAL', '', '', '', suma(filas.map(v => v.total)), suma(filas.map(v => v.pagado)), suma(filas.map(v => v.saldo)), '']
+  };
+}
 
-    // @ts-ignore
-    this.reportService.getRecentMovements(5).subscribe({
-      next: (data: any[]) => {
-        this.recentMovements.set(data);
-      }
-    });
+function reporteVentas(d: DatosReporte, f: FiltrosReporte): TablaExportable {
+  const filas = ventasDe(d)
+    .filter(v => enPeriodo(v.fecha, f) && pasaFiltros(v.contraparte, v.formaPago, f))
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 
-    // @ts-ignore
-    this.reportService.getInventoryMetrics().subscribe({
-      next: (data: any) => {
-        this.inventoryMetrics.set(data);
-      }
-    });
+  const anuladas = new Set(
+    d.movs
+      .filter(m => esSalida(m) && !esActivo(m) && m.codigo && enPeriodo(m.fecha, f) && (!f.contraparte || contrapartesDe(m) === f.contraparte))
+      .map(m => String(m.codigo))
+  ).size;
 
-    // @ts-ignore
-    this.reportService.getRecentAlerts(5).subscribe({
-      next: (data: any) => {
-        this.recentAlerts.set(data);
-      }
-    });
+  return {
+    titulo: 'Reporte de Ventas',
+    subtitulo: [etiquetaPeriodo(f)],
+    resumen: [
+      { etiqueta: 'Ventas', valor: String(filas.length) },
+      { etiqueta: 'Ventas anuladas (no incluidas)', valor: String(anuladas) }
+    ],
+    columnas: ['Cliente', 'Fecha', 'Venta', 'Productos', 'Total', 'Cobrado', 'Saldo', 'Estado'],
+    columnasNumericas: [4, 5, 6],
+    filas: filas.map(v => [
+      v.contraparte, dia(v.fecha), v.codigo,
+      v.productos.map(p => `${p.cantidad} x ${p.articulo}`).join(', '),
+      redondear(v.total), redondear(v.pagado), redondear(v.saldo), estadoTexto(v.estadoPago)
+    ]),
+    totales: ['TOTAL', '', '', '', suma(filas.map(v => v.total)), suma(filas.map(v => v.pagado)), suma(filas.map(v => v.saldo)), '']
+  };
+}
 
-    // @ts-ignore
-    this.reportService.getMonthlySummary(this.currentMonth()).subscribe({
-      next: (data: any) => {
-        this.monthlySummary.set(data);
-      }
-    });
+function reporteIngresos(d: DatosReporte, f: FiltrosReporte): TablaExportable {
+  const ventas = ventasDe(d);
+  const nombreVenta = new Map(ventas.map(v => [v.codigo, v.contraparte]));
+  const conCobros = new Set(d.cobros.filter(esRegistroActivo).map(c => String(c.codigoVenta).trim()));
 
-    // Actualizar gráficos después de cargar datos
-    setTimeout(() => {
-      this.updateCharts();
-    }, 500);
-  }
+  const ingresos: { fecha?: string; cliente: string; codigo: string; forma: string; tipo: string; monto: number }[] = [];
 
-  initializeCharts(): void {
-    // Inicializar gráfico de ventas vs movimientos
-    if (this.salesChartRef?.nativeElement) {
-      this.salesChart = new Chart(this.salesChartRef.nativeElement, {
-        type: 'line',
-        data: {
-          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-          datasets: [
-            {
-              label: 'Ventas',
-              data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4
-            },
-            {
-              label: 'Movimientos',
-              data: [15, 20, 25, 30, 22, 18, 28],
-              borderColor: '#3b82f6',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              },
-              ticks: {
-                callback: function(value) {
-                  // @ts-ignore
-                  return value >= 1000 ? (value / 1000) + 'k' : value;
-                }
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      });
-    }
+  d.cobros.filter(esRegistroActivo).forEach(c =>
+    ingresos.push({
+      fecha: c.fecha,
+      cliente: c.clienteNombre ?? nombreVenta.get(String(c.codigoVenta).trim()) ?? 'Sin registrar',
+      codigo: c.codigoVenta,
+      forma: c.formaPago,
+      tipo: 'Cobro',
+      monto: Number(c.monto) || 0
+    })
+  );
 
-    // Inicializar gráfico de categorías
-    if (this.categoryChartRef?.nativeElement) {
-      this.categoryChart = new Chart(this.categoryChartRef.nativeElement, {
-        type: 'doughnut',
-        data: {
-          labels: ['Redes', 'Cables', 'Fibra Óptica', 'Wireless', 'Accesorios'],
-          datasets: [{
-            data: [35, 25, 20, 15, 5],
-            backgroundColor: [
-              '#3b82f6',
-              '#10b981',
-              '#8b5cf6',
-              '#f59e0b',
-              '#ef4444'
-            ],
-            borderWidth: 2,
-            borderColor: '#ffffff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'right',
-              labels: {
-                padding: 20,
-                usePointStyle: true,
-                pointStyle: 'circle'
-              }
-            }
-          },
-          cutout: '70%'
-        }
-      });
-    }
-  }
+  // Ventas al contado: están pagadas pero no tienen registros de cobro.
+  ventas
+    .filter(v => v.pagado > 0 && !conCobros.has(v.codigo))
+    .forEach(v =>
+      ingresos.push({ fecha: v.fecha, cliente: v.contraparte, codigo: v.codigo, forma: v.formaPago, tipo: 'Contado', monto: v.pagado })
+    );
 
-  updateCharts(): void {
-    // Aquí actualizarías los gráficos con datos reales del servicio
-    // Por ahora, usamos datos de prueba
-  }
+  const filas = ingresos
+    .filter(i => enPeriodo(i.fecha, f) && pasaFiltros(i.cliente, i.forma, f))
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 
-  onPeriodChange(): void {
-    this.loadDashboardData();
-  }
+  const porForma = new Map<string, number>();
+  filas.forEach(i => porForma.set(i.forma, (porForma.get(i.forma) ?? 0) + i.monto));
 
-  updateCategoryChart(): void {
-    if (this.categoryChart) {
-      // Actualizar datos del gráfico según el filtro seleccionado
-      const newData = this.getCategoryChartData();
-      this.categoryChart.data.datasets[0].data = newData;
-      this.categoryChart.update();
-    }
-  }
+  return {
+    titulo: 'Reporte de Ingresos',
+    subtitulo: [etiquetaPeriodo(f)],
+    resumen: Array.from(porForma.entries()).map(([forma, total]) => ({ etiqueta: forma, valor: moneda(total) })),
+    columnas: ['Fecha', 'Cliente', 'Venta', 'Forma de pago', 'Tipo', 'Monto'],
+    columnasNumericas: [5],
+    filas: filas.map(i => [dia(i.fecha), i.cliente, i.codigo, i.forma, i.tipo, redondear(i.monto)]),
+    totales: ['TOTAL', '', '', '', '', suma(filas.map(i => i.monto))]
+  };
+}
 
-  getCategoryChartData(): number[] {
-    // Datos de ejemplo según el filtro
-    switch (this.categoryFilter) {
-      case 'value':
-        return [45000, 32000, 28000, 19000, 8000];
-      case 'quantity':
-        return [150, 200, 80, 45, 120];
-      case 'movements':
-        return [45, 60, 25, 15, 20];
-      default:
-        return [35, 25, 20, 15, 5];
-    }
-  }
+function reporteRegistros(d: DatosReporte, f: FiltrosReporte, modo: 'COBROS' | 'PAGOS'): TablaExportable {
+  const esCobro = modo === 'COBROS';
+  const nombres = new Map((esCobro ? ventasDe(d) : comprasDe(d)).map(x => [x.codigo, x.contraparte]));
 
-  refreshData(): void {
-    this.loadDashboardData();
-    Swal.fire({
-      icon: 'success',
-      title: 'Datos actualizados',
-      text: 'El dashboard se ha actualizado correctamente',
-      timer: 1500,
-      showConfirmButton: false
-    });
-  }
+  const registros = (esCobro ? d.cobros : d.pagos).map((r: any) => {
+    const codigo = String(esCobro ? r.codigoVenta : r.codigoCompra).trim();
+    return {
+      fecha: r.fecha as string | undefined,
+      nombre: (esCobro ? r.clienteNombre : r.proveedorNombre) ?? nombres.get(codigo) ?? 'Sin registrar',
+      codigo,
+      forma: r.formaPago as string,
+      activo: esRegistroActivo(r),
+      obs: (r.observaciones as string) ?? '',
+      monto: Number(r.monto) || 0
+    };
+  });
 
-  exportDashboard(): void {
-    Swal.fire({
-      title: 'Exportar Reporte',
-      html: `
-        <div style="text-align: left; padding: 20px;">
-          <p>Selecciona el formato de exportación:</p>
-          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-            <label>
-              <input type="radio" name="format" value="pdf" checked> PDF (Recomendado)
-            </label>
-            <label>
-              <input type="radio" name="format" value="excel"> Excel
-            </label>
-            <label>
-              <input type="radio" name="format" value="csv"> CSV
-            </label>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Exportar',
-      cancelButtonText: 'Cancelar',
-      preConfirm: () => {
-        const format = (document.querySelector('input[name="format"]:checked') as HTMLInputElement)?.value;
-        return format;
-      }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        // @ts-ignore
-        this.reportService.exportReport(result.value, this.selectedPeriod).subscribe({
-          next: ({response}: { response: any }) => {
-            Swal.fire({
-              icon: 'success',
-              title: 'Exportación completada',
-              text: `El reporte se ha exportado en formato ${result.value.toUpperCase()}`,
-              timer: 2000,
-              showConfirmButton: false
-            });
-          },
-          error: (error: any) => {
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo exportar el reporte'
-            });
-          }
-        });
-      }
-    });
-  }
+  const filas = registros
+    .filter(r => enPeriodo(r.fecha, f) && pasaFiltros(r.nombre, r.forma, f))
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 
-  viewAllProducts(): void {
-    this.router.navigate(['/products']);
-  }
+  const activos = filas.filter(r => r.activo);
 
-  viewAllMovements(): void {
-    this.router.navigate(['/stock/movements']);
-  }
+  return {
+    titulo: esCobro ? 'Reporte de Cobros' : 'Reporte de Pagos',
+    subtitulo: [etiquetaPeriodo(f)],
+    resumen: [
+      { etiqueta: esCobro ? 'Cobros vigentes' : 'Pagos vigentes', valor: String(activos.length) },
+      { etiqueta: 'Anulados (no suman)', valor: String(filas.length - activos.length) }
+    ],
+    columnas: ['Fecha', esCobro ? 'Cliente' : 'Proveedor', esCobro ? 'Venta' : 'Compra', 'Forma de pago', 'Estado', 'Observaciones', 'Monto'],
+    columnasNumericas: [6],
+    filas: filas.map(r => [dia(r.fecha), r.nombre, r.codigo, r.forma, r.activo ? 'Vigente' : 'Anulado', r.obs, redondear(r.monto)]),
+    totales: ['TOTAL VIGENTE', '', '', '', '', '', suma(activos.map(r => r.monto))]
+  };
+}
 
-  handleAlert(alert: any): void {
-    Swal.fire({
-      title: alert.title,
-      text: alert.description || 'Sin descripción adicional',
-      icon: alert.level === 'high' ? 'error' : alert.level === 'medium' ? 'warning' : 'info',
-      showCancelButton: alert.level === 'high',
-      confirmButtonText: alert.level === 'high' ? 'Resolver' : 'OK',
-      cancelButtonText: 'Ignorar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Marcar alerta como resuelta
-        // @ts-ignore
-        this.reportService.resolveAlert(alert.id).subscribe({
-          next: () => {
-            // Actualizar lista de alertas
-            this.recentAlerts.update(alerts => alerts.filter(a => a.id !== alert.id));
-          }
-        });
-      }
-    });
-  }
+function reporteCanastillos(d: DatosReporte, f: FiltrosReporte): TablaExportable {
+  const palabra = (f.palabra || 'canast').trim().toLowerCase();
+  const estadoVenta = new Map(ventasDe(d).map(v => [v.codigo, v.estadoPago]));
 
-  previousMonth(): void {
-    const newDate = new Date(this.currentMonth());
-    newDate.setMonth(newDate.getMonth() - 1);
-    this.currentMonth.set(newDate);
-    this.loadMonthlySummary();
-  }
+  const lineas = d.movs
+    .filter(m => esSalida(m) && esActivo(m) && m.codigo && enPeriodo(m.fecha, f))
+    .filter(m => {
+      const texto = `${nombreCategoria(m)} ${m.product?.articulo ?? m.producto?.articulo ?? ''}`.toLowerCase();
+      return texto.includes(palabra);
+    })
+    .filter(m => pasaFiltros(contrapartesDe(m), m.formaPago ?? '', f))
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 
-  nextMonth(): void {
-    const newDate = new Date(this.currentMonth());
-    newDate.setMonth(newDate.getMonth() + 1);
-    this.currentMonth.set(newDate);
-    this.loadMonthlySummary();
-  }
+  const compras = new Map<string, Set<string>>();
+  lineas.forEach(m => {
+    const c = contrapartesDe(m);
+    compras.set(c, (compras.get(c) ?? new Set()).add(String(m.codigo)));
+  });
+  const fieles = Array.from(compras.entries())
+    .sort((a, b) => b[1].size - a[1].size)
+    .slice(0, 5)
+    .map(([nombre, set]) => `${nombre} (${set.size})`)
+    .join(', ');
 
-  loadMonthlySummary(): void {
-    // @ts-ignore
-    this.reportService.getMonthlySummary(this.currentMonth()).subscribe({
-      next: (data: any) => {
-        this.monthlySummary.set(data);
-      }
-    });
-  }
+  const subtotales = lineas.map(subtotalLinea);
 
-  formatDateShort(dateString: string): string {
-    if (!dateString) return 'N/A';
-
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        return 'Hoy';
-      } else if (diffDays === 1) {
-        return 'Ayer';
-      } else if (diffDays <= 7) {
-        return `Hace ${diffDays} días`;
-      } else {
-        return date.toLocaleDateString('es-BO', {
-          day: '2-digit',
-          month: 'short'
-        });
-      }
-    } catch {
-      return 'Fecha inválida';
-    }
-  }
-
-  formatTimeAgo(timestamp: string): string {
-    if (!timestamp) return 'N/A';
-
-    try {
-      const date = new Date(timestamp);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffSec = Math.floor(diffMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHour = Math.floor(diffMin / 60);
-      const diffDay = Math.floor(diffHour / 24);
-
-      if (diffSec < 60) {
-        return 'Hace unos segundos';
-      } else if (diffMin < 60) {
-        return `Hace ${diffMin} min`;
-      } else if (diffHour < 24) {
-        return `Hace ${diffHour} h`;
-      } else if (diffDay === 1) {
-        return 'Ayer';
-      } else if (diffDay <= 7) {
-        return `Hace ${diffDay} días`;
-      } else {
-        return date.toLocaleDateString('es-BO', {
-          day: 'numeric',
-          month: 'short'
-        });
-      }
-    } catch {
-      return 'Fecha inválida';
-    }
-  }
-
-  getUserInitials(fullName: string): string {
-    if (!fullName) return '??';
-
-    return fullName
-      .split(' ')
-      .map(name => name[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  }
+  return {
+    titulo: 'Reporte de Canastillos',
+    subtitulo: [etiquetaPeriodo(f)],
+    resumen: [
+      { etiqueta: 'Unidades', valor: String(lineas.reduce((s, m) => s + Number(m.cantidad ?? 0), 0)) },
+      { etiqueta: 'Clientes', valor: String(compras.size) },
+      { etiqueta: 'Más fieles (compras)', valor: fieles || '—' }
+    ],
+    columnas: ['Fecha', 'Cliente', 'Venta', 'Canastillo', 'Cant.', 'P. unit.', 'Subtotal', 'Estado'],
+    columnasNumericas: [4, 5, 6],
+    columnasEnteras: [4],
+    filas: lineas.map((m, i): Celda[] => {
+      const cant = Number(m.cantidad ?? 0);
+      return [
+        dia(m.fecha), contrapartesDe(m), String(m.codigo),
+        m.product?.articulo ?? m.producto?.articulo ?? 'Sin nombre',
+        cant, redondear(cant > 0 ? subtotales[i] / cant : subtotales[i]), redondear(subtotales[i]),
+        estadoTexto(estadoVenta.get(String(m.codigo).trim()) ?? 'PENDIENTE')
+      ];
+    }),
+    totales: ['TOTAL', '', '', '', lineas.reduce((s, m) => s + Number(m.cantidad ?? 0), 0), '', suma(subtotales), '']
+  };
 }
