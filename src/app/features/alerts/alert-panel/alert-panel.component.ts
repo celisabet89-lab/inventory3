@@ -257,7 +257,7 @@ export class AlertPanelComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, gestionar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0f766e',
+      confirmButtonColor: '#1b6f6f',
       cancelButtonColor: '#64748b',
       reverseButtons: true,
       background: '#ffffff',
@@ -453,7 +453,7 @@ export class AlertPanelComponent implements OnInit, OnDestroy {
 
   getBarraColor(alert: Alert): string {
     if (alert.estado === 'GESTIONADA') {
-      return '#0f766e';
+      return '#1b6f6f';
     }
 
     const porcentaje = this.getStockPorcentaje(alert);
@@ -509,7 +509,7 @@ export class AlertPanelComponent implements OnInit, OnDestroy {
       width: '340px',
       padding: '1rem',
       confirmButtonText: 'Aceptar',
-      confirmButtonColor: '#0f766e',
+      confirmButtonColor: '#1b6f6f',
       background: '#ffffff',
       color: '#1f2937',
       customClass: {

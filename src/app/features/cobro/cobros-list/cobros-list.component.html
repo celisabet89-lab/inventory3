@@ -1,4 +1,3 @@
-
 <div class="cobros-container">
   <header class="page-header">
     <div>
@@ -51,7 +50,7 @@
     </div>
 
     <div class="table-scroll" *ngIf="!cargando && !errorCarga">
-      <table>
+      <div class="sl-table-wrap"><table class="sl-table">
         <thead>
         <tr>
           <th>N.º venta</th>
@@ -144,7 +143,7 @@
           </td>
         </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
   </section>
 </div>
@@ -262,7 +261,7 @@
       <div
         class="table-scroll"
         *ngIf="!cargandoHistorial && historial.length > 0">
-        <table>
+        <div class="sl-table-wrap"><table class="sl-table">
           <thead>
           <tr>
             <th>N.º cobro</th>
@@ -304,7 +303,7 @@
             </td>
           </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
 

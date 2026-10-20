@@ -1,6 +1,5 @@
 <div class="client-page">
 
-  <!-- HEADER -->
   <div class="page-header">
     <div class="header-left">
       <i class="fas fa-users header-icon"></i>
@@ -46,7 +45,6 @@
     </div>
   </div>
 
-  <!-- FILTROS -->
   <div class="bar-filtros">
     <div class="search-wrap">
       <i class="fas fa-search"></i>
@@ -65,7 +63,6 @@
     </button>
   </div>
 
-  <!-- TABLA -->
   <div class="table-wrap">
     @if (loading()) {
       <div class="empty-st">
@@ -81,10 +78,10 @@
         </button>
       </div>
     } @else {
-      <table class="client-table">
+      <div class="sl-table-wrap"><table class="sl-table client-table">
         <thead>
         <tr>
-          <th>#</th>
+          <th>N°</th>
           <th>Cliente</th>
           <th>CI / NIT</th>
           <th>Teléfono</th>
@@ -139,13 +136,12 @@
             </tr>
           }
         </tbody>
-      </table>
+      </table></div>
     }
   </div>
 
 </div>
 
-<!-- MODAL FORM -->
 @if (showForm()) {
   <div class="modal-overlay" (click)="closeForm()">
     <div class="modal-container" (click)="$event.stopPropagation()">

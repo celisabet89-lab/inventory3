@@ -90,7 +90,6 @@ export class MainLayoutComponent implements OnInit {
         { path: '/movimientos/movimientos',   icon: 'fa-cart-plus',     label: 'Movimientos'  },
         { path: '/movimientos/gestion-compras',  icon: 'fa-shopping-cart', label: 'Gestiónar Compras' },
         { path: '/movimientos/reporte-compras',  icon: 'fa-chart-line',    label: 'Reporte Compras'   },
-        { path: '/movimientos/ventas-anuladas',  icon: 'fa-ban',           label: 'Ventas Anuladas'   },
         { path: '/movimientos/alertas', icon: 'fa-exclamation-circle',     label: 'Alertas'   },
         {path: 'movimientos/stock', icon: 'fa-shopping-cart',     label: 'Stock'}
 
@@ -127,11 +126,29 @@ export class MainLayoutComponent implements OnInit {
         { path: '/reportes/ventas',      icon: 'fa-chart-line',         label: 'Reporte de Ventas'    },
         { path: '/reportes/ingresos',    icon: 'fa-dollar-sign',        label: 'Reporte de Ingresos'  },
         { path: '/reportes/cobranzas',   icon: 'fa-hand-holding-usd',   label: 'Reporte de Cobranzas' },
-        { path: '/reportes/canastillos', icon: 'fa-shopping-basket',    label: 'Reporte de Canastillos'}
+        { path: '/reportes/canastillos', icon: 'fa-shopping-basket',    label: 'Reporte de Canastillos'},
+        { path: '/reportes/usuarios',    icon: 'fa-users',              label: 'Reporte de Usuarios'  },
+        { path: '/reportes/clientes',    icon: 'fa-user-friends',       label: 'Reporte de Clientes'  },
+        { path: '/reportes/productos',   icon: 'fa-box',                label: 'Reporte de Productos' },
+        { path: '/reportes/proveedores', icon: 'fa-truck',              label: 'Reporte de Proveedores'},
+        { path: '/reportes/onus',        icon: 'fa-wifi',               label: 'Reporte de ONUs'      }
       ],
       isOpen: false
     },
-    { path: '/onus',            icon: 'fa-wifi',          label: 'ONUs'         },
+    {
+      path: '/onus',
+      icon: 'fa-wifi',
+      label: 'ONUs',
+      subItems: [
+        { path: '/onus/lista',         icon: 'fa-list',          label: 'Lista de ONUs'           },
+        { path: '/onus/clientes',      icon: 'fa-user-friends',  label: 'Clientes ONU'            },
+        { path: '/onus/tipos-cliente', icon: 'fa-tags',          label: 'Tipo de Clientes ONU'    },
+        { path: '/onus/asignar',       icon: 'fa-user-check',    label: 'Asignar ONUs'            },
+        { path: '/onus/recojo',        icon: 'fa-truck-loading', label: 'Recojo de ONUs'          },
+        { path: '/onus/mantenimiento', icon: 'fa-cogs',          label: 'ONUs en Mantenimiento'   }
+      ],
+      isOpen: false
+    },
     //{ path: '/deliveries',      icon: 'fa-truck',         label: 'Entregas'     }
   ];
 

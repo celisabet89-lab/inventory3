@@ -45,7 +45,7 @@
   gap: 8px;
   align-items: stretch;
 }/* === FORM ONU — mismo estilo que product-form === */
-.form-wrapper { background:#fff; border-radius:14px; width:100%; max-width:560px; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+.form-wrapper { background:#fff; border-radius:14px; width:100%; max-width:560px; font-family:inherit; overflow:hidden; }
 .form-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:#1b6f6f; border-radius:14px 14px 0 0; }
 .form-title { font-size:18px; font-weight:700; color:white; margin:0; display:flex; align-items:center; gap:10px; }
 .btn-close { width:32px; height:32px; border:none; background:rgba(255,255,255,0.2); color:white; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }

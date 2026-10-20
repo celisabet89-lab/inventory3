@@ -1,4 +1,4 @@
-.cat-page { padding:24px; background:#f3f4f6; min-height:100vh; box-sizing:border-box; width:100%; }
+.cat-page { padding:24px; background:#f3f4f6; min-height: calc(100vh - 64px); box-sizing:border-box; width:100%; }
 
 .page-header { display:flex; justify-content:space-between; align-items:center; background:#fff; padding:18px 24px; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:20px; }
 .header-left { display:flex; align-items:center; gap:14px; }

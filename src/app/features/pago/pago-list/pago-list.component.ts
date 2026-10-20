@@ -108,7 +108,7 @@ export class PagoListComponent implements OnInit {
           icon: 'error',
           title: 'No se pudieron cargar los datos',
           text: 'Verifica que el backend esté funcionando e inténtalo de nuevo.',
-          confirmButtonColor: '#009688'
+          confirmButtonColor: '#1b6f6f'
         });
       }
     });
@@ -254,7 +254,7 @@ export class PagoListComponent implements OnInit {
         icon: 'info',
         title: 'Compra pagada',
         text: 'Esta compra no tiene saldo pendiente.',
-        confirmButtonColor: '#009688'
+        confirmButtonColor: '#1b6f6f'
       });
       return;
     }
@@ -283,7 +283,7 @@ export class PagoListComponent implements OnInit {
         icon: 'warning',
         title: 'Monto inválido',
         text: 'Ingresa un monto mayor que cero.',
-        confirmButtonColor: '#009688'
+        confirmButtonColor: '#1b6f6f'
       });
       return;
     }
@@ -293,7 +293,7 @@ export class PagoListComponent implements OnInit {
         icon: 'warning',
         title: 'Monto excedido',
         text: `El saldo pendiente es ${this.moneda(compra.saldoPendiente)}.`,
-        confirmButtonColor: '#009688'
+        confirmButtonColor: '#1b6f6f'
       });
       return;
     }
@@ -350,7 +350,7 @@ export class PagoListComponent implements OnInit {
           icon: 'error',
           title: 'Error',
           text: 'No se pudo consultar el historial.',
-          confirmButtonColor: '#009688'
+          confirmButtonColor: '#1b6f6f'
         });
       }
     });
@@ -428,16 +428,16 @@ export class PagoListComponent implements OnInit {
     * { box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; color: #17212b; margin: 0; padding: 28px; font-size: 13px; }
     .recibo { max-width: 720px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #009688; padding-bottom: 14px; margin-bottom: 18px; }
-    header h1 { margin: 0 0 4px; font-size: 20px; color: #00796b; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b6f6f; padding-bottom: 14px; margin-bottom: 18px; }
+    header h1 { margin: 0 0 4px; font-size: 20px; color: #155a5a; }
     header p { margin: 0; color: #64748b; font-size: 12px; }
     .numero { text-align: right; font-weight: 700; font-size: 15px; }
     .numero small { display: block; font-weight: 400; font-size: 11px; color: #64748b; }
     .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 18px; }
     .datos span { display: block; color: #64748b; font-size: 11px; }
-    h2 { font-size: 13px; margin: 18px 0 6px; color: #00796b; text-transform: uppercase; letter-spacing: .5px; }
+    h2 { font-size: 13px; margin: 18px 0 6px; color: #155a5a; text-transform: uppercase; letter-spacing: .5px; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #009688; color: #fff; text-align: left; padding: 7px 8px; font-size: 11px; }
+    th { background: #1b6f6f; color: #fff; text-align: left; padding: 7px 8px; font-size: 11px; }
     td { padding: 7px 8px; border-bottom: 1px solid #d8e0e5; font-size: 12px; }
     .num, th.num { text-align: right; white-space: nowrap; }
     .totales { margin: 18px 0 0 auto; width: 260px; }
@@ -494,7 +494,7 @@ export class PagoListComponent implements OnInit {
         icon: 'warning',
         title: 'Ventana bloqueada',
         text: 'Permite las ventanas emergentes de este sitio para imprimir el recibo.',
-        confirmButtonColor: '#009688'
+        confirmButtonColor: '#1b6f6f'
       });
       return;
     }
@@ -527,7 +527,7 @@ export class PagoListComponent implements OnInit {
             icon: 'info',
             title: 'Nada que anular',
             text: 'Esta compra se pagó al contado y no tiene pagos registrados.',
-            confirmButtonColor: '#009688'
+            confirmButtonColor: '#1b6f6f'
           });
           return;
         }
@@ -547,7 +547,7 @@ export class PagoListComponent implements OnInit {
           icon: 'info',
           title: 'Elige el pago a anular',
           text: 'Esta compra tiene varios pagos. Usa el botón "Anular" del que corresponda.',
-          confirmButtonColor: '#009688'
+          confirmButtonColor: '#1b6f6f'
         });
       },
       error: () => this.mostrarError(null, 'No se pudo consultar los pagos.')
@@ -678,7 +678,7 @@ export class PagoListComponent implements OnInit {
       icon: 'error',
       title: 'Error',
       text: mensaje,
-      confirmButtonColor: '#009688'
+      confirmButtonColor: '#1b6f6f'
     });
   }
 }

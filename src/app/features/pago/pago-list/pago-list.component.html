@@ -101,7 +101,7 @@
 
     <div class="table-wrapper"
          *ngIf="!cargando && !errorCarga && comprasFiltradas.length > 0">
-      <table>
+      <div class="sl-table-wrap"><table class="sl-table">
         <thead>
         <tr>
           <th>Compra</th>
@@ -191,7 +191,7 @@
           </td>
         </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
   </section>
 
@@ -235,7 +235,7 @@
       </div>
 
       <h3 class="block-title">Productos</h3>
-      <table class="product-table">
+      <div class="sl-table-wrap"><table class="sl-table product-table">
         <thead>
         <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th></tr>
         </thead>
@@ -246,7 +246,7 @@
           <td class="num">{{ moneda(p.subtotal) }}</td>
         </tr>
         </tbody>
-      </table>
+      </table></div>
 
       <div class="balance-grid">
         <div class="balance-box balance-total">

@@ -39,6 +39,8 @@ export class OnuFormComponent implements OnInit, OnDestroy {
 
   // Portador genérico (para Técnico / Usuario / Almacén)
   portadorOptions = signal<string[]>([]);
+  /** Almacén actual de la ONU: el formulario no lo edita, pero hay que reenviarlo al guardar. */
+  private almacenActual = '';
 
   // Clientes con contrato (para tipo = Cliente)
   clientesOptions = signal<ClienteOption[]>([]);
@@ -124,6 +126,7 @@ export class OnuFormComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.onuService.getById(id).subscribe({
       next: (onu: any) => {
+        this.almacenActual = onu.almacen || '';
         this.onuForm.patchValue({
           marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac,
           estado: onu.estado, contrato: onu.contrato, observaciones: onu.observaciones,
@@ -253,6 +256,7 @@ export class OnuFormComponent implements OnInit, OnDestroy {
     const v = this.onuForm.getRawValue();
     const data: OnuRequest = {
       ...v,
+      almacen: this.almacenActual || undefined,
       codigoQR: v.codigoQR || `ONU-${v.serial}-${Date.now()}`
     };
     const op = (this.isEditMode() && this.onuId)

@@ -271,8 +271,9 @@
 .page-content {
   flex: 1;
   overflow-y: auto;
-  background-color: #f9fafb;
-  padding: 24px;
+  background-color: #f3f4f6;
+  /* Cada página ya trae su propio margen interior */
+  padding: 0;
 }
 
 
@@ -329,6 +330,6 @@
   }
 
   .page-content {
-    padding: 16px;
+    padding: 0;
   }
 }

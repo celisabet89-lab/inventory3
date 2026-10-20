@@ -48,7 +48,13 @@ export const routes: Routes = [
         children: [
           { path: '', loadComponent: () => import('./features/onus/onu-list/onu-list.component').then(m => m.OnuListComponent) },
           { path: 'new', loadComponent: () => import('./features/onus/onu-form/onu-form.component').then(m => m.OnuFormComponent) },
-          { path: 'assign/:id', loadComponent: () => import('./features/onus/onu-assignment/onu-assignment.component').then(m => m.OnuAssignmentComponent) }
+          { path: 'lista', loadComponent: () => import('./features/onus/onu-list/onu-list.component').then(m => m.OnuListComponent) },
+          { path: 'asignar', loadComponent: () => import('./features/onus/onu-assignment/onu-assignment.component').then(m => m.OnuAsignarComponent) },
+          { path: 'recojo', loadComponent: () => import('./features/onus/onu-recojo/onu-recojo.component').then(m => m.OnuRecojoComponent) },
+          { path: 'mantenimiento', loadComponent: () => import('./features/onus/onu-mantenimiento/onu-mantenimiento.component').then(m => m.OnuMantenimientoComponent) },
+          { path: 'clientes', loadComponent: () => import('./features/onus/cliente-onu-list/cliente-onu-list.component').then(m => m.ClienteOnuListComponent) },
+          { path: 'tipos-cliente', loadComponent: () => import('./features/onus/tipo-cliente-onu-list/tipo-cliente-onu-list.component').then(m => m.TipoClienteOnuListComponent) },
+          { path: 'assign/:id', loadComponent: () => import('./features/onus/onu-assignment/onu-assignment.component').then(m => m.OnuAsignarComponent) }
         ]
       },
 

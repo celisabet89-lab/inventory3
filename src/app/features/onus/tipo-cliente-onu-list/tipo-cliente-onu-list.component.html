@@ -1,0 +1,87 @@
+<div class="onu-page">
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-tags header-icon"></i>
+      <div>
+        <h2>Tipo de Clientes ONU</h2>
+        <span class="header-sub">Gestión de tipos de cliente del servicio de ONU</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="barra-acciones">
+      <button type="button" class="btn-nuevo" (click)="nuevo()"><i class="fas fa-plus-circle"></i> Agregar nuevo</button>
+    </div>
+
+    <div class="filtros">
+      <label class="por-pagina">
+        Mostrar
+        <select [ngModel]="porPagina()" (ngModelChange)="cambiarPorPagina($event)" name="porPagina">
+          @for (n of opcionesPagina; track n) { <option [ngValue]="n">{{ n }}</option> }
+        </select>
+        registros por página
+      </label>
+      <label>
+        Buscar
+        <input type="text" [ngModel]="busqueda()" (ngModelChange)="buscar($event)" name="buscar" />
+      </label>
+    </div>
+
+    <div class="sl-table-wrap">
+      <table class="sl-table">
+        <thead><tr><th>Cod</th><th>Tipo de Cliente</th><th>Descripción</th><th>Color</th><th>Opciones</th></tr></thead>
+        <tbody>
+          @for (t of visibles(); track t.id) {
+            <tr>
+              <td>{{ t.id }}</td>
+              <td>{{ t.nombre }}</td>
+              <td>{{ t.descripcion || '—' }}</td>
+              <td><span class="color-chip" [style.background]="t.color || '#9ca3af'"></span></td>
+              <td class="acc-cell">
+                <button type="button" class="btn-ac edit" (click)="editar(t)" title="Editar"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn-ac delete" (click)="eliminar(t)" title="Eliminar"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay tipos de cliente' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <span>Mostrando {{ desde() }} a {{ hasta() }} de {{ filtrados().length }} registros</span>
+      <div class="pag-botones">
+        <button type="button" (click)="irA(pagina() - 1)" [disabled]="pagina() === 1">Anterior</button>
+        <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" (click)="irA(pagina() + 1)" [disabled]="pagina() === totalPaginas()">Siguiente</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+@if (formAbierto()) {
+  <div class="modal-fondo" (click)="cerrar()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3>{{ editandoId ? 'Editar tipo de cliente' : 'Nuevo tipo de cliente' }}</h3>
+        <button type="button" class="modal-x" (click)="cerrar()" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="campo"><label for="t-nombre">Tipo de cliente <span class="req">*</span></label>
+          <input id="t-nombre" type="text" [(ngModel)]="form.nombre" name="t-nombre" /></div>
+        <div class="campo"><label for="t-desc">Descripción</label>
+          <textarea id="t-desc" [(ngModel)]="form.descripcion" name="t-desc"></textarea></div>
+        <div class="campo"><label for="t-color">Color</label>
+          <input id="t-color" type="color" [(ngModel)]="form.color" name="t-color" /></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-cerrar" (click)="cerrar()"><i class="fas fa-times-circle"></i> Cerrar</button>
+        <button type="button" class="btn-registrar" (click)="guardar()" [disabled]="guardando()">
+          <i class="fas fa-save"></i> {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

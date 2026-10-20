@@ -2,7 +2,7 @@
 .del-page {
   width: 100%; max-width: 100%;
   padding: 24px; box-sizing: border-box;
-  background: #f3f4f6; min-height: 100vh;
+  background: #f3f4f6; min-height: calc(100vh - 64px);
 }
 
 /* HEADER */
@@ -63,17 +63,6 @@
 .estado-btns button.activo { background: #1b6f6f; color: #fff; border-color: #1b6f6f; font-weight: 600; }
 
 /* TABLA */
-.table-wrap {
-  background: #fff; border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden;
-}
-.del-table { width: 100%; border-collapse: collapse; }
-.del-table th {
-  background: #1b6f6f; color: #fff; padding: 12px 16px;
-  font-size: 13px; text-align: left; font-weight: 600;
-}
-.del-table td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; }
-.del-table tr:hover td { background: #f9fafb; }
 
 .cod-badge {
   background: linear-gradient(135deg,#1b6f6f,#0f4f4f);
@@ -201,12 +190,7 @@
 
 /* DETALLE TABLE */
 .detalle-section { display: flex; flex-direction: column; gap: 8px; }
-.det-mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.det-mini-table th {
-  background: #f3f4f6; padding: 8px 12px;
-  text-align: left; font-size: 12px; color: #6b7280;
-}
-.det-mini-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
+
 .cant-in {
   width: 60px; padding: 4px 6px; border: 1.5px solid #e5e7eb;
   border-radius: 6px; text-align: center; font-size: 13px; font-weight: 600;

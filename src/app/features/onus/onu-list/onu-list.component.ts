@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OnuService } from '../services/onu.service';
+import { OnuMovimiento, OnuOperacionesService } from '../services/onu-operaciones.service';
 import { OnuFormComponent } from '../onu-form/onu-form.component';
 import { Onu } from '../../../models/onu.model';
 import Swal from 'sweetalert2';
@@ -20,6 +21,7 @@ interface OnuStats {
 })
 export class OnuListComponent implements OnInit {
   private onuService = inject(OnuService);
+  private operaciones = inject(OnuOperacionesService);
 
   onus = signal<Onu[]>([]);
   filteredOnus = signal<Onu[]>([]);
@@ -42,7 +44,7 @@ export class OnuListComponent implements OnInit {
     { value: 'TODOS', label: 'Todos los Estados' },
     { value: 'Disponible', label: 'Disponibles' },
     { value: 'Asignada', label: 'Asignadas' },
-    { value: 'En Reparación', label: 'En Reparación' },
+    { value: 'Mantenimiento', label: 'En Mantenimiento' },
     { value: 'Observado', label: 'Observados' },
     { value: 'Instalado', label: 'Instalados' },
     { value: 'Recogido', label: 'Recogidos' },
@@ -78,7 +80,7 @@ export class OnuListComponent implements OnInit {
       total:        onus.length,
       disponibles:  onus.filter(o => o.estado === 'Disponible').length,
       asignadas:    onus.filter(o => o.estado === 'Asignada').length,
-      enReparacion: onus.filter(o => o.estado === 'Mantenimiento').length,
+      enReparacion: onus.filter(o => o.estado === 'Mantenimiento' || o.estado === 'En Reparación').length,
       instalados:   onus.filter(o => o.estado === 'Instalado').length,
       observados:   onus.filter(o => o.estado === 'Observado').length,
       recogidos:    onus.filter(o => o.estado === 'Recogido').length,
@@ -142,7 +144,7 @@ export class OnuListComponent implements OnInit {
     }).then(r => {
       if (r.isConfirmed && onu.id) {
         const nuevoEstado = r.value as any;
-        this.onuService.update(onu.id, { marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac, observaciones: onu.observaciones, estado: nuevoEstado, contrato: onu.contrato, codigoQR: onu.codigoQR }).subscribe({
+        this.onuService.update(onu.id, { marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac, observaciones: onu.observaciones, estado: nuevoEstado, contrato: onu.contrato, codigoQR: onu.codigoQR, tipoPortador: onu.tipoPortador, portador: onu.portador, almacen: onu.almacen }).subscribe({
           next: () => { Swal.fire({ icon: 'success', title: `Estado: ${nuevoEstado}`, timer: 1800, showConfirmButton: false }); this.loadOnus(); },
           error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar' })
         });
@@ -150,23 +152,46 @@ export class OnuListComponent implements OnInit {
     });
   }
 
+  private esc(v: unknown): string {
+    return String(v ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   viewDetails(onu: Onu): void {
-    Swal.fire({
-      title: `${onu.marca} ${onu.modelo}`,
-      html: `<div style="text-align:left;padding:8px;font-size:14px">
-        <p><b>Serial:</b> ${onu.serial}</p>
-        <p><b>MAC:</b> ${onu.mac}</p>
-        <p><b>Estado:</b> ${onu.estado}</p>
-        ${onu.contrato ? `<p><b>Contrato:</b> #${onu.contrato}</p>` : ''}
-        ${onu.observaciones ? `<p><b>Observaciones:</b> ${onu.observaciones}</p>` : ''}
-        ${onu.client ? `<hr/><p><b>Cliente:</b> ${onu.client.nombre ?? onu.client.name} ${onu.client.apellido ?? ''}</p>` : ''}
-      </div>`,
-      icon: 'info', confirmButtonColor: '#1b6f6f'
-    });
+    const cliente = onu.client ? `${onu.client.nombre ?? onu.client.name ?? ''} ${onu.client.apellido ?? ''}`.trim() : '';
+    const base = `<div style="text-align:left;padding:8px;font-size:14px">
+        <p><b>Serial:</b> ${this.esc(onu.serial)}</p>
+        <p><b>MAC:</b> ${this.esc(onu.mac)}</p>
+        <p><b>Estado:</b> ${this.esc(onu.estado)}</p>
+        ${onu.almacen ? `<p><b>Almacén:</b> ${this.esc(onu.almacen)}</p>` : ''}
+        ${onu.portador ? `<p><b>Portador:</b> ${this.esc(onu.portador)} <small>(${this.esc(onu.tipoPortador)})</small></p>` : ''}
+        ${onu.contrato ? `<p><b>Contrato:</b> #${this.esc(onu.contrato)}</p>` : ''}
+        ${onu.observaciones ? `<p><b>Observaciones:</b> ${this.esc(onu.observaciones)}</p>` : ''}
+        ${cliente ? `<hr/><p><b>Cliente:</b> ${this.esc(cliente)}</p>` : ''}
+      </div>`;
+
+    const mostrar = (historial: OnuMovimiento[]) => {
+      const nombres: Record<string, string> = { ASIGNACION: 'Asignación', RECOJO: 'Recojo', DIAGNOSTICO: 'Diagnóstico' };
+      const filas = historial.map(m => `<tr>
+          <td style="padding:4px 6px">${this.esc(new Date(m.fecha).toLocaleDateString('es-BO'))}</td>
+          <td style="padding:4px 6px"><b>${this.esc(nombres[m.tipo] ?? m.tipo)}</b></td>
+          <td style="padding:4px 6px">${this.esc(m.estadoAnterior)} → ${this.esc(m.estadoNuevo)}</td>
+          <td style="padding:4px 6px">${this.esc([m.usuario, m.almacen, m.detalle].filter(Boolean).join(' · '))}</td>
+        </tr>`).join('');
+      const bloque = historial.length
+        ? `<hr/><p style="text-align:left;margin:6px 8px"><b>Historial</b></p>
+           <div style="max-height:220px;overflow:auto"><table style="width:100%;font-size:12px;text-align:left">${filas}</table></div>`
+        : '';
+      Swal.fire({ title: `${this.esc(onu.marca)} ${this.esc(onu.modelo)}`, html: base + bloque, icon: 'info', confirmButtonColor: '#1b6f6f', width: 640 });
+    };
+
+    if (!onu.id) { mostrar([]); return; }
+    this.operaciones.movimientosDe(onu.id).subscribe({ next: mostrar, error: () => mostrar([]) });
   }
 
   getEstadoBadgeClass(estado: string): string {
-    const m: any = { 'Disponible': 'badge-success', 'Asignada': 'badge-info', 'En Reparación': 'badge-warning', 'Instalado': 'badge-info', 'Observado': 'badge-warning', 'Recogido': 'badge-secondary', 'Defectuoso': 'badge-danger' };
+    const m: any = { 'Disponible': 'badge-success', 'Asignada': 'badge-info', 'Mantenimiento': 'badge-warning', 'En Reparación': 'badge-warning', 'Instalado': 'badge-info', 'Observado': 'badge-warning', 'Recogido': 'badge-secondary', 'Defectuoso': 'badge-danger' };
     return m[estado] || 'badge-secondary';
   }
 

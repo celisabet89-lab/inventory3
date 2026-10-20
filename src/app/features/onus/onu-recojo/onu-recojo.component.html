@@ -1,0 +1,110 @@
+<div class="onu-page">
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-download header-icon"></i>
+      <div>
+        <h2>Autorización de Recojo de ONU</h2>
+        <span class="header-sub">Nueva autorización de recojo de ONU</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- DATOS -->
+    <section class="card">
+      <h3>Datos de Recojo de ONU</h3>
+
+      <div class="campo">
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="date" [(ngModel)]="fecha" name="fecha" />
+      </div>
+
+      <div class="campo">
+        <label for="usuario">Usuario de recojo ONU</label>
+        <select id="usuario" [(ngModel)]="usuario" name="usuario">
+          <option value="">Seleccionar usuario</option>
+          @for (u of usuarios(); track u) {
+            <option [value]="u">{{ u }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="campo">
+        <label for="obs">Observaciones</label>
+        <textarea id="obs" [(ngModel)]="observaciones" name="obs" placeholder="Opcional"></textarea>
+      </div>
+    </section>
+
+    <!-- CON CONTRATO -->
+    <section class="card">
+      <h3>ONU's con Contratos</h3>
+
+      <div class="buscar">
+        <label for="buscar">Buscar</label>
+        <input id="buscar" type="text" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" name="buscar" placeholder="Serial, MAC, contrato, cliente..." />
+      </div>
+
+      <div class="tabla-scroll">
+        <div class="sl-table-wrap">
+          <table class="sl-table sl-table--sm">
+            <thead>
+            <tr><th>Cod</th><th>Marca</th><th>Modelo</th><th>Serial</th><th>MAC</th><th>Nro Contrato</th><th>Cliente</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (o of disponibles(); track o.id) {
+                <tr class="fila-click" (dblclick)="agregar(o)">
+                  <td>{{ o.id }}</td>
+                  <td>{{ o.marca }}</td>
+                  <td>{{ o.modelo }}</td>
+                  <td>{{ o.serial }}</td>
+                  <td>{{ o.mac }}</td>
+                  <td>{{ o.contrato }}</td>
+                  <td>{{ cliente(o) }}</td>
+                  <td><button type="button" class="btn-sm" (click)="agregar(o)"><i class="fas fa-plus"></i> Agregar</button></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay ONU\'s con contrato para recoger' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- DETALLE -->
+  <section class="card">
+    <h3>Detalle ONU's</h3>
+    <div class="sl-table-wrap">
+      <table class="sl-table sl-table--sm">
+        <thead>
+        <tr><th>Cod</th><th>Marca</th><th>Modelo</th><th>Serial</th><th>MAC</th><th>N° Contrato</th><th>Cliente</th><th>Observaciones</th><th>Opción</th></tr>
+        </thead>
+        <tbody>
+          @for (l of detalle(); track l.onu.id) {
+            <tr>
+              <td>{{ l.onu.id }}</td>
+              <td>{{ l.onu.marca }}</td>
+              <td>{{ l.onu.modelo }}</td>
+              <td>{{ l.onu.serial }}</td>
+              <td>{{ l.onu.mac }}</td>
+              <td>{{ l.onu.contrato }}</td>
+              <td>{{ cliente(l.onu) }}</td>
+              <td><input class="detalle-obs" type="text" [(ngModel)]="l.observaciones" name="obs-{{ l.onu.id }}" placeholder="Opcional" /></td>
+              <td><button type="button" class="btn-sm btn-quitar" (click)="quitar(l)" title="Quitar"><i class="fas fa-trash"></i></button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="vacio-fila">Agrega ONU's desde la lista de ONU's con contrato</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card card-registrar">
+    <span class="resumen">{{ detalle().length }} ONU(s) en el detalle</span>
+    <button type="button" class="btn-registrar" (click)="registrar()" [disabled]="guardando() || !detalle().length">
+      <i class="fas fa-cloud-upload-alt"></i> {{ guardando() ? 'Registrando...' : 'Registrar' }}
+    </button>
+  </section>
+</div>

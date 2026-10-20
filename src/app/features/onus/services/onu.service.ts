@@ -10,9 +10,13 @@ export interface OnuRequest {
   serial: string;
   mac: string;
   observaciones?: string;
-  estado: 'Disponible' | 'Asignada' | 'En Reparación';
+  estado: string;
   contrato?: number;
   codigoQR?: string;
+  tipoPortador?: string;
+  portador?: string;
+  /** Almacén donde se guarda la ONU. Debe enviarse siempre para no borrarlo al editar. */
+  almacen?: string;
   clienteId?: number;
   productId?: number;
 }

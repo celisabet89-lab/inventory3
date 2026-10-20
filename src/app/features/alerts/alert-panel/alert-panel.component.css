@@ -1,9 +1,9 @@
 .alert-panel {
   width: 100%;
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   padding: 20px;
   box-sizing: border-box;
-  background: #f4f7f6;
+  background: #f3f4f6;
 }
 
 .panel-header {
@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #0f766e;
+  color: #1b6f6f;
   font-size: 10px;
   font-weight: 600;
 }
@@ -69,7 +69,7 @@
   padding: 9px 14px;
   border: none;
   border-radius: 9px;
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -192,7 +192,7 @@
 }
 
 .search-box input:focus {
-  border-color: #0f766e;
+  border-color: #1b6f6f;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.07);
 }
 
@@ -241,13 +241,13 @@
 }
 
 .filters button:hover {
-  border-color: #0f766e;
-  color: #0f766e;
+  border-color: #1b6f6f;
+  color: #1b6f6f;
 }
 
 .filters button.activo {
-  border-color: #0f766e;
-  background: #0f766e;
+  border-color: #1b6f6f;
+  background: #1b6f6f;
   color: #ffffff;
 }
 
@@ -538,7 +538,7 @@
 .btn-pedir {
   border: 1px solid #99f6e4;
   background: #ecfdf9;
-  color: #0f766e;
+  color: #1b6f6f;
 }
 
 .btn-pedir:hover {
@@ -547,7 +547,7 @@
 
 .btn-gestionar {
   border: none;
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
 }
 
@@ -589,7 +589,7 @@
 
 .loading-circle {
   margin-bottom: 8px;
-  color: #0f766e;
+  color: #1b6f6f;
   font-size: 28px;
   animation: girar 1s linear infinite;
 }
@@ -599,7 +599,7 @@
   padding: 8px 12px;
   border: none;
   border-radius: 8px;
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -637,7 +637,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  background: #0f766e;
+  background: #1b6f6f;
 }
 
 .modal-title {
@@ -739,7 +739,7 @@
 }
 
 .form-control:focus {
-  border-color: #0f766e;
+  border-color: #1b6f6f;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.07);
 }
 
@@ -787,7 +787,7 @@
 
 .btn-modal-send {
   border: none;
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
 }
 

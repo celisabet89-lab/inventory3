@@ -1,0 +1,120 @@
+<div class="onu-page">
+  <div class="page-header">
+    <div class="header-left">
+      <i class="fas fa-user-friends header-icon"></i>
+      <div>
+        <h2>Clientes ONU</h2>
+        <span class="header-sub">Gestión de clientes del servicio de ONU</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="barra-acciones">
+      <button type="button" class="btn-nuevo" (click)="nuevo()"><i class="fas fa-plus-circle"></i> Agregar nuevo</button>
+    </div>
+
+    <div class="filtros">
+      <label class="por-pagina">
+        Mostrar
+        <select [ngModel]="porPagina()" (ngModelChange)="cambiarPorPagina($event)" name="porPagina">
+          @for (n of opcionesPagina; track n) { <option [ngValue]="n">{{ n }}</option> }
+        </select>
+        registros por página
+      </label>
+      <label>
+        Buscar
+        <input type="text" [ngModel]="busqueda()" (ngModelChange)="buscar($event)" name="buscar" placeholder="Nombre, CI, contrato..." />
+      </label>
+    </div>
+
+    <div class="sl-table-wrap">
+      <table class="sl-table">
+        <thead>
+        <tr>
+          <th>Cod</th><th>Nombre</th><th>CI</th><th>Celular</th><th>N° Contrato</th><th>Dirección</th>
+          <th>Ubicación</th><th>Fecha Nacimiento</th><th>Tipo de Cliente</th><th>Opciones</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (c of visibles(); track c.id) {
+            <tr>
+              <td>{{ c.id }}</td>
+              <td>{{ c.nombre }}</td>
+              <td>{{ c.ci || '—' }}</td>
+              <td>{{ c.celular || '—' }}</td>
+              <td>{{ c.numeroContrato ?? '—' }}</td>
+              <td>{{ c.direccion || '—' }}</td>
+              <td>
+                @if (!c.ubicacion) { — }
+                @else if (esUrl(c.ubicacion)) { <a class="link-ubic" [href]="c.ubicacion" target="_blank" rel="noopener"><i class="fas fa-map-marker-alt"></i> Ver mapa</a> }
+                @else { {{ c.ubicacion }} }
+              </td>
+              <td>{{ fechaCorta(c.fechaNacimiento) }}</td>
+              <td>
+                @if (nombreTipo(c)) {
+                  <span class="badge" [style.background]="colorTipo(c)" style="color:#fff">{{ nombreTipo(c) }}</span>
+                } @else { — }
+              </td>
+              <td class="acc-cell">
+                <button type="button" class="btn-ac edit" (click)="editar(c)" title="Editar"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn-ac delete" (click)="eliminar(c)" title="Eliminar"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="10" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay clientes registrados' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacion">
+      <span>Mostrando {{ desde() }} a {{ hasta() }} de {{ filtrados().length }} registros</span>
+      <div class="pag-botones">
+        <button type="button" (click)="irA(pagina() - 1)" [disabled]="pagina() === 1">Anterior</button>
+        <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" (click)="irA(pagina() + 1)" [disabled]="pagina() === totalPaginas()">Siguiente</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+@if (formAbierto()) {
+  <div class="modal-fondo" (click)="cerrar()">
+    <div class="modal modal-ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3>{{ editandoId ? 'Editar cliente ONU' : 'Nuevo cliente ONU' }}</h3>
+        <button type="button" class="modal-x" (click)="cerrar()" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="campo"><label for="c-nombre">Nombre <span class="req">*</span></label>
+          <input id="c-nombre" type="text" [(ngModel)]="form.nombre" name="c-nombre" /></div>
+        <div class="fila-2">
+          <div class="campo"><label for="c-ci">CI</label><input id="c-ci" type="text" [(ngModel)]="form.ci" name="c-ci" /></div>
+          <div class="campo"><label for="c-cel">Celular</label><input id="c-cel" type="text" [(ngModel)]="form.celular" name="c-cel" /></div>
+        </div>
+        <div class="fila-2">
+          <div class="campo"><label for="c-contrato">N° Contrato</label>
+            <input id="c-contrato" type="number" min="0" [(ngModel)]="form.numeroContrato" name="c-contrato" /></div>
+          <div class="campo"><label for="c-fnac">Fecha de nacimiento</label>
+            <input id="c-fnac" type="date" [(ngModel)]="form.fechaNacimiento" name="c-fnac" /></div>
+        </div>
+        <div class="campo"><label for="c-dir">Dirección</label>
+          <input id="c-dir" type="text" [(ngModel)]="form.direccion" name="c-dir" /></div>
+        <div class="campo"><label for="c-ubi">Ubicación (enlace de Google Maps)</label>
+          <input id="c-ubi" type="text" [(ngModel)]="form.ubicacion" name="c-ubi" placeholder="https://maps.google.com/..." /></div>
+        <div class="campo"><label for="c-tipo">Tipo de cliente</label>
+          <select id="c-tipo" [(ngModel)]="tipoId" name="c-tipo">
+            <option [ngValue]="null">Sin tipo</option>
+            @for (t of tipos(); track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+          </select></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-cerrar" (click)="cerrar()"><i class="fas fa-times-circle"></i> Cerrar</button>
+        <button type="button" class="btn-registrar" (click)="guardar()" [disabled]="guardando()">
+          <i class="fas fa-save"></i> {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

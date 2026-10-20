@@ -8,11 +8,12 @@ export interface Onu {
   serial: string;
   mac: string;
   observaciones?: string;
-  estado: 'Disponible' | 'Asignada' | 'Mantenimiento' | 'Instalado' | 'Observado' | 'Recogido' |'Defectuoso';
+  estado: 'Disponible' | 'Asignada' | 'Mantenimiento' | 'En Reparación' | 'Instalado' | 'Observado' | 'Recogido' |'Defectuoso';
   contrato?: number;
   codigoQR?: string;
   tipoPortador: string
   portador: string;
+  almacen?: string;
   product?: Product;
 }
 

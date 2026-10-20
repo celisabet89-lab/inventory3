@@ -70,7 +70,7 @@
 
 .btn-primary,
 .btn-print {
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
 }
 
@@ -106,9 +106,9 @@
 }
 
 .report-tab.active {
-  background: #0f766e;
+  background: #1b6f6f;
   color: #ffffff;
-  border-color: #0f766e;
+  border-color: #1b6f6f;
 }
 
 .summary-grid {
@@ -191,7 +191,7 @@
 .filter-group input:focus,
 .filter-group select:focus,
 .input-icon input:focus {
-  border-color: #0f766e;
+  border-color: #1b6f6f;
 }
 
 .input-icon {
@@ -284,33 +284,6 @@
 
 .receipt-close:hover {
   background: #f1f5f9;
-}
-
-.printable-receipt {
-  width: 80mm;
-  max-width: 100%;
-
-  margin: 0 auto;
-
-  padding: 7mm 5mm;
-
-  box-sizing: border-box;
-
-  background: #ffffff;
-
-  color: #111111;
-
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
-
-  font-size: 11px;
-
-  line-height: 1.35;
-
-  box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 .receipt-company {
@@ -493,30 +466,6 @@
   min-width: 125px;
 }
 
-.table-card {
-  overflow: hidden;
-
-  background: #ffffff;
-
-  border: 1px solid #e2e8f0;
-
-  border-radius: 12px;
-}
-
-.table-header {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 15px;
-
-  padding: 18px 20px;
-
-  border-bottom: 1px solid #e2e8f0;
-}
-
 .table-header h2 {
   margin: 0 0 4px;
 
@@ -541,56 +490,10 @@
   color: #334155;
 }
 
-.table-container {
-  width: 100%;
-
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-
-  min-width: 1200px;
-
-  border-collapse: collapse;
-}
-
-thead {
-  background: #f8fafc;
-}
-
-th,
-td {
-  padding: 12px 14px;
-
-  border-bottom:
-    1px solid #e2e8f0;
-
-  text-align: left;
-
-  white-space: nowrap;
-
-  font-size: 13px;
-}
-
-th {
-  color: #475569;
-
-  font-weight: 700;
-}
-
-td {
-  color: #334155;
-}
-
-tbody tr:hover {
-  background: #f8fafc;
-}
-
 .code-cell {
   font-weight: 700;
 
-  color: #0f766e;
+  color: #1b6f6f;
 }
 
 .product-cell {
@@ -719,7 +622,7 @@ tbody tr:hover {
 
   border: 4px solid #dbeafe;
 
-  border-top-color: #0f766e;
+  border-top-color: #1b6f6f;
 
   border-radius: 50%;
 
@@ -786,9 +689,7 @@ tbody tr:hover {
     padding: 14px;
   }
 
-  .printable-receipt {
-    width: 80mm;
-  }
+
 
   .receipt-bottom {
     flex-direction: column;
