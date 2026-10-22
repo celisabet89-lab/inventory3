@@ -1,10 +1,10 @@
 <div class="form-wrapper">
   <div class="form-header">
     <h2 class="form-title">
-      <i class="fas fa-wifi"></i>
+      <span class="title-chip"><i class="fas fa-wifi"></i></span>
       {{ isEditMode() ? 'Editar ONU' : 'Nueva ONU' }}
     </h2>
-    <button type="button" class="btn-close" (click)="cancel()">
+    <button type="button" class="btn-close" (click)="cancel()" aria-label="Cerrar">
       <i class="fas fa-times"></i>
     </button>
   </div>
@@ -12,13 +12,15 @@
   <form [formGroup]="onuForm" (ngSubmit)="onSubmit()" class="form-body">
     <div class="form-grid">
 
-      <!-- Marca -->
+      <!-- Marca (catálogo de Marcas de ONU) -->
       <div class="field">
         <label class="field-label"><i class="fas fa-tag"></i> Marca *</label>
         <select formControlName="marca" class="field-input" [class.error]="hasError('marca','required')">
-          @for (m of marcas; track m) { <option [value]="m">{{ m }}</option> }
+          <option value="">Seleccionar marca...</option>
+          @for (m of marcas(); track m) { <option [value]="m">{{ m }}</option> }
         </select>
         @if (hasError('marca','required')) { <span class="field-error">Obligatorio</span> }
+        @if (!marcas().length) { <span class="field-hint">Primero registra marcas en ONUs → Marcas de ONU</span> }
       </div>
 
       <!-- Modelo -->
@@ -47,26 +49,19 @@
         <label class="field-label"><i class="fas fa-network-wired"></i> Dirección MAC *</label>
         <div class="input-with-scanner">
           <div class="mac-input-container">
-            <input type="text" maxlength="2" class="mac-part" placeholder="48" (input)="onMacPartInput($event, 0)" />
-            <span class="mac-separator">:</span>
-            <input type="text" maxlength="2" class="mac-part" placeholder="57" (input)="onMacPartInput($event, 1)" />
-            <span class="mac-separator">:</span>
-            <input type="text" maxlength="2" class="mac-part" placeholder="02" (input)="onMacPartInput($event, 2)" />
-            <span class="mac-separator">:</span>
-            <input type="text" maxlength="2" class="mac-part" placeholder="AB" (input)="onMacPartInput($event, 3)" />
-            <span class="mac-separator">:</span>
-            <input type="text" maxlength="2" class="mac-part" placeholder="CD" (input)="onMacPartInput($event, 4)" />
-            <span class="mac-separator">:</span>
-            <input type="text" maxlength="2" class="mac-part" placeholder="EF" (input)="onMacPartInput($event, 5)" />
+            @for (i of macIdx; track i) {
+              <input type="text" maxlength="2" class="mac-part" [value]="macParts[i]" (input)="onMacPartInput($event, i)" />
+              @if (i < 5) { <span class="mac-separator">:</span> }
+            }
           </div>
-          <input type="hidden" formControlName="mac" [value]="getFullMac()" />
           <button type="button" class="btn-scanner" (click)="openScanner('mac')" title="Escanear">
             <i class="fas fa-camera"></i>
           </button>
         </div>
-        @if (hasError('mac','required')) { <span class="field-error">Obligatorio</span> }
+        @if (hasError('mac','required')) { <span class="field-error">Completa los 6 bloques de la MAC</span> }
         @if (hasError('mac','pattern')) { <span class="field-error">Formato: XX:XX:XX:XX:XX:XX</span> }
       </div>
+
       <!-- Estado -->
       <div class="field">
         <label class="field-label"><i class="fas fa-toggle-on"></i> Estado *</label>
@@ -75,72 +70,15 @@
         </select>
       </div>
 
-      <!-- Tipo Portador -->
+      <!-- Almacén -->
       <div class="field">
-        <label class="field-label"><i class="fas fa-id-badge"></i> Tipo Portador</label>
-        <select formControlName="tipoPortador" class="field-input" (change)="onTipoPortadorChange()">
-          <option value="">— Sin portador —</option>
-          @for (t of tiposPortador; track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
+        <label class="field-label"><i class="fas fa-warehouse"></i> Almacén</label>
+        <select formControlName="almacen" class="field-input">
+          <option value="">Seleccionar almacén...</option>
+          @for (a of almacenes; track a) { <option [value]="a">{{ a }}</option> }
         </select>
+        <span class="field-hint">Obligatorio si la ONU queda Disponible.</span>
       </div>
-
-      <!-- ══ PORTADOR: CLIENTE (con contrato automático) ══ -->
-      @if (mostrarClientes) {
-        <div class="field cliente-portador-field">
-          <label class="field-label">
-            <i class="fas fa-user"></i> Cliente
-            <span class="auto-badge">Contrato automático</span>
-          </label>
-          <select class="field-input" (change)="onClienteChange($event)">
-            <option value="">— Seleccionar cliente —</option>
-            @for (c of clientesOptions(); track c.id) {
-              <option [value]="c.id">
-                📋 #{{ c.nContrato }} — {{ c.nombre }}
-              </option>
-            }
-          </select>
-          <!-- Campo portador oculto que se llena automáticamente -->
-          <input type="hidden" formControlName="portador" />
-        </div>
-
-        <!-- N° Contrato — auto-llenado al elegir cliente, readonly -->
-        <div class="field">
-          <label class="field-label">
-            <i class="fas fa-file-contract"></i> N° Contrato
-          </label>
-          <div class="contrato-wrap">
-            <input type="text" formControlName="contrato"
-                   class="field-input f-contract" readonly
-                   placeholder="Se llena al elegir cliente" />
-            <span class="contrato-hint">📋 Vinculado al cliente</span>
-          </div>
-        </div>
-
-      } @else {
-        <!-- PORTADOR: Usuario / Técnico / Almacén -->
-        <div class="field">
-          <label class="field-label"><i class="fas fa-user"></i> Portador</label>
-          @if (portadorOptions().length > 0) {
-            <select formControlName="portador" class="field-input">
-              <option value="">— Seleccionar —</option>
-              @for (p of portadorOptions(); track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
-          } @else {
-            <input type="text" formControlName="portador" placeholder="Nombre del portador"
-                   class="field-input" />
-          }
-        </div>
-
-        <!-- N° Contrato manual (cuando no es cliente) -->
-        <div class="field">
-          <label class="field-label"><i class="fas fa-file-contract"></i> N° Contrato</label>
-          <input type="text" formControlName="contrato" placeholder="Opcional" class="field-input" />
-        </div>
-      }
 
       <!-- Observaciones -->
       <div class="field full">
@@ -155,7 +93,7 @@
       <button type="button" (click)="cancel()" [disabled]="loading()" class="btn-cancel">
         <i class="fas fa-times"></i> Cancelar
       </button>
-      <button type="submit" [disabled]="loading() || onuForm.invalid" class="btn-save">
+      <button type="submit" [disabled]="loading()" class="btn-save">
         @if (loading()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
         @else { <i class="fas fa-save"></i> {{ isEditMode() ? 'Actualizar' : 'Guardar' }} }
       </button>

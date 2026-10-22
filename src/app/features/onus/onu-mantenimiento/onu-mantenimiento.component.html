@@ -1,7 +1,7 @@
 <div class="onu-page">
   <div class="page-header">
     <div class="header-left">
-      <i class="fas fa-cogs header-icon"></i>
+      <span class="header-icon"><i class="fas fa-tools"></i></span>
       <div>
         <h2>ONU's en Mantenimiento</h2>
         <span class="header-sub">Gestión de ONU's en mantenimiento y diagnóstico</span>
@@ -69,40 +69,44 @@
 <!-- MODAL DIAGNÓSTICO -->
 @if (seleccionada(); as onu) {
   <div class="modal-fondo" (click)="cerrar()">
-    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Diagnóstico ONU">
+    <div class="modal modal-ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Diagnóstico ONU">
       <div class="modal-head">
-        <h3>Diagnóstico ONU</h3>
+        <h3><i class="fas fa-stethoscope"></i> Diagnóstico ONU</h3>
         <button type="button" class="modal-x" (click)="cerrar()" aria-label="Cerrar">×</button>
       </div>
 
       <div class="modal-body">
-        <div class="campo">
-          <label for="d-fecha">Fecha</label>
-          <input id="d-fecha" type="date" [(ngModel)]="fecha" name="d-fecha" />
+        <!-- Datos de la ONU (solo lectura) -->
+        <div class="ficha">
+          <div><span>Cod ONU</span><b>{{ onu.id }}</b></div>
+          <div><span>Estado actual</span><b>{{ onu.estado }}</b></div>
+          <div><span>Marca</span><b>{{ onu.marca }}</b></div>
+          <div><span>Modelo</span><b>{{ onu.modelo }}</b></div>
+          <div><span>Serial</span><b>{{ onu.serial }}</b></div>
+          <div><span>MAC</span><b>{{ onu.mac }}</b></div>
+          @if (onu.observaciones) {
+            <div class="ancho"><span>Observaciones anteriores</span><b>{{ onu.observaciones }}</b></div>
+          }
         </div>
 
         <div class="fila-2">
-          <div class="campo"><label>Cod ONU</label><input type="text" [value]="onu.id" readonly /></div>
-          <div class="campo"><label>Marca</label><input type="text" [value]="onu.marca" readonly /></div>
-        </div>
-        <div class="fila-2">
-          <div class="campo"><label>Modelo</label><input type="text" [value]="onu.modelo" readonly /></div>
-          <div class="campo"><label>Serial</label><input type="text" [value]="onu.serial" readonly /></div>
-        </div>
-        <div class="campo"><label>MAC</label><input type="text" [value]="onu.mac" readonly /></div>
-
-        <div class="campo">
-          <label for="d-estado">Estado de la ONU</label>
-          <select id="d-estado" [(ngModel)]="estadoNuevo" name="d-estado">
-            <option value="">Seleccione estado ONU...</option>
-            @for (e of estadosResultado; track e) {
-              <option [value]="e">{{ e }}</option>
-            }
-          </select>
+          <div class="campo">
+            <label for="d-fecha">Fecha</label>
+            <input id="d-fecha" type="date" [(ngModel)]="fecha" name="d-fecha" />
+          </div>
+          <div class="campo">
+            <label for="d-estado">Resultado (estado) <span class="req">*</span></label>
+            <select id="d-estado" [(ngModel)]="estadoNuevo" name="d-estado">
+              <option value="">Seleccione estado...</option>
+              @for (e of estadosResultado; track e) {
+                <option [value]="e">{{ e }}</option>
+              }
+            </select>
+          </div>
         </div>
 
         <div class="campo">
-          <label for="d-diag">Diagnóstico</label>
+          <label for="d-diag">Diagnóstico <span class="req">*</span></label>
           <textarea id="d-diag" [(ngModel)]="diagnostico" name="d-diag" placeholder="Describe lo encontrado y lo realizado"></textarea>
         </div>
 
@@ -114,6 +118,9 @@
               <option [value]="a">{{ a }}</option>
             }
           </select>
+          @if (estadoNuevo === 'Disponible') {
+            <small style="color:#047857;font-weight:600">La ONU volverá al stock del producto.</small>
+          }
         </div>
       </div>
 

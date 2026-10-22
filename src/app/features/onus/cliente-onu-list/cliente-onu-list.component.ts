@@ -9,7 +9,7 @@ import { mensajeError } from '../services/onu-operaciones.service';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './cliente-onu-list.component.html',
-  styleUrls: ['../onu-recojo/onu-recojo.component.css', './cliente-onu-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css']
 })
 export class ClienteOnuListComponent implements OnInit {
   private svc = inject(ClienteOnuService);

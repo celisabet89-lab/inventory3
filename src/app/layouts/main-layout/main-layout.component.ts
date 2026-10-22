@@ -90,6 +90,7 @@ export class MainLayoutComponent implements OnInit {
         { path: '/movimientos/movimientos',   icon: 'fa-cart-plus',     label: 'Movimientos'  },
         { path: '/movimientos/gestion-compras',  icon: 'fa-shopping-cart', label: 'Gestiónar Compras' },
         { path: '/movimientos/reporte-compras',  icon: 'fa-chart-line',    label: 'Reporte Compras'   },
+        { path: '/movimientos/ventas-anuladas',  icon: 'fa-ban',           label: 'Ventas Anuladas'   },
         { path: '/movimientos/alertas', icon: 'fa-exclamation-circle',     label: 'Alertas'   },
         {path: 'movimientos/stock', icon: 'fa-shopping-cart',     label: 'Stock'}
 
@@ -142,7 +143,8 @@ export class MainLayoutComponent implements OnInit {
       subItems: [
         { path: '/onus/lista',         icon: 'fa-list',          label: 'Lista de ONUs'           },
         { path: '/onus/clientes',      icon: 'fa-user-friends',  label: 'Clientes ONU'            },
-        { path: '/onus/tipos-cliente', icon: 'fa-tags',          label: 'Tipo de Clientes ONU'    },
+        { path: '/onus/tipos-cliente', icon: 'fa-user-tag',      label: 'Tipo de Clientes ONU'    },
+        { path: '/onus/marcas',        icon: 'fa-tags',          label: 'Marcas de ONU'           },
         { path: '/onus/asignar',       icon: 'fa-user-check',    label: 'Asignar ONUs'            },
         { path: '/onus/recojo',        icon: 'fa-truck-loading', label: 'Recojo de ONUs'          },
         { path: '/onus/mantenimiento', icon: 'fa-cogs',          label: 'ONUs en Mantenimiento'   }

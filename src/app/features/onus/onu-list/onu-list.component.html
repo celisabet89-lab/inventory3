@@ -2,7 +2,10 @@
 
   <!-- TÍTULO -->
   <div class="page-title-bar">
-    <i class="fas fa-wifi"></i> Gestión de ONU
+    <i class="fas fa-wifi"></i>
+    <div>Gestión de ONU
+      <div style="font-size:13px;font-weight:500;color:#6b7280">Inventario, estados y trazabilidad de cada ONU</div>
+    </div>
   </div>
 
   <!-- TARJETAS ESTADÍSTICAS -->
@@ -87,7 +90,7 @@
       }
     </select>
     <select [(ngModel)]="selectedMarca" (change)="onMarcaChange()" class="filter-select">
-      @for (m of marcaOptions; track m) { <option [value]="m">{{ m }}</option> }
+      @for (m of marcaOptions(); track m) { <option [value]="m">{{ m }}</option> }
     </select>
     <div class="search-box">
       <i class="fas fa-search search-icon"></i>
@@ -109,16 +112,17 @@
         <th>Observaciones</th>
         <th>Estado</th>
         <th>Nro Contrato</th>
-        <th>Tipo Portador</th>
-        <th>Portador</th>
+        <th>Almacén</th>
+        <th>Asignado a</th>
+        <th>Responsable</th>
         <th>Opciones</th>
       </tr>
       </thead>
       <tbody>
         @if (loading()) {
-          <tr><td colspan="10" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando ONUs...</td></tr>
+          <tr><td colspan="12" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando ONUs...</td></tr>
         } @else if (getPaginatedOnus().length === 0) {
-          <tr><td colspan="10" class="empty-row"><i class="fas fa-inbox"></i><br/>No se encontraron ONUs</td></tr>
+          <tr><td colspan="12" class="empty-row"><i class="fas fa-inbox"></i><br/>No se encontraron ONUs</td></tr>
         } @else {
           @for (onu of getPaginatedOnus(); track onu.id; let i = $index) {
             <tr>
@@ -135,12 +139,13 @@
                 @if (onu.contrato) { <span class="contrato-badge">#{{ onu.contrato }}</span> }
                 @else { <span class="text-muted">—</span> }
               </td>
+              <td style="font-size:13px">{{ onu.almacen || '—' }}</td>
               <td>
-                @if ((onu)?.tipoPortador) {
-                  <span class="tipo-badge tipo-{{ (onu)?.tipoPortador?.toLowerCase() }}">{{ (onu)?.tipoPortador }}</span>
+                @if (onu.tipoPortador) {
+                  <span class="tipo-badge tipo-{{ onu.tipoPortador.toLowerCase() }}">{{ onu.tipoPortador }}</span>
                 } @else { <span class="text-muted">—</span> }
               </td>
-              <td style="font-size:13px">{{ (onu)?.portador || '—' }}</td>
+              <td style="font-size:13px">{{ onu.portador || '—' }}</td>
               <td class="actions-cell">
                 <button (click)="viewDetails(onu)" class="btn-action view" title="Ver">
                   <i class="fas fa-eye"></i>
@@ -148,6 +153,11 @@
                 <button (click)="openEdit(onu)" class="btn-action edit" title="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
+                @if (onu.estado === 'Disponible') {
+                  <button (click)="instalar(onu)" class="btn-action install" title="Instalar a un cliente">
+                    <i class="fas fa-plug"></i>
+                  </button>
+                }
                 <button (click)="cambiarEstado(onu)" class="btn-action state" title="Estado">
                   <i class="fas fa-exchange-alt"></i>
                 </button>

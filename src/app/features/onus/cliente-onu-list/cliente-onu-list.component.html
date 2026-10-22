@@ -1,7 +1,7 @@
 <div class="onu-page">
   <div class="page-header">
     <div class="header-left">
-      <i class="fas fa-user-friends header-icon"></i>
+      <span class="header-icon"><i class="fas fa-user-friends"></i></span>
       <div>
         <h2>Clientes ONU</h2>
         <span class="header-sub">Gestión de clientes del servicio de ONU</span>
@@ -57,8 +57,8 @@
                 } @else { — }
               </td>
               <td class="acc-cell">
-                <button type="button" class="btn-ac edit" (click)="editar(c)" title="Editar"><i class="fas fa-edit"></i></button>
-                <button type="button" class="btn-ac delete" (click)="eliminar(c)" title="Eliminar"><i class="fas fa-trash"></i></button>
+                <button type="button" class="btn-ic edit" (click)="editar(c)" title="Editar"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn-ic del" (click)="eliminar(c)" title="Eliminar"><i class="fas fa-trash"></i></button>
               </td>
             </tr>
           } @empty {

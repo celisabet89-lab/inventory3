@@ -19,6 +19,9 @@ export interface OnuRequest {
   almacen?: string;
   clienteId?: number;
   productId?: number;
+  /** Solo al crear: quién registra la ONU y su cargo (para el historial). */
+  registradoPor?: string;
+  cargoRegistro?: string;
 }
 
 @Injectable({

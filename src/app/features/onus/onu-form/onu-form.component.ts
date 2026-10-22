@@ -2,17 +2,13 @@ import { Component, OnInit, OnDestroy, inject, signal, Input, Output, EventEmitt
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OnuService, OnuRequest } from '../services/onu.service';
-import { ClientService } from '../../clients/services/client.service';
-import { UserService } from '../../users/services/user.service';
+import { MarcaOnuService } from '../services/marca-onu.service';
+import { cargoDe, nombreUsuario } from '../services/onu-operaciones.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ALMACENES } from '../onu.constants';
 import Swal from 'sweetalert2';
 
 declare const BarcodeDetector: any;
-
-interface ClienteOption {
-  id: number;
-  nombre: string;
-  nContrato: string;
-}
 
 @Component({
   selector: 'app-onu-form',
@@ -28,95 +24,77 @@ export class OnuFormComponent implements OnInit, OnDestroy {
   @Output() cancelled = new EventEmitter<void>();
   @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
 
-  private fb            = inject(FormBuilder);
-  private onuService    = inject(OnuService);
-  private clientService = inject(ClientService);
-  private userService   = inject(UserService);
+  private fb          = inject(FormBuilder);
+  private onuService  = inject(OnuService);
+  private marcaSvc    = inject(MarcaOnuService);
+  private auth        = inject(AuthService);
 
   onuForm!: FormGroup;
   isEditMode = signal(false);
   loading = signal(false);
 
-  // Portador genérico (para Técnico / Usuario / Almacén)
-  portadorOptions = signal<string[]>([]);
-  /** Almacén actual de la ONU: el formulario no lo edita, pero hay que reenviarlo al guardar. */
-  private almacenActual = '';
+  private contratoActual: number | null = null;
+  private tipoPortadorActual = '';
+  private portadorActual = '';
 
-  // Clientes con contrato (para tipo = Cliente)
-  clientesOptions = signal<ClienteOption[]>([]);
-  mostrarClientes = false;
+  marcas = signal<string[]>([]);
+  readonly almacenes = ALMACENES;
+  readonly estados = ['Disponible', 'Asignada', 'Instalado', 'Mantenimiento', 'Observado', 'Recogido', 'Defectuoso'];
 
   // Escáner
   scannerOpen  = signal(false);
   scannerField: 'serial' | 'mac' = 'serial';
-  macParts: string[] = ['', '', '', '', '', ''];
-
-  onMacPartInput(event: any, index: number) {
-    let value = event.target.value.toUpperCase();
-    value = value.replace(/[^0-9A-Z]/g, '');
-    if (value.length > 2) value = value.substring(0, 2);
-
-    this.macParts[index] = value;
-    event.target.value = value;
-
-    if (value.length === 2 && index < 5) {
-      const nextInput = document.querySelectorAll('.mac-part')[index + 1] as HTMLInputElement;
-      if (nextInput) nextInput.focus();
-    }
-
-    this.updateMacFormControl();
-  }
-
-  getFullMac(): string {
-    return this.macParts.join(':');
-  }
-
-  updateMacFormControl() {
-    this.onuForm.get('mac')?.setValue(this.getFullMac());
-  }
-
-// Modifica el openScanner para que cuando escanee llame a este método
-  setScannedMac(macValue: string) {
-    let cleanMac = macValue.toUpperCase().replace(/[^0-9A-Z]/g, '');
-    for (let i = 0; i < 6; i++) {
-      this.macParts[i] = cleanMac.substring(i * 2, i * 2 + 2);
-    }
-    this.updateMacFormControl();
-
-    // Actualizar inputs visualmente
-    const inputs = document.querySelectorAll('.mac-part');
-    inputs.forEach((input: Element, idx: number) => {
-      (input as HTMLInputElement).value = this.macParts[idx];
-    });
-  }  scanResult   = signal<string | null>(null);
+  scanResult   = signal<string | null>(null);
   private stream: MediaStream | null = null;
   private scanInterval: any = null;
 
-  marcas  = ['Huawei', 'ZTE', 'Nokia', 'Fiberhome', 'TP-LINK', 'Otro'];
-  estados = ['Disponible', 'Asignada', 'Mantenimiento', 'Instalado', 'Observado', 'Recogido', 'Defectuoso'];
-  tiposPortador = [
-    { value: 'Cliente',  label: '👤 Cliente'  },
-    { value: 'Usuario',  label: '🧑‍💻 Usuario'  },
-    { value: 'Almacén',  label: '🏭 Almacén'  },
-    { value: 'Técnico',  label: '🔧 Técnico'  }
-  ];
+  // MAC en 6 partes
+  macParts: string[] = ['', '', '', '', '', ''];
+  readonly macIdx = [0, 1, 2, 3, 4, 5];
+
+  onMacPartInput(event: any, index: number): void {
+    let value = String(event.target.value).toUpperCase().replace(/[^0-9A-F]/g, '');
+    if (value.length > 2) value = value.substring(0, 2);
+    this.macParts[index] = value;
+    event.target.value = value;
+    if (value.length === 2 && index < 5) {
+      const next = document.querySelectorAll('.mac-part')[index + 1] as HTMLInputElement;
+      next?.focus();
+    }
+    this.updateMacFormControl();
+  }
+
+  getFullMac(): string { return this.macParts.join(':'); }
+
+  updateMacFormControl(): void {
+    const completa = this.macParts.every(p => p.length === 2);
+    this.onuForm.get('mac')?.setValue(completa ? this.getFullMac() : '');
+  }
+
+  private setMac(mac: string): void {
+    const limpia = (mac ?? '').toUpperCase().replace(/[^0-9A-F]/g, '');
+    for (let i = 0; i < 6; i++) this.macParts[i] = limpia.substring(i * 2, i * 2 + 2);
+    this.updateMacFormControl();
+  }
 
   ngOnInit(): void {
     this.initForm();
+    this.marcaSvc.getAll().subscribe({
+      next: m => this.marcas.set(m.map(x => x.nombre).sort((a, b) => a.localeCompare(b, 'es'))),
+      error: () => this.marcas.set([])
+    });
     if (this.onuId) { this.isEditMode.set(true); this.loadOnu(this.onuId); }
   }
   ngOnDestroy(): void { this.stopCamera(); }
 
   initForm(): void {
     this.onuForm = this.fb.group({
-      marca:         ['Huawei', Validators.required],
+      marca:         ['', Validators.required],
       modelo:        ['', Validators.required],
       serial:        ['', Validators.required],
-      mac:           ['', [Validators.required, Validators.pattern(/^([0-9A-Za-z]{2}[:\-]){5}[0-9A-Za-f]{2}$/)]],
+      mac:           ['', [Validators.required, Validators.pattern(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/)]],
       estado:        ['Disponible', Validators.required],
-      contrato:      [{ value: '', disabled: false }],
-      tipoPortador:  [''],
-      portador:      [''],
+      almacen:       [''],
       observaciones: [''],
       codigoQR:      ['']
     });
@@ -126,13 +104,17 @@ export class OnuFormComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.onuService.getById(id).subscribe({
       next: (onu: any) => {
-        this.almacenActual = onu.almacen || '';
+        this.contratoActual = onu.contrato ?? null;
+        this.tipoPortadorActual = onu.tipoPortador || '';
+        this.portadorActual = onu.portador || '';
         this.onuForm.patchValue({
-          marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac,
-          estado: onu.estado, contrato: onu.contrato, observaciones: onu.observaciones,
-          codigoQR: onu.codigoQR, tipoPortador: onu.tipoPortador || '', portador: onu.portador || ''
+          marca: onu.marca, modelo: onu.modelo, serial: onu.serial,
+          estado: onu.estado, almacen: onu.almacen || '',
+          observaciones: onu.observaciones, codigoQR: onu.codigoQR
         });
-        if (onu.tipoPortador) this.loadPortadorOptions(onu.tipoPortador);
+        this.setMac(onu.mac);
+        // La marca de una ONU antigua puede no estar en el catálogo todavía
+        if (onu.marca && !this.marcas().includes(onu.marca)) this.marcas.update(m => [...m, onu.marca]);
         this.loading.set(false);
       },
       error: () => {
@@ -141,59 +123,6 @@ export class OnuFormComponent implements OnInit, OnDestroy {
         this.cancelled.emit();
       }
     });
-  }
-
-  onTipoPortadorChange(): void {
-    const tipo = this.onuForm.get('tipoPortador')?.value;
-    this.onuForm.patchValue({ portador: '', contrato: '' });
-    this.mostrarClientes = false;
-    this.clientesOptions.set([]);
-    this.portadorOptions.set([]);
-    this.loadPortadorOptions(tipo);
-  }
-
-  loadPortadorOptions(tipo: string): void {
-    if (!tipo) { this.portadorOptions.set([]); this.mostrarClientes = false; return; }
-
-    if (tipo === 'Cliente') {
-      // Cargar clientes con su N° contrato
-      this.mostrarClientes = true;
-      this.clientService.getAll().subscribe({
-        next: (clients: any[]) => {
-          const opciones: ClienteOption[] = clients.map(c => ({
-            id:        c.idCliente,
-            nombre:    `${c.nombre ?? c.name} ${c.apellido ?? ''}`.trim(),
-            nContrato: c.nContrato ?? ''
-          }));
-          this.clientesOptions.set(opciones);
-        },
-        error: () => this.clientesOptions.set([])
-      });
-    } else {
-      this.mostrarClientes = false;
-      if (tipo === 'Usuario' || tipo === 'Técnico') {
-        this.userService.getAll().subscribe({
-          next: (users: any[]) => this.portadorOptions.set(users.map(u => u.name ?? u.nombre ?? u.email)),
-          error: () => this.portadorOptions.set([])
-        });
-      } else if (tipo === 'Almacén') {
-        this.portadorOptions.set(['Almacén Central', 'Almacén Norte', 'Almacén Sur']);
-      }
-    }
-  }
-
-  /** Cuando el usuario elige un cliente del select:
-   *  → llena el campo portador con el nombre
-   *  → llena el campo contrato con su N° contrato automáticamente */
-  onClienteChange(event: Event): void {
-    const clienteId = parseInt((event.target as HTMLSelectElement).value);
-    const cliente = this.clientesOptions().find(c => c.id === clienteId);
-    if (cliente) {
-      this.onuForm.patchValue({
-        portador: cliente.nombre,
-        contrato: cliente.nContrato   // ← AUTO-FILL del contrato del cliente
-      });
-    }
   }
 
   // ======== ESCÁNER ========
@@ -231,7 +160,8 @@ export class OnuFormComponent implements OnInit, OnDestroy {
         if (barcodes.length > 0) {
           const value = barcodes[0].rawValue;
           this.scanResult.set(value);
-          this.onuForm.patchValue({ [this.scannerField]: value });
+          if (this.scannerField === 'mac') this.setMac(value);
+          else this.onuForm.patchValue({ serial: value });
           if (navigator.vibrate) navigator.vibrate(200);
           setTimeout(() => this.closeScanner(), 1000);
         }
@@ -252,13 +182,32 @@ export class OnuFormComponent implements OnInit, OnDestroy {
       Swal.fire({ icon: 'warning', title: 'Formulario incompleto', text: 'Completa los campos requeridos' });
       return;
     }
-    this.loading.set(true);
     const v = this.onuForm.getRawValue();
+    if (v.estado === 'Disponible' && !v.almacen) {
+      Swal.fire({ icon: 'warning', title: 'Falta el almacén', text: 'Elige el almacén donde queda la ONU.' });
+      return;
+    }
+
+    // En almacén: queda a cargo del almacén. Si está asignada/instalada se conserva su portador.
+    const enAlmacen = !!v.almacen && !['Asignada', 'Instalado'].includes(v.estado);
+    const usuario = this.auth.getCurrentUser();
+
     const data: OnuRequest = {
-      ...v,
-      almacen: this.almacenActual || undefined,
+      marca: v.marca, modelo: v.modelo, serial: v.serial, mac: v.mac,
+      estado: v.estado, observaciones: v.observaciones,
+      contrato: this.contratoActual ?? undefined,
+      almacen: v.almacen || undefined,
+      tipoPortador: enAlmacen ? 'Almacén' : (this.tipoPortadorActual || undefined),
+      portador: enAlmacen ? v.almacen : (this.portadorActual || undefined),
       codigoQR: v.codigoQR || `ONU-${v.serial}-${Date.now()}`
     };
+    if (!this.isEditMode() && usuario) {
+      // Para el historial: quién registró la ONU y con qué cargo
+      data.registradoPor = nombreUsuario(usuario);
+      data.cargoRegistro = cargoDe(usuario) || (usuario as any)?.profile?.cargo || (usuario as any)?.rol?.nombre || '';
+    }
+
+    this.loading.set(true);
     const op = (this.isEditMode() && this.onuId)
       ? this.onuService.update(this.onuId, data)
       : this.onuService.create(data);

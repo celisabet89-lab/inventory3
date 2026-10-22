@@ -5,12 +5,14 @@ import { environment } from '../../../../environments/environment';
 
 export interface OnuMovimiento {
   id: number;
-  /** ASIGNACION | RECOJO | DIAGNOSTICO */
+  /** REGISTRO | ASIGNACION | RECOJO | DIAGNOSTICO */
   tipo: string;
   fecha: string;
   estadoAnterior?: string;
   estadoNuevo?: string;
   usuario?: string;
+  /** Cargo de quien realizó la operación. */
+  cargo?: string;
   almacen?: string;
   detalle?: string;
 }
@@ -20,9 +22,18 @@ export interface OnuItemOperacion {
   observaciones?: string;
 }
 
+export type TipoDestino = 'USUARIO' | 'EMPRESA' | 'CLIENTE';
+export type CargoUsuario = 'Técnico' | 'Administrador' | 'Encargado';
+
 export interface LoteRequest {
   fecha?: string;
-  usuario: string;
+  /** Solo asignar. Por defecto USUARIO. */
+  tipoDestino?: TipoDestino;
+  cargo?: CargoUsuario;
+  empresa?: string;
+  clienteId?: number;
+  contrato?: number;
+  usuario?: string;
   observaciones?: string;
   items: OnuItemOperacion[];
 }
@@ -70,6 +81,16 @@ export function hoyISO(): string {
 export function nombreUsuario(u: any): string {
   const nombre = [u?.profile?.name, u?.profile?.lastName].filter(Boolean).join(' ').trim();
   return nombre || u?.name || u?.email || 'Sin nombre';
+}
+
+/** Deduce el cargo (Técnico, Administrador, Encargado) de un usuario según su cargo o rol. */
+export function cargoDe(u: any): CargoUsuario | '' {
+  const texto = [u?.profile?.cargo, u?.rol?.cargo, u?.rol?.nombre]
+    .filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (texto.includes('tecnic')) return 'Técnico';
+  if (texto.includes('admin')) return 'Administrador';
+  if (texto.includes('encarg')) return 'Encargado';
+  return '';
 }
 
 export function nombreCliente(onu: any): string {

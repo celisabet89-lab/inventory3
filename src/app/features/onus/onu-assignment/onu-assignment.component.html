@@ -1,10 +1,10 @@
 <div class="onu-page">
   <div class="page-header">
     <div class="header-left">
-      <i class="fas fa-download header-icon"></i>
+      <span class="header-icon"><i class="fas fa-user-check"></i></span>
       <div>
         <h2>Asignar ONU's</h2>
-        <span class="header-sub">Nueva asignación de ONU's a un usuario</span>
+        <span class="header-sub">Nueva asignación de ONU's a un usuario, empresa o cliente</span>
       </div>
     </div>
   </div>
@@ -20,14 +20,49 @@
       </div>
 
       <div class="campo">
-        <label for="usuario">Usuario asignado</label>
-        <select id="usuario" [(ngModel)]="usuario" name="usuario">
-          <option value="">Seleccionar usuario</option>
-          @for (u of usuarios(); track u) {
-            <option [value]="u">{{ u }}</option>
-          }
+        <label for="destino">Asignar a</label>
+        <select id="destino" [(ngModel)]="tipoDestino" name="destino">
+          <option value="USUARIO">Usuario (técnico, administrador, encargado)</option>
+          <option value="EMPRESA">Otra empresa</option>
+          <option value="CLIENTE">Cliente ONU</option>
         </select>
       </div>
+
+      @if (tipoDestino === 'USUARIO') {
+        <div class="campo">
+          <label for="usuario">Usuario asignado</label>
+          <select id="usuario" [(ngModel)]="usuario" (ngModelChange)="alElegirUsuario()" name="usuario">
+            <option value="">Seleccionar usuario</option>
+            @for (u of usuarios(); track u) {
+              <option [value]="u">{{ u }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label for="cargo">Cargo</label>
+          <select id="cargo" [(ngModel)]="cargo" name="cargo">
+            <option value="">Seleccionar cargo</option>
+            @for (c of cargos; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
+      } @else if (tipoDestino === 'EMPRESA') {
+        <div class="campo">
+          <label for="empresa">Nombre de la empresa</label>
+          <input id="empresa" type="text" [(ngModel)]="empresa" name="empresa" placeholder="Empresa que recibe las ONUs" />
+        </div>
+      } @else {
+        <div class="campo">
+          <label for="cliente">Cliente</label>
+          <select id="cliente" [(ngModel)]="clienteId" name="cliente">
+            <option [ngValue]="null">Seleccionar cliente</option>
+            @for (c of clientes(); track c.id) {
+              <option [ngValue]="c.id">{{ c.nombre }}{{ c.numeroContrato ? ' — Contrato ' + c.numeroContrato : '' }}</option>
+            }
+          </select>
+        </div>
+      }
 
       <div class="campo">
         <label for="obs">Observaciones</label>

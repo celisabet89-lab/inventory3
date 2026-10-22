@@ -1,7 +1,7 @@
 <div class="onu-page">
   <div class="page-header">
     <div class="header-left">
-      <i class="fas fa-download header-icon"></i>
+      <span class="header-icon"><i class="fas fa-truck-loading"></i></span>
       <div>
         <h2>Autorización de Recojo de ONU</h2>
         <span class="header-sub">Nueva autorización de recojo de ONU</span>
@@ -20,9 +20,9 @@
       </div>
 
       <div class="campo">
-        <label for="usuario">Usuario de recojo ONU</label>
+        <label for="usuario">Técnico de recojo ONU</label>
         <select id="usuario" [(ngModel)]="usuario" name="usuario">
-          <option value="">Seleccionar usuario</option>
+          <option value="">Seleccionar técnico</option>
           @for (u of usuarios(); track u) {
             <option [value]="u">{{ u }}</option>
           }
@@ -37,7 +37,7 @@
 
     <!-- CON CONTRATO -->
     <section class="card">
-      <h3>ONU's con Contratos</h3>
+      <h3>ONU's asignadas a clientes</h3>
 
       <div class="buscar">
         <label for="buscar">Buscar</label>
@@ -58,12 +58,12 @@
                   <td>{{ o.modelo }}</td>
                   <td>{{ o.serial }}</td>
                   <td>{{ o.mac }}</td>
-                  <td>{{ o.contrato }}</td>
+                  <td>{{ o.contrato || '—' }}</td>
                   <td>{{ cliente(o) }}</td>
                   <td><button type="button" class="btn-sm" (click)="agregar(o)"><i class="fas fa-plus"></i> Agregar</button></td>
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay ONU\'s con contrato para recoger' }}</td></tr>
+                <tr><td colspan="8" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay ONU\'s asignadas a clientes para recoger' }}</td></tr>
               }
             </tbody>
           </table>
@@ -88,13 +88,13 @@
               <td>{{ l.onu.modelo }}</td>
               <td>{{ l.onu.serial }}</td>
               <td>{{ l.onu.mac }}</td>
-              <td>{{ l.onu.contrato }}</td>
+              <td>{{ l.onu.contrato || '—' }}</td>
               <td>{{ cliente(l.onu) }}</td>
               <td><input class="detalle-obs" type="text" [(ngModel)]="l.observaciones" name="obs-{{ l.onu.id }}" placeholder="Opcional" /></td>
               <td><button type="button" class="btn-sm btn-quitar" (click)="quitar(l)" title="Quitar"><i class="fas fa-trash"></i></button></td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="vacio-fila">Agrega ONU's desde la lista de ONU's con contrato</td></tr>
+            <tr><td colspan="9" class="vacio-fila">Agrega ONU's desde la lista de ONU's de clientes</td></tr>
           }
         </tbody>
       </table>

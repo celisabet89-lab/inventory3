@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OnuService } from '../services/onu.service';
 import { OnuMovimiento, OnuOperacionesService } from '../services/onu-operaciones.service';
 import { OnuFormComponent } from '../onu-form/onu-form.component';
 import { Onu } from '../../../models/onu.model';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
 interface OnuStats {
@@ -22,6 +23,7 @@ interface OnuStats {
 export class OnuListComponent implements OnInit {
   private onuService = inject(OnuService);
   private operaciones = inject(OnuOperacionesService);
+  private router = inject(Router);
 
   onus = signal<Onu[]>([]);
   filteredOnus = signal<Onu[]>([]);
@@ -50,7 +52,11 @@ export class OnuListComponent implements OnInit {
     { value: 'Recogido', label: 'Recogidos' },
     { value: 'Defectuoso', label: 'Defectuosos' }
   ];
-  marcaOptions = ['TODAS', 'Huawei', 'ZTE', 'Nokia', 'Fiberhome', 'TP-LINK', 'Otro'];
+  /** Marcas que existen en las ONUs registradas (se actualiza sola). */
+  marcaOptions = computed(() => {
+    const marcas = new Set(this.onus().map(o => (o.marca ?? '').trim()).filter(Boolean));
+    return ['TODAS', ...[...marcas].sort((a, b) => a.localeCompare(b, 'es'))];
+  });
 
   currentPage = 1;
   itemsPerPage = 10;
@@ -91,12 +97,11 @@ export class OnuListComponent implements OnInit {
   applyFilters(): void {
     let result = [...this.onus()];
     if (this.selectedEstado !== 'TODOS') result = result.filter(o => o.estado === this.selectedEstado);
-    if (this.selectedMarca !== 'TODAS') result = result.filter(o => o.marca === this.selectedMarca);
+    if (this.selectedMarca !== 'TODAS') result = result.filter(o => (o.marca ?? '').trim() === this.selectedMarca);
     const term = this.searchTerm.toLowerCase().trim();
     if (term) result = result.filter(o =>
-      o.serial?.toLowerCase().includes(term) || o.mac?.toLowerCase().includes(term) ||
-      o.modelo?.toLowerCase().includes(term) || o.marca?.toLowerCase().includes(term) ||
-      String(o.contrato ?? '').includes(term)
+      [o.serial, o.mac, o.modelo, o.marca, o.almacen, o.tipoPortador, o.portador, o.contrato]
+        .some(v => String(v ?? '').toLowerCase().includes(term))
     );
     this.filteredOnus.set(result);
     this.totalPages.set(Math.ceil(result.length / this.itemsPerPage) || 1);
@@ -107,13 +112,15 @@ export class OnuListComponent implements OnInit {
   onEstadoChange(): void { this.applyFilters(); }
   onMarcaChange():  void { this.applyFilters(); }
 
+  instalar(onu: Onu): void { if (onu.id) this.router.navigate(['/onus/assign', onu.id]); }
+
   openNew():  void { this.isEditMode = false; this.selectedOnu = null; this.showForm.set(true); }
   openEdit(onu: Onu): void { this.isEditMode = true; this.selectedOnu = onu; this.showForm.set(true); }
   closeForm(): void { this.showForm.set(false); this.selectedOnu = null; }
   onSaved():  void { this.closeForm(); this.loadOnus(); }
 
   deleteOnu(onu: Onu): void {
-    if (onu.estado === 'Asignada') {
+    if (onu.estado === 'Asignada' || onu.estado === 'Instalado') {
       Swal.fire({ icon: 'error', title: 'No se puede eliminar', text: 'Primero desasigna la ONU.' });
       return;
     }
@@ -139,6 +146,7 @@ export class OnuListComponent implements OnInit {
     Swal.fire({
       title: `Cambiar Estado — ${onu.marca} ${onu.modelo}`,
       input: 'select', inputOptions: opts, inputValue: onu.estado,
+      inputLabel: 'Solo las ONUs "Disponible" cuentan en el stock del producto.',
       showCancelButton: true, confirmButtonColor: '#1b6f6f',
       confirmButtonText: 'Cambiar', cancelButtonText: 'Cancelar'
     }).then(r => {
@@ -172,18 +180,25 @@ export class OnuListComponent implements OnInit {
       </div>`;
 
     const mostrar = (historial: OnuMovimiento[]) => {
-      const nombres: Record<string, string> = { ASIGNACION: 'Asignación', RECOJO: 'Recojo', DIAGNOSTICO: 'Diagnóstico' };
-      const filas = historial.map(m => `<tr>
-          <td style="padding:4px 6px">${this.esc(new Date(m.fecha).toLocaleDateString('es-BO'))}</td>
-          <td style="padding:4px 6px"><b>${this.esc(nombres[m.tipo] ?? m.tipo)}</b></td>
-          <td style="padding:4px 6px">${this.esc(m.estadoAnterior)} → ${this.esc(m.estadoNuevo)}</td>
-          <td style="padding:4px 6px">${this.esc([m.usuario, m.almacen, m.detalle].filter(Boolean).join(' · '))}</td>
-        </tr>`).join('');
+      const nombres: Record<string, string> = { REGISTRO: 'Registro', ASIGNACION: 'Asignación', RECOJO: 'Recojo', DIAGNOSTICO: 'Diagnóstico' };
+      const filas = historial.map(m => {
+        // Quién: usuario y, entre paréntesis, su cargo
+        const quien = m.usuario ? `${m.usuario}${m.cargo ? ` (${m.cargo})` : ''}` : (m.cargo ?? '');
+        const alm = m.almacen ? `Almacén: ${m.almacen}` : '';
+        return `<tr>
+          <td style="padding:5px 6px;white-space:nowrap">${this.esc(new Date(m.fecha).toLocaleDateString('es-BO'))}</td>
+          <td style="padding:5px 6px"><b>${this.esc(nombres[m.tipo] ?? m.tipo)}</b></td>
+          <td style="padding:5px 6px">${this.esc(quien) || '—'}</td>
+          <td style="padding:5px 6px">${this.esc([alm, m.detalle].filter(Boolean).join(' · ')) || '—'}</td>
+        </tr>`;
+      }).join('');
       const bloque = historial.length
         ? `<hr/><p style="text-align:left;margin:6px 8px"><b>Historial</b></p>
-           <div style="max-height:220px;overflow:auto"><table style="width:100%;font-size:12px;text-align:left">${filas}</table></div>`
+           <div style="max-height:240px;overflow:auto"><table style="width:100%;font-size:12px;text-align:left">
+             <thead><tr style="color:#6b7280"><th style="padding:4px 6px">Fecha</th><th style="padding:4px 6px">Operación</th><th style="padding:4px 6px">Usuario (cargo)</th><th style="padding:4px 6px">Detalle</th></tr></thead>
+             <tbody>${filas}</tbody></table></div>`
         : '';
-      Swal.fire({ title: `${this.esc(onu.marca)} ${this.esc(onu.modelo)}`, html: base + bloque, icon: 'info', confirmButtonColor: '#1b6f6f', width: 640 });
+      Swal.fire({ title: `${this.esc(onu.marca)} ${this.esc(onu.modelo)}`, html: base + bloque, icon: 'info', confirmButtonColor: '#1b6f6f', width: 720 });
     };
 
     if (!onu.id) { mostrar([]); return; }

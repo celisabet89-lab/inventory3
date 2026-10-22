@@ -1,0 +1,62 @@
+<div class="onu-page">
+  <div class="page-header">
+    <div class="header-left">
+      <span class="header-icon"><i class="fas fa-tags"></i></span>
+      <div>
+        <h2>Marcas de ONU</h2>
+        <span class="header-sub">Administra las marcas que se pueden elegir al registrar una ONU</span>
+      </div>
+    </div>
+    <div class="buscar" style="margin:0">
+      <input type="text" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" name="buscar" placeholder="Buscar marca..." />
+    </div>
+  </div>
+
+  @if (formAbierto()) {
+    <div class="form-card">
+      <h3><i class="fas" [class.fa-plus-circle]="!editandoId" [class.fa-edit]="editandoId"></i>
+        {{ editandoId ? 'Editar marca' : 'Nueva marca' }}</h3>
+      <div class="fila-2">
+        <div class="campo">
+          <label for="m-nombre">Nombre <span class="req">*</span></label>
+          <input id="m-nombre" type="text" [(ngModel)]="form.nombre" name="m-nombre" placeholder="Ej: Huawei" (keyup.enter)="guardar()" />
+        </div>
+        <div class="campo">
+          <label for="m-desc">Descripción</label>
+          <input id="m-desc" type="text" [(ngModel)]="form.descripcion" name="m-desc" placeholder="Opcional" (keyup.enter)="guardar()" />
+        </div>
+      </div>
+      <div class="form-btns">
+        <button type="button" class="btn-cerrar" (click)="cancelar()"><i class="fas fa-times"></i> Cancelar</button>
+        <button type="button" class="btn-registrar" (click)="guardar()" [disabled]="guardando() || !form.nombre.trim()">
+          <i class="fas fa-save"></i> {{ guardando() ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Guardar') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="vacio-grande"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+  } @else {
+    <div class="cards-grid">
+      <div class="cat-card-new" (click)="nueva()" role="button" tabindex="0" (keyup.enter)="nueva()">
+        <i class="fas fa-plus-circle"></i>
+        <span>Nueva marca</span>
+      </div>
+      @for (m of filtradas(); track m.id) {
+        <div class="cat-card">
+          <div class="cat-icon"><i class="fas fa-wifi"></i></div>
+          <div class="cat-body">
+            <h4 class="cat-nombre">{{ m.nombre }}</h4>
+            <span class="cat-id">Cod {{ m.id }}</span>
+            @if (m.descripcion) { <span class="cat-desc">{{ m.descripcion }}</span> }
+          </div>
+          <div class="cat-actions">
+            <button type="button" class="btn-ic edit" (click)="editar(m)" title="Editar"><i class="fas fa-edit"></i></button>
+            <button type="button" class="btn-ic del" (click)="eliminar(m)" title="Eliminar"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -53,6 +53,7 @@ export const routes: Routes = [
           { path: 'recojo', loadComponent: () => import('./features/onus/onu-recojo/onu-recojo.component').then(m => m.OnuRecojoComponent) },
           { path: 'mantenimiento', loadComponent: () => import('./features/onus/onu-mantenimiento/onu-mantenimiento.component').then(m => m.OnuMantenimientoComponent) },
           { path: 'clientes', loadComponent: () => import('./features/onus/cliente-onu-list/cliente-onu-list.component').then(m => m.ClienteOnuListComponent) },
+          { path: 'marcas', loadComponent: () => import('./features/onus/marcas/marca-onu-list.component').then(m => m.MarcaOnuListComponent) },
           { path: 'tipos-cliente', loadComponent: () => import('./features/onus/tipo-cliente-onu-list/tipo-cliente-onu-list.component').then(m => m.TipoClienteOnuListComponent) },
           { path: 'assign/:id', loadComponent: () => import('./features/onus/onu-assignment/onu-assignment.component').then(m => m.OnuAsignarComponent) }
         ]
