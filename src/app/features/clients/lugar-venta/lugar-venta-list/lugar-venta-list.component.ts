@@ -1,3 +1,4 @@
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,114 +15,226 @@ import Swal from 'sweetalert2';
 export class LugarVentaListComponent implements OnInit {
   private svc = inject(LugarVentaService);
 
-  lugares  = signal<any[]>([]);
-  loading  = signal(false);
-  saving   = signal(false);
+  lugares = signal<any[]>([]);
+  loading = signal(false);
+  saving = signal(false);
+
+  searchTerm = '';
+  filtroEstado = 'TODOS';
+
   showForm = false;
-  isEdit   = false;
+  isEdit = false;
   editId: number | null = null;
 
-  // Campos del form
-  nombre     = '';
-  direccion  = '';
-  zona       = '';
-  ciudad     = '';
-  telefono   = '';
+  nombre = '';
+  direccion = '';
+  zona = '';
+  ciudad = '';
+  telefono = '';
   referencia = '';
-  errorMsg   = '';
+  estado = 'ACTIVO';
+  errorMsg = '';
 
-  ngOnInit(): void { this.load(); }
+  get lugaresFiltrados(): any[] {
+    const termino = this.searchTerm.trim().toLocaleLowerCase();
+
+    return this.lugares().filter(lugar => {
+      const coincideEstado = this.filtroEstado === 'TODOS' ||
+        (lugar.estado ?? 'ACTIVO') === this.filtroEstado;
+
+      const valores = [
+        lugar.nombre,
+        lugar.direccion,
+        lugar.zona,
+        lugar.ciudad,
+        lugar.telefono,
+        lugar.referencia
+      ];
+
+      const coincideBusqueda = !termino ||
+        valores.some(valor =>
+          String(valor ?? '').toLocaleLowerCase().includes(termino)
+        );
+
+      return coincideEstado && coincideBusqueda;
+    });
+  }
+
+  get totalActivos(): number {
+    return this.lugares().filter(l => (l.estado ?? 'ACTIVO') === 'ACTIVO').length;
+  }
+
+  get totalInactivos(): number {
+    return this.lugares().filter(l => l.estado === 'INACTIVO').length;
+  }
+
+  ngOnInit(): void {
+    this.load();
+  }
 
   load(): void {
     this.loading.set(true);
+
     this.svc.getAll().subscribe({
-      next: d => { this.lugares.set(d); this.loading.set(false); },
-      error: () => this.loading.set(false)
+      next: data => {
+        this.lugares.set(data ?? []);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudieron cargar los lugares',
+          text: 'Comprueba la conexión con el servidor e inténtalo nuevamente.'
+        });
+      }
     });
   }
 
   openNew(): void {
-    this.isEdit    = false;
-    this.editId    = null;
-    this.nombre    = '';
+    this.isEdit = false;
+    this.editId = null;
+    this.nombre = '';
     this.direccion = '';
-    this.zona      = '';
-    this.ciudad    = '';
-    this.telefono  = '';
+    this.zona = '';
+    this.ciudad = '';
+    this.telefono = '';
     this.referencia = '';
-    this.errorMsg  = '';
-    this.showForm  = true;
+    this.estado = 'ACTIVO';
+    this.errorMsg = '';
+    this.showForm = true;
   }
 
-  openEdit(l: any): void {
-    this.isEdit    = true;
-    this.editId    = l.idLugarVenta;
-    this.nombre    = l.nombre     ?? '';
-    this.direccion = l.direccion  ?? '';
-    this.zona      = l.zona       ?? '';
-    this.ciudad    = l.ciudad     ?? '';
-    this.telefono  = l.telefono   ?? '';
-    this.referencia = l.referencia ?? '';
-    this.errorMsg  = '';
-    this.showForm  = true;
+  openEdit(lugar: any): void {
+    this.isEdit = true;
+    this.editId = lugar.idLugarVenta;
+    this.nombre = lugar.nombre ?? '';
+    this.direccion = lugar.direccion ?? '';
+    this.zona = lugar.zona ?? '';
+    this.ciudad = lugar.ciudad ?? '';
+    this.telefono = lugar.telefono ?? '';
+    this.referencia = lugar.referencia ?? '';
+    this.estado = lugar.estado ?? 'ACTIVO';
+    this.errorMsg = '';
+    this.showForm = true;
   }
 
   cancel(): void {
-    this.showForm  = false;
-    this.errorMsg  = '';
-    this.nombre    = '';
+    this.showForm = false;
+    this.errorMsg = '';
+    this.nombre = '';
     this.direccion = '';
+    this.zona = '';
+    this.ciudad = '';
+    this.telefono = '';
+    this.referencia = '';
+    this.estado = 'ACTIVO';
   }
 
   guardar(): void {
-    if (!this.nombre.trim()) { this.errorMsg = 'El nombre es requerido'; return; }
+    const nombreLimpio = this.nombre.trim();
 
-    const dup = this.lugares().some(l =>
-      l.nombre.toLowerCase() === this.nombre.trim().toLowerCase() && l.idLugarVenta !== this.editId
+    if (!nombreLimpio) {
+      this.errorMsg = 'El nombre del lugar es obligatorio.';
+      return;
+    }
+
+    const duplicado = this.lugares().some(lugar =>
+      String(lugar.nombre ?? '').trim().toLocaleLowerCase() ===
+      nombreLimpio.toLocaleLowerCase() &&
+      lugar.idLugarVenta !== this.editId
     );
-    if (dup) { this.errorMsg = `Ya existe "${this.nombre}"`; return; }
+
+    if (duplicado) {
+      this.errorMsg = `Ya existe un lugar llamado "${nombreLimpio}".`;
+      return;
+    }
 
     this.saving.set(true);
+    this.errorMsg = '';
+
     const body = {
-      nombre:     this.nombre.trim(),
-      direccion:  this.direccion.trim(),
-      zona:       this.zona.trim(),
-      ciudad:     this.ciudad.trim(),
-      telefono:   this.telefono.trim(),
+      nombre: nombreLimpio,
+      direccion: this.direccion.trim(),
+      zona: this.zona.trim(),
+      ciudad: this.ciudad.trim(),
+      telefono: this.telefono.trim(),
       referencia: this.referencia.trim(),
-      estado:     'ACTIVO'
+      estado: this.estado
     };
 
-    const op = this.isEdit && this.editId
+    const operacion = this.isEdit && this.editId !== null
       ? this.svc.update(this.editId, body)
       : this.svc.create(body);
 
-    op.subscribe({
+    operacion.subscribe({
       next: () => {
+        const titulo = this.isEdit ? 'Lugar actualizado' : 'Lugar creado';
+
         this.saving.set(false);
         this.cancel();
         this.load();
+
         Swal.fire({
           icon: 'success',
-          title: this.isEdit ? 'Lugar actualizado' : 'Lugar creado',
-          timer: 1400, showConfirmButton: false
+          title: titulo,
+          timer: 1400,
+          showConfirmButton: false
         });
       },
-      error: () => { this.saving.set(false); this.errorMsg = 'Error al guardar'; }
+      error: err => {
+        this.saving.set(false);
+        this.errorMsg = err?.error?.message ??
+          'No se pudo guardar el lugar. Comprueba los datos e inténtalo nuevamente.';
+      }
     });
   }
 
-  eliminar(l: any): void {
+  eliminar(lugar: any): void {
+    const id = lugar?.idLugarVenta;
+
+    if (id === null || id === undefined) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se puede eliminar',
+        text: 'El lugar no tiene un identificador válido.'
+      });
+      return;
+    }
+
     Swal.fire({
-      title: `¿Eliminar "${l.nombre}"?`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonColor: '#ef4444', confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (r.isConfirmed)
-        this.svc.delete(l.idLugarVenta).subscribe({
-          next: () => { this.load(); Swal.fire({ icon:'success', title:'Eliminado', timer:1200, showConfirmButton:false }); },
-          error: () => Swal.fire({ icon:'error', title:'Error al eliminar' })
-        });
+      title: `¿Eliminar "${lugar.nombre}"?`,
+      text: 'Si tiene clientes relacionados, el servidor podría impedir la eliminación.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(resultado => {
+      if (!resultado.isConfirmed) {
+        return;
+      }
+
+      this.svc.delete(Number(id)).subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Lugar eliminado',
+            timer: 1200,
+            showConfirmButton: false
+          });
+          this.load();
+        },
+        error: err => {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo eliminar',
+            text: err?.error?.message ??
+              'Puede que existan clientes asociados a este lugar.'
+          });
+        }
+      });
     });
   }
 }

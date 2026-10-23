@@ -109,9 +109,9 @@ export class RolListComponent implements OnInit {
 
   getRolColor(cargo: string): string {
     const c = cargo.toLowerCase();
-    if (c.includes('admin'))      return '#8b5cf6';
-    if (c.includes('écnico') || c.includes('ecnico')) return '#f59e0b';
-    if (c.includes('encargado'))  return '#10b981';
-    return '#3b82f6';
+    if (c.includes('admin'))      return '#1b6f6f';
+    if (c.includes('écnico') || c.includes('ecnico')) return '#1b6f6f';
+    if (c.includes('encargado'))  return '#1b6f6f';
+    return '#1b6f6f';
   }
 }

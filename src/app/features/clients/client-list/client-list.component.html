@@ -1,5 +1,5 @@
-<div class="client-page">
 
+<div class="client-page">
   <div class="page-header">
     <div class="header-left">
       <i class="fas fa-users header-icon"></i>
@@ -8,20 +8,22 @@
         <span class="header-sub">Gestión de clientes y lugares de venta</span>
       </div>
     </div>
-    <button class="btn-nuevo" (click)="openNew()">
-      <i class="fas fa-plus"></i> Nuevo Cliente
+
+    <button type="button" class="btn-nuevo" (click)="openNew()">
+      <i class="fas fa-plus"></i>
+      Nuevo Cliente
     </button>
   </div>
 
-  <!-- STATS -->
   <div class="stats-grid">
     <div class="stat-card s-total">
       <div class="stat-icon-wrap"><i class="fas fa-users"></i></div>
       <div>
         <p class="stat-val">{{ stats().total }}</p>
-        <p class="stat-lbl">Total Clientes</p>
+        <p class="stat-lbl">Total clientes</p>
       </div>
     </div>
+
     <div class="stat-card s-activo">
       <div class="stat-icon-wrap"><i class="fas fa-check-circle"></i></div>
       <div>
@@ -29,6 +31,7 @@
         <p class="stat-lbl">Activos</p>
       </div>
     </div>
+
     <div class="stat-card s-inactivo">
       <div class="stat-icon-wrap"><i class="fas fa-ban"></i></div>
       <div>
@@ -36,11 +39,12 @@
         <p class="stat-lbl">Inactivos</p>
       </div>
     </div>
+
     <div class="stat-card s-lugar">
       <div class="stat-icon-wrap"><i class="fas fa-store"></i></div>
       <div>
         <p class="stat-val">{{ stats().lugares }}</p>
-        <p class="stat-lbl">Lugares de Venta</p>
+        <p class="stat-lbl">Lugares de venta</p>
       </div>
     </div>
   </div>
@@ -48,19 +52,53 @@
   <div class="bar-filtros">
     <div class="search-wrap">
       <i class="fas fa-search"></i>
-      <input [(ngModel)]="searchTerm" (input)="applyFilters()"
-             placeholder="Buscar por nombre, apellido, CI, teléfono..." class="search-in" />
+      <input
+        type="search"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilters()"
+        placeholder="Buscar por nombre, CI, teléfono, correo o lugar..."
+        class="search-in"
+        aria-label="Buscar clientes"
+      />
+
+      @if (searchTerm) {
+        <button
+          type="button"
+          class="clear-search"
+          (click)="searchTerm = ''; applyFilters()"
+          title="Limpiar búsqueda"
+          aria-label="Limpiar búsqueda">
+          <i class="fas fa-times"></i>
+        </button>
+      }
     </div>
 
-    <select [(ngModel)]="filtroEstado" (change)="applyFilters()" class="f-sel">
+    <select
+      [(ngModel)]="filtroEstado"
+      (change)="applyFilters()"
+      class="f-sel"
+      aria-label="Filtrar por estado">
       <option value="TODOS">Todos los estados</option>
       <option value="ACTIVO">Activos</option>
       <option value="INACTIVO">Inactivos</option>
     </select>
 
-    <button class="btn-refresh" (click)="loadClients()" title="Actualizar">
+    <button
+      type="button"
+      class="btn-refresh"
+      (click)="loadClients()"
+      title="Actualizar clientes"
+      aria-label="Actualizar clientes">
       <i class="fas fa-sync-alt"></i>
     </button>
+  </div>
+
+  <div class="results-line">
+    <span>
+      <i class="fas fa-list"></i>
+      {{ filteredClients().length }}
+      {{ filteredClients().length === 1 ? 'cliente encontrado' : 'clientes encontrados' }}
+    </span>
   </div>
 
   <div class="table-wrap">
@@ -73,73 +111,97 @@
       <div class="empty-st">
         <i class="fas fa-user-slash"></i>
         <p>No se encontraron clientes</p>
-        <button class="btn-nuevo" (click)="openNew()">
-          <i class="fas fa-plus"></i> Crear primer cliente
+        <span>Prueba con otro término o registra un nuevo cliente.</span>
+        <button type="button" class="btn-nuevo" (click)="openNew()">
+          <i class="fas fa-plus"></i>
+          Nuevo Cliente
         </button>
       </div>
     } @else {
-      <div class="sl-table-wrap"><table class="sl-table client-table">
-        <thead>
-        <tr>
-          <th>N°</th>
-          <th>Cliente</th>
-          <th>CI / NIT</th>
-          <th>Teléfono</th>
-          <th>Email</th>
-          <th>Lugar de Venta</th>
-          <th>Zona</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-          @for (c of filteredClients(); track c.idCliente; let i = $index) {
-            <tr [class.row-inactivo]="c.estado === 'INACTIVO'">
-              <td class="tc gray">{{ i + 1 }}</td>
-              <td>
-                <div class="client-cell">
-                  <div class="client-avatar" [style.background]="c.estado === 'ACTIVO' ? '#1b6f6f' : '#9ca3af'">
-                    {{ getIniciales(c) || '?' }}
+      <div class="sl-table-wrap">
+        <table class="sl-table client-table">
+          <thead>
+          <tr>
+            <th>N.º</th>
+            <th>Cliente</th>
+            <th>CI / NIT</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Lugar de venta</th>
+            <th>Zona</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+          </thead>
+
+          <tbody>
+            @for (c of filteredClients(); track (c.idCliente ?? c.id); let i = $index) {
+              <tr [class.row-inactivo]="c.estado === 'INACTIVO'">
+                <td class="tc gray">{{ i + 1 }}</td>
+
+                <td>
+                  <div class="client-cell">
+                    <div
+                      class="client-avatar"
+                      [style.background]="c.estado === 'ACTIVO' ? '#1b6f6f' : '#9ca3af'">
+                      {{ getIniciales(c) || '?' }}
+                    </div>
+
+                    <div class="client-info">
+                      <span class="client-nombre">{{ getNombre(c) }}</span>
+                      @if (c.direccion) {
+                        <span class="client-dir">{{ c.direccion }}</span>
+                      }
+                    </div>
                   </div>
-                  <div class="client-info">
-                    <span class="client-nombre">{{ getNombre(c) }}</span>
-                    @if (c.direccion) {
-                      <span class="client-dir">{{ c.direccion }}</span>
-                    }
-                  </div>
-                </div>
-              </td>
-              <td class="mono">{{ c.ci || '—' }}</td>
-              <td>{{ c.telefono || '—' }}</td>
-              <td>{{ c.gmail || '—' }}</td>
-              <td>
-                <span class="lugar-badge">
-                  <i class="fas fa-store"></i>
-                  {{ getLugarNombre(c) }}
-                </span>
-              </td>
-              <td>{{ c.zona || '—' }}</td>
-              <td>
-                <span class="estado-badge" [class]="getEstadoClass(c.estado)">
-                  <i class="fas" [class.fa-circle]="c.estado === 'ACTIVO'" [class.fa-circle]="c.estado === 'INACTIVO'"></i>
-                  {{ c.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="acc-cell">
-                <button class="btn-ac edit" (click)="openEdit(c)" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn-ac delete" (click)="deleteClient(c)" title="Eliminar">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table></div>
+                </td>
+
+                <td class="mono">{{ c.ci || '—' }}</td>
+                <td>{{ c.telefono || '—' }}</td>
+                <td>{{ c.gmail || c.email || '—' }}</td>
+
+                <td>
+                  <span class="lugar-badge">
+                    <i class="fas fa-store"></i>
+                    {{ getLugarNombre(c) }}
+                  </span>
+                </td>
+
+                <td>{{ c.zona || '—' }}</td>
+
+                <td>
+                  <span class="estado-badge" [ngClass]="getEstadoClass(c.estado)">
+                    <i class="fas fa-circle"></i>
+                    {{ c.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+
+                <td class="acc-cell">
+                  <button
+                    type="button"
+                    class="btn-ac edit"
+                    (click)="openEdit(c)"
+                    title="Editar cliente"
+                    aria-label="Editar cliente">
+                    <i class="fas fa-edit"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-ac delete"
+                    (click)="deleteClient(c)"
+                    title="Eliminar cliente"
+                    aria-label="Eliminar cliente">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </div>
-
 </div>
 
 @if (showForm()) {
