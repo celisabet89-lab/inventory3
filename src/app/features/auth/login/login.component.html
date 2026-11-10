@@ -26,22 +26,31 @@
         <i class="fas fa-minus separator-icon"></i>
       </div>
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+
+        @if (error()) {
+          <div class="login-alert" role="alert">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>{{ error() }}</span>
+          </div>
+        }
 
         <!-- USUARIO -->
         <div class="form-group">
-          <label class="form-label">
+          <label class="form-label" for="login-email">
             <i class="fas fa-user form-icon"></i>
             Usuario
           </label>
           <div class="input-wrapper">
             <i class="fas fa-envelope input-icon"></i>
             <input
-              type="text"
+              type="email"
+              id="login-email"
               formControlName="email"
-              placeholder="michel@gmail.com"
+              placeholder="correo@empresa.com"
               class="form-input"
-              value="michel@gmail.com"
+              autocomplete="username"
+              [attr.aria-invalid]="hasError('email', 'required') || hasError('email', 'email')"
             />
           </div>
           @if (hasError('email', 'required')) {
@@ -49,12 +58,17 @@
               <i class="fas fa-exclamation-circle error-icon"></i>
               El usuario es requerido
             </p>
+          } @else if (hasError('email', 'email')) {
+            <p class="error-text">
+              <i class="fas fa-exclamation-circle error-icon"></i>
+              Escribe un correo válido
+            </p>
           }
         </div>
 
         <!-- CONTRASEÑA -->
         <div class="form-group">
-          <label class="form-label">
+          <label class="form-label" for="login-password">
             <i class="fas fa-key form-icon"></i>
             Contraseña
           </label>
@@ -62,12 +76,15 @@
             <i class="fas fa-lock input-icon"></i>
             <input
               [type]="showPassword() ? 'text' : 'password'"
+              id="login-password"
               formControlName="password"
-              placeholder="......"
+              placeholder="••••••••"
               class="form-input"
-              value="password123"
+              autocomplete="current-password"
             />
-            <button type="button" (click)="togglePassword()" class="eye-btn">
+            <button type="button" (click)="togglePassword()" class="eye-btn"
+                    [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    [attr.aria-pressed]="showPassword()">
               <i class="fas" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
             </button>
           </div>
@@ -82,11 +99,11 @@
         <!-- OPCIONES -->
         <div class="options">
           <label class="remember">
-            <input type="checkbox" class="checkbox" checked />
+            <input type="checkbox" class="checkbox" [checked]="recordar()" (change)="toggleRecordar()" />
             <i class="fas fa-check check-icon"></i>
             <span class="checkbox-label">Recordarme</span>
           </label>
-          <a href="#" class="forgot-password">
+          <a href="#" class="forgot-password" (click)="olvidoClave($event)">
             <i class="fas fa-question-circle forgot-icon"></i>
             ¿Olvidaste tu contraseña?
           </a>

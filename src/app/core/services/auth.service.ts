@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { User } from '../../models/user.model';
 import { LoginRequest } from '../../models/auth.model';
+import { Rol, rolDeCargo, puedeAcceder, puedeEditar } from '../permissions';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -55,6 +56,10 @@ export class AuthService {
         const authenticatedUser: User = { ...user };
 
         delete authenticatedUser.password;
+
+        // El token de sesión va aparte: el servidor lo exige en cada petición.
+        if (authenticatedUser.token) localStorage.setItem('token', authenticatedUser.token);
+        delete authenticatedUser.token;
 
         localStorage.setItem(
           'user',
@@ -125,5 +130,20 @@ export class AuthService {
     return String(cargo)
       .toLowerCase()
       .includes('admin');
+  }
+
+  /** Rol efectivo del usuario (ADMIN, ENCARGADO, TECNICO u OTRO). */
+  rol(): Rol {
+    const user = this._currentUser.getValue();
+    return rolDeCargo(user?.rol?.cargo ?? user?.profile?.cargo ?? '');
+  }
+
+  canAccess(url: string): boolean {
+    return puedeAcceder(this.rol(), url);
+  }
+
+  /** false para el técnico: solo consulta. */
+  canEdit(): boolean {
+    return puedeEditar(this.rol());
   }
 }

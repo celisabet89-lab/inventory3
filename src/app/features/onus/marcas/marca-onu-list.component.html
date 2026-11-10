@@ -7,8 +7,8 @@
         <span class="header-sub">Administra las marcas que se pueden elegir al registrar una ONU</span>
       </div>
     </div>
-    <div class="buscar" style="margin:0">
-      <input type="text" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" name="buscar" placeholder="Buscar marca..." />
+    <div class="buscar">
+      <input type="text" aria-label="Buscar marca" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" name="buscar" placeholder="Buscar marca..." />
     </div>
   </div>
 
@@ -52,8 +52,8 @@
             @if (m.descripcion) { <span class="cat-desc">{{ m.descripcion }}</span> }
           </div>
           <div class="cat-actions">
-            <button type="button" class="btn-ic edit" (click)="editar(m)" title="Editar"><i class="fas fa-edit"></i></button>
-            <button type="button" class="btn-ic del" (click)="eliminar(m)" title="Eliminar"><i class="fas fa-trash"></i></button>
+            <button type="button" class="btn-ic edit" (click)="editar(m)" title="Editar" aria-label="Editar marca"><i class="fas fa-edit"></i></button>
+            <button type="button" class="btn-ic del" (click)="eliminar(m)" title="Eliminar" aria-label="Eliminar marca"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       }

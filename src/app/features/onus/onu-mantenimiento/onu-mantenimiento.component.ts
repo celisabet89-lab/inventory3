@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { OnuService } from '../services/onu.service';
@@ -11,9 +12,9 @@ type EstadoDiagnostico = 'Disponible' | 'Defectuoso' | 'Observado' | 'Mantenimie
 @Component({
   selector: 'app-onu-mantenimiento',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, NgClass],
   templateUrl: './onu-mantenimiento.component.html',
-  styleUrls: [ './onu-mantenimiento.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './onu-mantenimiento.component.css']
 })
 export class OnuMantenimientoComponent implements OnInit {
   private onuService = inject(OnuService);
@@ -29,6 +30,22 @@ export class OnuMantenimientoComponent implements OnInit {
   pagina = signal(1);
   cargando = signal(false);
   guardando = signal(false);
+
+  /** Opciones de resultado con su ícono y explicación. */
+  readonly resultados: { valor: EstadoDiagnostico; icono: string; texto: string; clase: string }[] = [
+    { valor: 'Disponible',    icono: 'fa-circle-check',        texto: 'Funciona bien: vuelve al stock',   clase: 'ok' },
+    { valor: 'Mantenimiento', icono: 'fa-screwdriver-wrench',  texto: 'Sigue en reparación',              clase: 'warn' },
+    { valor: 'Observado',     icono: 'fa-eye',                 texto: 'Requiere seguimiento',             clase: 'info' },
+    { valor: 'Defectuoso',    icono: 'fa-circle-xmark',        texto: 'No tiene arreglo',                 clase: 'bad' }
+  ];
+
+  /** Pruebas rápidas: lo marcado se agrega al texto del diagnóstico. */
+  readonly pruebasBase = [
+    'Potencia óptica correcta', 'Puertos LAN funcionan', 'WiFi emite señal', 'LEDs normales',
+    'Enciende y arranca', 'Firmware restablecido', 'Conectores limpios', 'Daño físico visible'
+  ];
+  pruebas = signal<string[]>([]);
+  readonly maxDiagnostico = 500;
 
   // Modal de diagnóstico
   seleccionada = signal<Onu | null>(null);
@@ -95,7 +112,24 @@ export class OnuMantenimientoComponent implements OnInit {
     return 'badge-warning';
   }
 
+  alternarPrueba(p: string): void {
+    this.pruebas.update(l => l.includes(p) ? l.filter(x => x !== p) : [...l, p]);
+  }
+
+  elegirResultado(e: EstadoDiagnostico): void {
+    this.estadoNuevo = e;
+    if (e !== 'Disponible') this.almacen = '';
+  }
+
+  /** Diagnóstico final: lo escrito + las pruebas marcadas. */
+  private textoDiagnostico(): string {
+    const base = this.diagnostico.trim();
+    const marcadas = this.pruebas();
+    return marcadas.length ? `${base}\nPruebas: ${marcadas.join('; ')}.` : base;
+  }
+
   abrir(onu: Onu): void {
+    this.pruebas.set([]);
     this.seleccionada.set(onu);
     this.fecha = hoyISO();
     this.estadoNuevo = '';
@@ -129,7 +163,7 @@ export class OnuMantenimientoComponent implements OnInit {
       fecha: this.fecha,
       onuId: onu.id,
       estadoNuevo: this.estadoNuevo,
-      diagnostico: this.diagnostico.trim(),
+      diagnostico: this.textoDiagnostico(),
       almacen: this.almacen || undefined
     }).subscribe({
       next: () => {

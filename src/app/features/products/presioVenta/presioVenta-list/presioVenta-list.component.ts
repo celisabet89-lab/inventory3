@@ -48,7 +48,7 @@ interface DashboardStats {
     FormsModule,
     SlicePipe
   ],
-  styleUrls: ['./presioVenta-list.component.css']
+  styleUrls: ['../../../../shared/onu-pantalla.css', './presioVenta-list.component.css']
 })
 export class PresioVentaListComponent implements OnInit, OnDestroy {
   private productSvc = inject(ProductService);
@@ -93,7 +93,7 @@ export class PresioVentaListComponent implements OnInit, OnDestroy {
   // Cache para colores de categorías
   private categoriaColorCache = new Map<string, string>();
   private categoriaIconCache = new Map<string, string>();
-  Math: any;
+  readonly Math = Math;
 
   ngOnInit(): void {
     this.setupSearchDebounce();

@@ -11,6 +11,7 @@ import { AlertService }    from '../../alerts/services/alert.service';
 import { MovementsService }from '../../stock/services/movements.service';
 import { DeliveryService } from '../../deliveries/services/delivery.service';
 import { ExistingService } from '../../stock/services/existing.service';
+import { MaterialTecnicoService } from '../../products/services/material-tecnico.service';
 
 interface Kpi {
   etiqueta: string; valor: string | number; icono: string; color: string; ruta: string;
@@ -51,6 +52,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private movSvc    = inject(MovementsService);
   private delSvc    = inject(DeliveryService);
   private existSvc  = inject(ExistingService);
+  private matSvc    = inject(MaterialTecnicoService);
 
   @ViewChild('onuChart') onuCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild('movChart') movCanvas?: ElementRef<HTMLCanvasElement>;
@@ -63,21 +65,33 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   stockCritico = signal(0);
   alertasPendientes = signal(0);
-  entregasPendientes = signal(0);
+  materialesEnTecnicos = signal(0);
   clientesActivos = signal(0);
 
   private graficos: Chart[] = [];
   private datos: Record<string, any[]> = {};
   private vistaLista = false;
 
-  quickActions = [
+  /** Rol del usuario: define qué accesos y tarjetas se muestran. */
+  readonly esTecnico = this.auth.rol() === 'TECNICO';
+  readonly veAtencion = this.auth.canAccess('/movimientos/alertas');
+
+  /** Solo se muestran los accesos a los que el cargo puede entrar. */
+  permitido(ruta: string): boolean { return this.auth.canAccess(ruta); }
+
+  private quickTodas = [
     { label: 'Nuevo Producto', icon: 'fa-box',          route: '/productos/lista',       color: '#3b82f6' },
     { label: 'Movimiento',     icon: 'fa-exchange-alt', route: '/movimientos/movimientos', color: '#10b981' },
     { label: 'Registrar ONU',  icon: 'fa-wifi',         route: '/onus/lista',            color: '#1b6f6f' },
     { label: 'Ver Alertas',    icon: 'fa-bell',         route: '/movimientos/alertas',   color: '#ef4444' },
     { label: 'Clientes',       icon: 'fa-user-plus',    route: '/clientes/lista',        color: '#8b5cf6' },
-    { label: 'Reportes',       icon: 'fa-chart-line',   route: '/reportes',              color: '#f59e0b' }
+    { label: 'Reportes',       icon: 'fa-chart-line',   route: '/reportes/ventas',            color: '#f59e0b' },
+    { label: 'Materiales',     icon: 'fa-toolbox',      route: '/materiales',            color: '#0ea5e9' },
+    { label: 'Recojo ONU',     icon: 'fa-truck-loading',route: '/onus/recojo',           color: '#f97316' },
+    { label: 'Mantenimiento',  icon: 'fa-screwdriver-wrench', route: '/onus/mantenimiento', color: '#64748b' }
   ];
+
+  get quickActions() { return this.quickTodas.filter(q => this.permitido(q.route)); }
 
   hoy = new Date().toLocaleDateString('es-BO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -110,7 +124,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       ['onus',       () => this.onuSvc.getAll()],
       ['alertas',    () => this.alertSvc.getAll()],
       ['movimientos',() => this.movSvc.getAll()],
-      ['entregas',   () => this.delSvc.getAll()],
+      ['materiales', () => this.matSvc.getAll(this.esTecnico ? this.miId() : undefined)],
       ['usuarios',   () => this.userSvc.getAll()]
     ];
     let pendientes = fuentes.length;
@@ -134,20 +148,21 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const clientesActivos = d['clientes'].filter(x => x.estado === 'ACTIVO').length;
     const alertasPend = d['alertas'].filter(x => x.estado === 'PENDIENTE');
     const criticas = alertasPend.filter(x => x.resultado === 'CRÍTICO').length;
-    const entregasPend = d['entregas'].filter(x => x.estado === 'PENDIENTE').length;
+    const matEnManos = d['materiales'].reduce((t, m) => t + Math.max(Number(m.pendiente) || 0, 0), 0);
+    const matAbiertas = d['materiales'].filter(m => m.estado !== 'CERRADO').length;
     const cargo = (x: any) => String(x.profile?.cargo ?? x.rol?.cargo ?? x.rol?.nombre ?? '');
     const tecnicos = d['usuarios'].filter(x => /t[eé]cnic/i.test(cargo(x))).length;
     const onuDisp = d['onus'].filter(x => x.estado === 'Disponible').length;
     const onuInst = d['onus'].filter(x => x.estado === 'Instalado').length;
     const movHoy = d['movimientos'].filter(x => esHoy(x.fecha)).length;
-    const entHoy = d['entregas'].filter(x => esHoy(x.fecha)).length;
+    const matHoy = d['materiales'].filter(x => esHoy(x.fecha)).length;
 
     this.stockCritico.set(stockCritico);
     this.alertasPendientes.set(alertasPend.length);
-    this.entregasPendientes.set(entregasPend);
+    this.materialesEnTecnicos.set(matEnManos);
     this.clientesActivos.set(clientesActivos);
 
-    this.kpis.set([
+    const todos: Kpi[] = [
       { etiqueta: 'Productos', valor: d['productos'].length, icono: 'fa-box', color: '#3b82f6', ruta: '/productos/lista',
         detalle: `${stockCritico} con stock crítico`, alerta: stockCritico > 0 },
       { etiqueta: 'Valor del inventario', valor: this.moneda(valor), icono: 'fa-coins', color: '#1b6f6f', ruta: '/movimientos/stock',
@@ -160,11 +175,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         detalle: criticas ? `${criticas} críticas` : 'Sin críticas', alerta: criticas > 0 },
       { etiqueta: 'Movimientos', valor: d['movimientos'].length, icono: 'fa-exchange-alt', color: '#10b981', ruta: '/movimientos/movimientos',
         detalle: `${movHoy} hoy` },
-      { etiqueta: 'Entregas pendientes', valor: entregasPend, icono: 'fa-truck', color: '#f59e0b', ruta: '/deliveries',
-        detalle: `${entHoy} hoy` },
+      { etiqueta: this.esTecnico ? 'Mis materiales' : 'Materiales con técnicos', valor: matEnManos, icono: 'fa-toolbox', color: '#f59e0b', ruta: '/materiales',
+        detalle: `${matAbiertas} entregas abiertas · ${matHoy} hoy` },
       { etiqueta: 'Usuarios', valor: d['usuarios'].length, icono: 'fa-user-cog', color: '#64748b', ruta: '/usuarios/lista',
         detalle: `${tecnicos} técnicos` }
-    ]);
+    ];
+    this.kpis.set(todos.filter(k => this.permitido(k.ruta)));
 
     // Actividad reciente: los 6 movimientos más nuevos
     const ordenados = [...d['movimientos']].sort((a, b) => String(b.fecha ?? '').localeCompare(String(a.fecha ?? '')));
@@ -236,6 +252,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         }
       }));
     }
+  }
+
+  /** Id del usuario con sesión (para que el técnico vea solo sus materiales). */
+  private miId(): number | undefined {
+    const u: any = this.currentUser();
+    return u?.idUser ?? u?.idUsuario ?? u?.userId ?? u?.id;
   }
 
   totalOnus(): number { return this.onusPorEstado().reduce((s, e) => s + e.cantidad, 0); }

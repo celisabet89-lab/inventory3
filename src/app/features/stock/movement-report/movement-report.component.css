@@ -699,3 +699,10 @@
     width: 100%;
   }
 }
+
+/* Varias líneas de una misma compra en una sola fila */
+.lineas-compra { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; min-width: 160px; }
+.lineas-compra li { display: flex; gap: 6px; font-size: 12.5px; }
+.linea-cant { font-weight: 700; color: var(--primary-dark, #0f4f4f); min-width: 28px; }
+
+.receipt-logo { display: block; margin: 0 auto 6px; max-width: 120px; max-height: 70px; object-fit: contain; }

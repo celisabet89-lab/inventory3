@@ -1,7 +1,7 @@
-<div class="onu-page">
+<div class="onu-page sl-page">
   <div class="page-header">
     <div class="header-left">
-      <span class="header-icon"><i class="fas fa-tools"></i></span>
+      <span class="header-icon"><i class="fas fa-tools" aria-hidden="true"></i></span>
       <div>
         <h2>ONU's en Mantenimiento</h2>
         <span class="header-sub">Gestión de ONU's en mantenimiento y diagnóstico</span>
@@ -13,7 +13,7 @@
     <div class="filtros">
       <label class="por-pagina">
         Mostrar
-        <select [ngModel]="porPagina()" (ngModelChange)="cambiarPorPagina($event)" name="porPagina">
+        <select aria-label="Registros por página" [ngModel]="porPagina()" (ngModelChange)="cambiarPorPagina($event)" name="porPagina">
           @for (n of opcionesPagina; track n) {
             <option [ngValue]="n">{{ n }}</option>
           }
@@ -21,9 +21,9 @@
         registros por página
       </label>
 
-      <label class="buscar-mant">
+      <label>
         Buscar
-        <input type="text" [ngModel]="busqueda()" (ngModelChange)="buscar($event)" name="buscar" placeholder="Serial, MAC, modelo..." />
+        <input type="text" aria-label="Buscar ONU" [ngModel]="busqueda()" (ngModelChange)="buscar($event)" name="buscar" placeholder="Serial, MAC, modelo..." />
       </label>
     </div>
 
@@ -40,11 +40,11 @@
               <td>{{ o.modelo }}</td>
               <td>{{ o.serial }}</td>
               <td>{{ o.mac }}</td>
-              <td><span class="badge" [class]="'badge ' + claseEstado(o.estado)">{{ o.estado }}</span></td>
+              <td><span [class]="'badge ' + claseEstado(o.estado)">{{ o.estado }}</span></td>
               <td>{{ o.observaciones || '—' }}</td>
               <td>
-                <button type="button" class="btn-sm" (click)="abrir(o)" title="Diagnosticar">
-                  <i class="fas fa-stethoscope"></i> Diagnosticar
+                <button type="button" class="btn-sm" (click)="abrir(o)" title="Diagnosticar" [attr.aria-label]="'Diagnosticar ONU ' + o.serial">
+                  <i class="fas fa-stethoscope" aria-hidden="true"></i> Diagnosticar
                 </button>
               </td>
             </tr>
@@ -68,8 +68,8 @@
 
 <!-- MODAL DIAGNÓSTICO -->
 @if (seleccionada(); as onu) {
-  <div class="modal-fondo" (click)="cerrar()">
-    <div class="modal modal-ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Diagnóstico ONU">
+  <div class="modal-fondo" (click)="cerrar()" (keydown.escape)="cerrar()">
+    <div class="modal modal-ancho modal-diag" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Diagnóstico ONU">
       <div class="modal-head">
         <h3><i class="fas fa-stethoscope"></i> Diagnóstico ONU</h3>
         <button type="button" class="modal-x" (click)="cerrar()" aria-label="Cerrar">×</button>
@@ -89,38 +89,60 @@
           }
         </div>
 
+        <div class="campo">
+          <label>Resultado del diagnóstico <span class="req">*</span></label>
+          <div class="resultado-grid" role="radiogroup" aria-label="Resultado del diagnóstico">
+            @for (r of resultados; track r.valor) {
+              <button type="button" class="resultado" [ngClass]="r.clase"
+                      [class.activo]="estadoNuevo === r.valor"
+                      role="radio" [attr.aria-checked]="estadoNuevo === r.valor"
+                      (click)="elegirResultado(r.valor)">
+                <i class="fas" [ngClass]="r.icono" aria-hidden="true"></i>
+                <b>{{ r.valor }}</b>
+                <small>{{ r.texto }}</small>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="campo">
+          <label>Pruebas realizadas</label>
+          <div class="chips">
+            @for (p of pruebasBase; track p) {
+              <button type="button" class="chip" [class.on]="pruebas().includes(p)"
+                      [attr.aria-pressed]="pruebas().includes(p)" (click)="alternarPrueba(p)">
+                <i class="fas" [ngClass]="pruebas().includes(p) ? 'fa-check' : 'fa-plus'" aria-hidden="true"></i> {{ p }}
+              </button>
+            }
+          </div>
+        </div>
+
         <div class="fila-2">
           <div class="campo">
             <label for="d-fecha">Fecha</label>
             <input id="d-fecha" type="date" [(ngModel)]="fecha" name="d-fecha" />
           </div>
-          <div class="campo">
-            <label for="d-estado">Resultado (estado) <span class="req">*</span></label>
-            <select id="d-estado" [(ngModel)]="estadoNuevo" name="d-estado">
-              <option value="">Seleccione estado...</option>
-              @for (e of estadosResultado; track e) {
-                <option [value]="e">{{ e }}</option>
-              }
-            </select>
-          </div>
+          @if (estadoNuevo === 'Disponible') {
+            <div class="campo">
+              <label for="d-alm">Destino almacén <span class="req">*</span></label>
+              <select id="d-alm" [(ngModel)]="almacen" name="d-alm">
+                <option value="">Seleccione almacén...</option>
+                @for (a of almacenes; track a) {
+                  <option [value]="a">{{ a }}</option>
+                }
+              </select>
+            </div>
+          }
         </div>
+        @if (estadoNuevo === 'Disponible') {
+          <small class="nota-ok">La ONU volverá al stock del producto.</small>
+        }
 
         <div class="campo">
           <label for="d-diag">Diagnóstico <span class="req">*</span></label>
-          <textarea id="d-diag" [(ngModel)]="diagnostico" name="d-diag" placeholder="Describe lo encontrado y lo realizado"></textarea>
-        </div>
-
-        <div class="campo">
-          <label for="d-alm">Destino almacén @if (estadoNuevo === 'Disponible') { <span class="req">*</span> }</label>
-          <select id="d-alm" [(ngModel)]="almacen" name="d-alm">
-            <option value="">Seleccione almacén...</option>
-            @for (a of almacenes; track a) {
-              <option [value]="a">{{ a }}</option>
-            }
-          </select>
-          @if (estadoNuevo === 'Disponible') {
-            <small style="color:#047857;font-weight:600">La ONU volverá al stock del producto.</small>
-          }
+          <textarea id="d-diag" [(ngModel)]="diagnostico" name="d-diag" [maxlength]="maxDiagnostico"
+                    placeholder="Describe lo encontrado y lo realizado"></textarea>
+          <small class="contador">{{ diagnostico.length }}/{{ maxDiagnostico }}</small>
         </div>
       </div>
 

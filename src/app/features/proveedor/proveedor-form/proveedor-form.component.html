@@ -1,38 +1,44 @@
 <div class="form-wrapper">
   <div class="form-header">
     <h2 class="form-title">
-      <i class="fas fa-truck"></i>
-      {{ isEditMode() ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+      <span class="avatar-prov" aria-hidden="true">{{ iniciales() }}</span>
+      <span class="titulo-tx">
+        {{ isEditMode() ? 'Editar proveedor' : 'Nuevo proveedor' }}
+        <small>{{ proveedorForm.get('empresa')?.value || 'Completa los datos de la empresa' }}</small>
+      </span>
     </h2>
-    <button type="button" class="btn-close" (click)="cancel()">
+    <button type="button" class="btn-close" (click)="cancel()" aria-label="Cerrar">
       <i class="fas fa-times"></i>
     </button>
   </div>
 
-  <form [formGroup]="proveedorForm" (ngSubmit)="onSubmit()" class="form-body">
+  <form [formGroup]="proveedorForm" (ngSubmit)="onSubmit()" class="form-body" novalidate>
+
+    <!-- Empresa -->
+    <h3 class="seccion"><i class="fas fa-building"></i> Datos de la empresa</h3>
     <div class="form-grid">
-      <!-- Empresa -->
       <div class="field full">
-        <label class="field-label">
-          <i class="fas fa-building"></i> Empresa <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          formControlName="empresa"
-          placeholder="Ej: Telefónica S.A."
-          class="field-input"
-          [class.error]="hasError('empresa','required') || hasError('empresa','minlength')" />
+        <label class="field-label" for="p-empresa">Empresa <span class="required">*</span></label>
+        <input id="p-empresa" type="text" formControlName="empresa" placeholder="Ej: Telefónica S.A."
+               class="field-input" autocomplete="off"
+               [class.error]="hasError('empresa','required') || hasError('empresa','minlength')" />
         @if (hasError('empresa','required') || hasError('empresa','minlength')) {
           <span class="field-error">{{ getError('empresa') }}</span>
         }
       </div>
 
-      <!-- País -->
       <div class="field">
-        <label class="field-label">
-          <i class="fas fa-globe-americas"></i> País <span class="required">*</span>
-        </label>
-        <select formControlName="pais" class="field-input" [class.error]="hasError('pais','required')">
+        <label class="field-label" for="p-ci">CI / NIT</label>
+        <input id="p-ci" type="text" formControlName="ciNit" placeholder="Número de documento"
+               class="field-input" autocomplete="off" [class.error]="hasError('ciNit','pattern')" />
+        @if (hasError('ciNit','pattern')) {
+          <span class="field-error">{{ getError('ciNit') }}</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="p-pais">País <span class="required">*</span></label>
+        <select id="p-pais" formControlName="pais" class="field-input" [class.error]="hasError('pais','required')">
           @for (p of paises; track p) {
             <option [value]="p">{{ p }}</option>
           }
@@ -41,89 +47,79 @@
           <span class="field-error">Selecciona un país</span>
         }
       </div>
+    </div>
 
-      <!-- Contacto -->
+    <!-- Contacto -->
+    <h3 class="seccion"><i class="fas fa-address-card"></i> Contacto</h3>
+    <div class="form-grid">
       <div class="field">
-        <label class="field-label">
-          <i class="fas fa-user-tie"></i> Contacto <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          formControlName="contacto"
-          placeholder="Ej: Juan Pérez"
-          class="field-input"
-          [class.error]="hasError('contacto','required') || hasError('contacto','minlength')" />
+        <label class="field-label" for="p-contacto">Persona de contacto <span class="required">*</span></label>
+        <input id="p-contacto" type="text" formControlName="contacto" placeholder="Ej: Juan Pérez"
+               class="field-input" autocomplete="off"
+               [class.error]="hasError('contacto','required') || hasError('contacto','minlength')" />
         @if (hasError('contacto','required') || hasError('contacto','minlength')) {
           <span class="field-error">{{ getError('contacto') }}</span>
         }
       </div>
 
-      <!-- Email -->
       <div class="field">
-        <label class="field-label">
-          <i class="fas fa-envelope"></i> Email <span class="required">*</span>
-        </label>
-        <input
-          type="email"
-          formControlName="email"
-          placeholder="contacto@empresa.com"
-          class="field-input"
-          [class.error]="hasError('email','required') || hasError('email','email')" />
+        <label class="field-label" for="p-email">Correo electrónico <span class="required">*</span></label>
+        <input id="p-email" type="email" formControlName="email" placeholder="contacto@empresa.com"
+               class="field-input" autocomplete="off"
+               [class.error]="hasError('email','required') || hasError('email','email')" />
         @if (hasError('email','required') || hasError('email','email')) {
           <span class="field-error">{{ getError('email') }}</span>
         }
       </div>
 
-      <!-- Dirección -->
       <div class="field full">
-        <label class="field-label">
-          <i class="fas fa-map-marker-alt"></i> Dirección <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          formControlName="direccion"
-          placeholder="Av. Principal #123, Ciudad"
-          class="field-input"
-          [class.error]="hasError('direccion','required') || hasError('direccion','minlength')" />
+        <label class="field-label" for="p-dir">Dirección <span class="required">*</span></label>
+        <input id="p-dir" type="text" formControlName="direccion" placeholder="Av. Principal #123, Ciudad"
+               class="field-input" autocomplete="off"
+               [class.error]="hasError('direccion','required') || hasError('direccion','minlength')" />
         @if (hasError('direccion','required') || hasError('direccion','minlength')) {
           <span class="field-error">{{ getError('direccion') }}</span>
         }
       </div>
+    </div>
 
-      <!-- Estado -->
-      <div class="field">
-        <label class="field-label">
-          <i class="fas fa-toggle-on"></i> Estado
-        </label>
-        <select formControlName="estado" class="field-input">
+    <!-- Estado y notas -->
+    <h3 class="seccion"><i class="fas fa-sliders"></i> Estado y notas</h3>
+    <div class="form-grid">
+      <div class="field full">
+        <span class="field-label">Estado</span>
+        <div class="estado-opciones" role="radiogroup" aria-label="Estado del proveedor">
           @for (e of estados; track e) {
-            <option [value]="e">{{ e === 'ACTIVO' ? '✓ Activo' : '✗ Inactivo' }}</option>
+            <button type="button" class="estado-op" role="radio"
+                    [class.activo]="proveedorForm.value.estado === e"
+                    [class.inactivo]="e === 'INACTIVO'"
+                    [attr.aria-checked]="proveedorForm.value.estado === e"
+                    (click)="setEstado(e)">
+              <i class="fas" [class.fa-circle-check]="e === 'ACTIVO'" [class.fa-circle-pause]="e === 'INACTIVO'"></i>
+              {{ e === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+            </button>
           }
-        </select>
+        </div>
       </div>
 
-      <!-- Observaciones -->
       <div class="field full">
-        <label class="field-label">
-          <i class="fas fa-comment"></i> Observaciones
-        </label>
-        <textarea
-          formControlName="observaciones"
-          rows="2"
-          placeholder="Notas adicionales sobre el proveedor..."
-          class="field-input"></textarea>
+        <label class="field-label" for="p-obs">Observaciones</label>
+        <textarea id="p-obs" formControlName="observaciones" rows="3" maxlength="300"
+                  placeholder="Condiciones de pago, tiempos de entrega, notas..." class="field-input"></textarea>
+        <span class="contador">{{ obsLength }}/300</span>
       </div>
     </div>
 
     <div class="form-actions">
+      <span class="nota-req"><span class="required">*</span> Campos obligatorios</span>
       <button type="button" (click)="cancel()" [disabled]="loading()" class="btn-cancel">
         <i class="fas fa-times"></i> Cancelar
       </button>
-      <button type="submit" [disabled]="loading() || proveedorForm.invalid" class="btn-save">
+      <button type="submit" [disabled]="loading()" class="btn-save">
         @if (loading()) {
           <i class="fas fa-spinner fa-spin"></i> Guardando...
         } @else {
-          <i class="fas fa-save"></i> {{ isEditMode() ? 'Actualizar' : 'Guardar' }}
+          <i class="fas fa-save"></i> {{ isEditMode() ? 'Actualizar proveedor' : 'Guardar proveedor' }}
         }
       </button>
     </div>

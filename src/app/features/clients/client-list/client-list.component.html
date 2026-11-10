@@ -1,129 +1,87 @@
-
-<div class="client-page">
+<div class="sl-page">
   <div class="page-header">
     <div class="header-left">
-      <i class="fas fa-users header-icon"></i>
+      <span class="header-icon"><i class="fa-solid fa-users"></i></span>
       <div>
         <h2>Clientes</h2>
-        <span class="header-sub">Gestión de clientes y lugares de venta</span>
+        <span class="header-sub">Gestión de clientes, contratos y lugares de venta</span>
       </div>
     </div>
-
     <button type="button" class="btn-nuevo" (click)="openNew()">
-      <i class="fas fa-plus"></i>
-      Nuevo Cliente
+      <i class="fa-solid fa-plus"></i> Nuevo cliente
     </button>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card s-total">
-      <div class="stat-icon-wrap"><i class="fas fa-users"></i></div>
-      <div>
-        <p class="stat-val">{{ stats().total }}</p>
-        <p class="stat-lbl">Total clientes</p>
-      </div>
-    </div>
-
-    <div class="stat-card s-activo">
-      <div class="stat-icon-wrap"><i class="fas fa-check-circle"></i></div>
-      <div>
-        <p class="stat-val">{{ stats().activos }}</p>
-        <p class="stat-lbl">Activos</p>
-      </div>
-    </div>
-
-    <div class="stat-card s-inactivo">
-      <div class="stat-icon-wrap"><i class="fas fa-ban"></i></div>
-      <div>
-        <p class="stat-val">{{ stats().inactivos }}</p>
-        <p class="stat-lbl">Inactivos</p>
-      </div>
-    </div>
-
-    <div class="stat-card s-lugar">
-      <div class="stat-icon-wrap"><i class="fas fa-store"></i></div>
-      <div>
-        <p class="stat-val">{{ stats().lugares }}</p>
-        <p class="stat-lbl">Lugares de venta</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="bar-filtros">
-    <div class="search-wrap">
-      <i class="fas fa-search"></i>
-      <input
-        type="search"
-        [(ngModel)]="searchTerm"
-        (input)="applyFilters()"
-        placeholder="Buscar por nombre, CI, teléfono, correo o lugar..."
-        class="search-in"
-        aria-label="Buscar clientes"
-      />
-
-      @if (searchTerm) {
-        <button
-          type="button"
-          class="clear-search"
-          (click)="searchTerm = ''; applyFilters()"
-          title="Limpiar búsqueda"
-          aria-label="Limpiar búsqueda">
-          <i class="fas fa-times"></i>
-        </button>
-      }
-    </div>
-
-    <select
-      [(ngModel)]="filtroEstado"
-      (change)="applyFilters()"
-      class="f-sel"
-      aria-label="Filtrar por estado">
-      <option value="TODOS">Todos los estados</option>
-      <option value="ACTIVO">Activos</option>
-      <option value="INACTIVO">Inactivos</option>
-    </select>
-
-    <button
-      type="button"
-      class="btn-refresh"
-      (click)="loadClients()"
-      title="Actualizar clientes"
-      aria-label="Actualizar clientes">
-      <i class="fas fa-sync-alt"></i>
+    <button type="button" class="stat-card s-total" [class.sel]="filtroEstado === 'TODOS'"
+            (click)="filtroEstado = 'TODOS'; applyFilters()" aria-label="Ver todos los clientes">
+      <span class="stat-icon"><i class="fa-solid fa-users"></i></span>
+      <span><b class="stat-val">{{ stats().total }}</b><span class="stat-lbl">Total clientes</span></span>
     </button>
+    <button type="button" class="stat-card s-activo" [class.sel]="filtroEstado === 'ACTIVO'"
+            (click)="filtroEstado = 'ACTIVO'; applyFilters()" aria-label="Filtrar clientes activos">
+      <span class="stat-icon"><i class="fa-solid fa-circle-check"></i></span>
+      <span><b class="stat-val">{{ stats().activos }}</b><span class="stat-lbl">Activos</span></span>
+    </button>
+    <button type="button" class="stat-card s-inactivo" [class.sel]="filtroEstado === 'INACTIVO'"
+            (click)="filtroEstado = 'INACTIVO'; applyFilters()" aria-label="Filtrar clientes inactivos">
+      <span class="stat-icon"><i class="fa-solid fa-ban"></i></span>
+      <span><b class="stat-val">{{ stats().inactivos }}</b><span class="stat-lbl">Inactivos</span></span>
+    </button>
+    <div class="stat-card s-lugar">
+      <span class="stat-icon"><i class="fa-solid fa-store"></i></span>
+      <span><b class="stat-val">{{ stats().lugares }}</b><span class="stat-lbl">Lugares de venta</span></span>
+    </div>
   </div>
 
-  <div class="results-line">
-    <span>
-      <i class="fas fa-list"></i>
+  <div class="card">
+    <div class="filtros">
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" [(ngModel)]="searchTerm" (input)="applyFilters()" name="buscar-cliente"
+               placeholder="Buscar por nombre, CI, contrato, teléfono, correo o lugar..." aria-label="Buscar clientes" />
+        @if (searchTerm) {
+          <button type="button" class="clear-search" title="Limpiar búsqueda" aria-label="Limpiar búsqueda"
+                  (click)="searchTerm = ''; applyFilters()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        }
+      </div>
+      <label>
+        Estado
+        <select [(ngModel)]="filtroEstado" (change)="applyFilters()" name="filtro-estado" aria-label="Filtrar por estado">
+          <option value="TODOS">Todos</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
+      </label>
+      <button type="button" class="btn-cerrar" (click)="loadClients()" title="Actualizar clientes" aria-label="Actualizar clientes">
+        <i class="fa-solid fa-rotate"></i> Actualizar
+      </button>
+    </div>
+
+    <p class="resumen" aria-live="polite">
       {{ filteredClients().length }}
       {{ filteredClients().length === 1 ? 'cliente encontrado' : 'clientes encontrados' }}
-    </span>
-  </div>
+    </p>
 
-  <div class="table-wrap">
     @if (loading()) {
-      <div class="empty-st">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>Cargando clientes...</p>
-      </div>
+      <div class="empty-st"><i class="fa-solid fa-spinner fa-spin"></i><p>Cargando clientes...</p></div>
     } @else if (filteredClients().length === 0) {
       <div class="empty-st">
-        <i class="fas fa-user-slash"></i>
+        <i class="fa-solid fa-user-slash"></i>
         <p>No se encontraron clientes</p>
         <span>Prueba con otro término o registra un nuevo cliente.</span>
-        <button type="button" class="btn-nuevo" (click)="openNew()">
-          <i class="fas fa-plus"></i>
-          Nuevo Cliente
-        </button>
+        <button type="button" class="btn-nuevo" (click)="openNew()"><i class="fa-solid fa-plus"></i> Nuevo cliente</button>
       </div>
     } @else {
       <div class="sl-table-wrap">
-        <table class="sl-table client-table">
+        <table class="sl-table">
           <thead>
           <tr>
             <th>N.º</th>
             <th>Cliente</th>
+            <th>Contrato</th>
             <th>CI / NIT</th>
             <th>Teléfono</th>
             <th>Email</th>
@@ -133,66 +91,42 @@
             <th>Acciones</th>
           </tr>
           </thead>
-
           <tbody>
             @for (c of filteredClients(); track (c.idCliente ?? c.id); let i = $index) {
               <tr [class.row-inactivo]="c.estado === 'INACTIVO'">
-                <td class="tc gray">{{ i + 1 }}</td>
-
+                <td class="gray">{{ i + 1 }}</td>
                 <td>
                   <div class="client-cell">
-                    <div
-                      class="client-avatar"
-                      [style.background]="c.estado === 'ACTIVO' ? '#1b6f6f' : '#9ca3af'">
-                      {{ getIniciales(c) || '?' }}
-                    </div>
-
-                    <div class="client-info">
+                    <span class="client-avatar" [class.off]="c.estado !== 'ACTIVO'">{{ getIniciales(c) || '?' }}</span>
+                    <span class="client-info">
                       <span class="client-nombre">{{ getNombre(c) }}</span>
-                      @if (c.direccion) {
-                        <span class="client-dir">{{ c.direccion }}</span>
-                      }
-                    </div>
+                      @if (c.direccion) { <span class="client-dir">{{ c.direccion }}</span> }
+                    </span>
                   </div>
                 </td>
-
+                <td>
+                  @if (c.nContrato) { <span class="contrato">{{ c.nContrato }}</span> } @else { — }
+                </td>
                 <td class="mono">{{ c.ci || '—' }}</td>
                 <td>{{ c.telefono || '—' }}</td>
                 <td>{{ c.gmail || c.email || '—' }}</td>
-
-                <td>
-                  <span class="lugar-badge">
-                    <i class="fas fa-store"></i>
-                    {{ getLugarNombre(c) }}
-                  </span>
-                </td>
-
+                <td><span class="lugar-badge"><i class="fa-solid fa-store"></i> {{ getLugarNombre(c) }}</span></td>
                 <td>{{ c.zona || '—' }}</td>
-
                 <td>
-                  <span class="estado-badge" [ngClass]="getEstadoClass(c.estado)">
-                    <i class="fas fa-circle"></i>
+                  <span class="badge" [ngClass]="getEstadoClass(c.estado)">
                     {{ c.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-
                 <td class="acc-cell">
-                  <button
-                    type="button"
-                    class="btn-ac edit"
-                    (click)="openEdit(c)"
-                    title="Editar cliente"
-                    aria-label="Editar cliente">
-                    <i class="fas fa-edit"></i>
+                  <button type="button" class="btn-ic" [class.ver]="c.estado !== 'ACTIVO'" [class.del]="c.estado === 'ACTIVO'" (click)="toggleEstado(c)"
+                          [title]="c.estado === 'ACTIVO' ? 'Desactivar cliente' : 'Activar cliente'" [attr.aria-label]="c.estado === 'ACTIVO' ? 'Desactivar cliente' : 'Activar cliente'">
+                    <i class="fa-solid" [class.fa-user-slash]="c.estado === 'ACTIVO'" [class.fa-user-check]="c.estado !== 'ACTIVO'"></i>
                   </button>
-
-                  <button
-                    type="button"
-                    class="btn-ac delete"
-                    (click)="deleteClient(c)"
-                    title="Eliminar cliente"
-                    aria-label="Eliminar cliente">
-                    <i class="fas fa-trash"></i>
+                  <button type="button" class="btn-ic edit" (click)="openEdit(c)" title="Editar cliente" aria-label="Editar cliente">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button type="button" class="btn-ic del" (click)="deleteClient(c)" title="Eliminar cliente" aria-label="Eliminar cliente">
+                    <i class="fa-solid fa-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -205,8 +139,8 @@
 </div>
 
 @if (showForm()) {
-  <div class="modal-overlay" (click)="closeForm()">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+  <div class="modal-fondo" (click)="closeForm()">
+    <div class="modal modal-ancho" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
       <app-client-form
         [client]="selectedClient"
         [isEdit]="isEditMode"

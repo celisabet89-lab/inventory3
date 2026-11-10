@@ -1,29 +1,11 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  signal
-} from '@angular/core';
-
-import {
-  CommonModule
-} from '@angular/common';
-
-import {
-  ActivatedRoute,
-  Router,
-  RouterModule
-} from '@angular/router';
-
-import {
-  FormsModule
-} from '@angular/forms';
-
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
+import {FormsModule} from '@angular/forms';
 import Swal from 'sweetalert2';
-
-import {
-  MovementsService
-} from '../services/movements.service';
+import {MovementsService} from '../services/movements.service';
+import { LOGO_REPORTE } from '../../../shared/exportar/logo';
+import { imprimirRecibo, usuarioEmisor } from '../../../shared/documento/recibo.util';
 
 @Component({
   selector: 'app-movement-report',
@@ -334,9 +316,48 @@ export class MovementReportComponent implements OnInit {
           this.obtenerFecha(a)
       );
 
+    // Compras: los productos con el mismo código van en una sola fila.
+    if (this.activeTab() === 'COMPRA') {
+      resultado = this.agruparPorCodigo(resultado);
+    }
+
     this.movimientos.set(resultado);
 
     this.actualizarResumen(resultado);
+  }
+
+  /** Une las líneas con el mismo código en una sola fila (conserva el orden). */
+  private agruparPorCodigo(lista: any[]): any[] {
+    const grupos = new Map<string, any[]>();
+
+    lista.forEach((m, i) => {
+      const codigo = String(m.codigo ?? m.nroMovimiento ?? '').trim();
+      const clave = codigo || `__solo_${m.idMovements ?? m.idMovimiento ?? i}`;
+      if (!grupos.has(clave)) grupos.set(clave, []);
+      grupos.get(clave)!.push(m);
+    });
+
+    return Array.from(grupos.values()).map(lineas => {
+      const activas = lineas.filter(l =>
+        String(l.estadoMovimiento || 'ACTIVO').toUpperCase() !== 'ANULADO');
+
+      return {
+        ...lineas[0],
+        __lineas: lineas,
+        cantidad: lineas.reduce((t, l) => t + (Number(l.cantidad) || 0), 0),
+        total: lineas.reduce((t, l) => t + this.getTotal(l), 0),
+        estadoMovimiento: activas.length === 0 ? 'ANULADO' : 'ACTIVO'
+      };
+    });
+  }
+
+  /** Productos de una fila (una compra puede tener varios). */
+  lineasDe(mov: any): any[] {
+    return mov?.__lineas?.length ? mov.__lineas : (mov ? [mov] : []);
+  }
+
+  precioDe(linea: any): number {
+    return Number(linea?.product?.precio || linea?.precio || 0);
   }
 
   limpiarFiltros(): void {
@@ -678,7 +699,42 @@ export class MovementReportComponent implements OnInit {
     this.mostrarDetalle.set(false);
   }
 
-  imprimir(): void {
+  readonly logo = LOGO_REPORTE;
+
+  /** Versión en hoja carta (para guardar como PDF). */
+  imprimirPdf(): void {
+    const mov = this.movimiento();
+    if (!mov) return;
+
+    const compra = this.activeTab() === 'COMPRA';
+    const lineas = this.lineasDe(mov);
+    imprimirRecibo({
+      titulo: compra ? 'Recibo de compra' : 'Recibo de venta',
+      numero: mov.codigo || mov.nroMovimiento || mov.idMovements || '—',
+      fecha: this.formatFecha(mov.fecha),
+      emitidoPor: usuarioEmisor(),
+      datos: [
+        { etiqueta: compra ? 'Proveedor' : 'Cliente', valor: mov.responsable || '—' },
+        { etiqueta: 'Usuario', valor: this.getUsuarioNombre(mov) },
+        { etiqueta: 'Forma de pago', valor: mov.formaPago || '—' },
+        { etiqueta: 'Estado de pago', valor: mov.estadoPago || '—' },
+        { etiqueta: 'Estado', valor: mov.estadoMovimiento || 'ACTIVO' }
+      ],
+      tablas: [{
+        titulo: 'Detalle',
+        columnas: [{ texto: 'Producto' }, { texto: 'Cant.', num: true }, { texto: 'Precio', num: true }, { texto: 'Subtotal', num: true }],
+        filas: lineas.map((l: any) => [
+          this.getProductoNombre(l), l.cantidad ?? 0, this.formatMoneda(this.precioDe(l)), this.formatMoneda(this.getTotal(l))
+        ])
+      }],
+      totales: [{ etiqueta: 'Total', valor: this.formatMoneda(this.getTotal(mov)), destacado: true }],
+      observaciones: mov.observaciones || undefined,
+      firmas: compra ? ['Entregó (proveedor)', 'Recibí conforme'] : ['Entregué conforme', 'Recibí conforme']
+    }, 'pdf');
+  }
+
+  /** Ticket de 80 mm para la impresora térmica. */
+  imprimirTicket(): void {
 
     const mov =
       this.movimiento();
@@ -703,13 +759,6 @@ export class MovementReportComponent implements OnInit {
       mov.idMovements ||
       '—';
 
-    const producto =
-      this.getProductoNombre(mov);
-
-    const descripcion =
-      mov.product?.descripcion ||
-      'Sin descripción';
-
     const usuario =
       this.getUsuarioNombre(mov);
 
@@ -720,17 +769,6 @@ export class MovementReportComponent implements OnInit {
     const fecha =
       this.formatFecha(
         mov.fecha
-      );
-
-    const cantidad =
-      mov.cantidad ||
-      0;
-
-    const precio =
-      Number(
-        mov.product?.precio ||
-        mov.precio ||
-        0
       );
 
     const total =
@@ -1052,6 +1090,8 @@ export class MovementReportComponent implements OnInit {
 
     <div class="company">
 
+      <img src="${LOGO_REPORTE}" alt="SIN LIMITE" style="display:block;margin:0 auto 2mm;max-width:34mm;max-height:22mm;filter:grayscale(1) contrast(1.6)">
+
       <h1>
         SIN LIMITE
       </h1>
@@ -1132,39 +1172,15 @@ export class MovementReportComponent implements OnInit {
         PRODUCTO
       </div>
 
+      ${this.lineasDe(mov).map(l => `
       <div class="product-name">
-        ${this.escapeHtml(producto)}
+        ${this.escapeHtml(this.getProductoNombre(l))}
       </div>
 
-      <div class="description">
-        ${this.escapeHtml(descripcion)}
-      </div>
-
-    </div>
-
-    <div class="line">
-
-      <span>
-        Cantidad:
-      </span>
-
-      <strong>
-        ${this.escapeHtml(cantidad)}
-      </strong>
-
-    </div>
-
-    <div class="line">
-
-      <span>
-        Precio:
-      </span>
-
-      <strong>
-        ${this.escapeHtml(
-      this.formatMoneda(precio)
-    )}
-      </strong>
+      <div class="line">
+        <span>${this.escapeHtml(l.cantidad ?? 0)} × ${this.escapeHtml(this.formatMoneda(this.precioDe(l)))}</span>
+        <strong>${this.escapeHtml(this.formatMoneda(this.getTotal(l)))}</strong>
+      </div>`).join('')}
 
     </div>
 

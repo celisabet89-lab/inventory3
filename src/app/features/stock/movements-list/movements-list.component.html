@@ -1,5 +1,5 @@
 <div
-  class="mov-page"
+  class="sl-page mov-page"
   [class.mode-salida]="tipoMovimiento === 'salida'"
 >
 
@@ -11,7 +11,9 @@
 
     <div class="header-left">
 
-      <i class="fas fa-exchange-alt header-icon"></i>
+      <span class="header-icon">
+        <i class="fas fa-exchange-alt"></i>
+      </span>
 
       <div>
 
@@ -30,6 +32,7 @@
     <div class="header-actions">
 
       <button
+        type="button"
         class="btn-report"
         (click)="abrirReporteGeneral()"
       >
@@ -61,6 +64,7 @@
   <div class="tipo-selector-bar">
 
     <button
+      type="button"
       class="tipo-btn"
       [class.active-entrada]="tipoMovimiento === 'entrada'"
       (click)="setTipo('entrada')"
@@ -74,6 +78,7 @@
 
 
     <button
+      type="button"
       class="tipo-btn"
       [class.active-salida]="tipoMovimiento === 'salida'"
       (click)="setTipo('salida')"
@@ -86,7 +91,7 @@
     </button>
 
 
-    <div class="tipo-indicator">
+    <div class="tipo-indicator" aria-live="polite">
 
       <span class="indicator-dot"></span>
 
@@ -472,6 +477,7 @@
             [(ngModel)]="productSearch"
             (input)="onProductSearch()"
             placeholder="Buscar..."
+            aria-label="Buscar producto"
             class="search-mini"
           />
 
@@ -484,7 +490,7 @@
 
         <div class="prod-scroll">
 
-          <table class="prod-table">
+          <table class="sl-table sl-table--sm prod-table">
 
             <thead>
 
@@ -673,18 +679,6 @@
         </div>
 
 
-        <div class="scroll-col">
-
-          <button class="arr">
-            ▲
-          </button>
-
-          <button class="arr">
-            ▼
-          </button>
-
-        </div>
-
       </div>
 
     </div>
@@ -729,7 +723,7 @@
 
     <div class="detalle-scroll">
 
-      <table class="det-table">
+      <table class="sl-table sl-table--sm det-table">
 
         <thead>
 
@@ -890,8 +884,8 @@
                   <input
                     type="text"
                     [(ngModel)]="item.almacen"
-                    class="i-inline"
-                    style="width:90px"
+                    class="i-inline i-almacen"
+                    aria-label="Almacén"
                   />
 
                 }
@@ -921,6 +915,7 @@
                   [(ngModel)]="item.cantidad"
                   min="1"
                   class="i-inline i-num"
+                  aria-label="Cantidad"
                   (change)="
                     recalcItem(item)
                   "
@@ -937,6 +932,7 @@
                   min="0"
                   step="0.01"
                   class="i-inline i-num"
+                  aria-label="Precio"
                   (change)="
                     recalcItem(item)
                   "
@@ -953,6 +949,7 @@
                   min="0"
                   max="100"
                   class="i-inline i-num"
+                  aria-label="Descuento %"
                   (change)="
                     recalcItem(item)
                   "
@@ -978,9 +975,11 @@
               <td class="tc">
 
                 <button
+                  type="button"
                   (click)="removeItem(item.seq)"
-                  class="btn-del"
+                  class="btn-ic del btn-del"
                   title="Eliminar"
+                  aria-label="Eliminar fila"
                 >
 
                   <i class="fas fa-trash"></i>
@@ -1007,8 +1006,9 @@
     <div class="detalle-foot">
 
       <button
+        type="button"
         (click)="cancelar()"
-        class="btn-cancel"
+        class="btn-cerrar btn-cancel"
       >
 
         <i class="fas fa-times"></i>
@@ -1019,8 +1019,9 @@
 
 
       <button
+        type="button"
         (click)="guardar()"
-        class="btn-guardar"
+        class="btn-registrar btn-guardar"
         [disabled]="loading()"
       >
 

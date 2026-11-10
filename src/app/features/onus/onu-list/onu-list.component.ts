@@ -6,6 +6,8 @@ import { OnuMovimiento, OnuOperacionesService } from '../services/onu-operacione
 import { OnuFormComponent } from '../onu-form/onu-form.component';
 import { Onu } from '../../../models/onu.model';
 import { Router } from '@angular/router';
+import { ClienteOnu, ClienteOnuService } from '../services/cliente-onu.service';
+import { ALMACEN_DEFECTUOSOS, ALMACEN_MANTENIMIENTO, ALMACEN_PRINCIPAL } from '../onu.constants';
 import Swal from 'sweetalert2';
 
 interface OnuStats {
@@ -24,6 +26,8 @@ export class OnuListComponent implements OnInit {
   private onuService = inject(OnuService);
   private operaciones = inject(OnuOperacionesService);
   private router = inject(Router);
+  private clienteSvc = inject(ClienteOnuService);
+  clientes: ClienteOnu[] = [];
 
   onus = signal<Onu[]>([]);
   filteredOnus = signal<Onu[]>([]);
@@ -63,7 +67,10 @@ export class OnuListComponent implements OnInit {
   totalPages = signal(1);
   Math = Math;
 
-  ngOnInit(): void { this.loadOnus(); }
+  ngOnInit(): void {
+    this.loadOnus();
+    this.clienteSvc.getAll().subscribe({ next: c => this.clientes = c, error: () => this.clientes = [] });
+  }
 
   loadOnus(): void {
     this.loading.set(true);
@@ -141,22 +148,80 @@ export class OnuListComponent implements OnInit {
   }
 
   cambiarEstado(onu: Onu): void {
-    const opts: any = {};
-    this.estadoOptions.filter(e => e.value !== 'TODOS').forEach(e => opts[e.value] = e.label);
+    const opciones = this.estadoOptions.filter(e => e.value !== 'TODOS')
+      .map(e => `<option value="${e.value}" ${e.value === onu.estado ? 'selected' : ''}>${this.esc(e.label)}</option>`).join('');
+    const clientes = this.clientes
+      .map(c => `<option value="${c.id}">${this.esc(c.nombre)}${c.numeroContrato ? ' — Contrato ' + this.esc(c.numeroContrato) : ''}</option>`).join('');
+
     Swal.fire({
-      title: `Cambiar Estado — ${onu.marca} ${onu.modelo}`,
-      input: 'select', inputOptions: opts, inputValue: onu.estado,
-      inputLabel: 'Solo las ONUs "Disponible" cuentan en el stock del producto.',
+      title: `Cambiar Estado — ${this.esc(onu.marca)} ${this.esc(onu.modelo)}`,
+      html: `
+        <div style="text-align:left">
+          <label for="sw-estado" style="font-weight:700;font-size:13px">Estado</label>
+          <select id="sw-estado" class="swal2-select" style="width:100%;margin:6px 0 10px">${opciones}</select>
+          <div id="sw-cli-box" style="display:none">
+            <label for="sw-cliente" style="font-weight:700;font-size:13px">Cliente ONU donde se instala</label>
+            <select id="sw-cliente" class="swal2-select" style="width:100%;margin:6px 0 4px">
+              <option value="">Seleccionar cliente...</option>${clientes}
+            </select>
+          </div>
+          <div id="sw-info" style="font-size:12.5px;color:#6b7280;margin-top:6px"></div>
+        </div>`,
       showCancelButton: true, confirmButtonColor: '#1b6f6f',
-      confirmButtonText: 'Cambiar', cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (r.isConfirmed && onu.id) {
-        const nuevoEstado = r.value as any;
-        this.onuService.update(onu.id, { marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac, observaciones: onu.observaciones, estado: nuevoEstado, contrato: onu.contrato, codigoQR: onu.codigoQR, tipoPortador: onu.tipoPortador, portador: onu.portador, almacen: onu.almacen }).subscribe({
-          next: () => { Swal.fire({ icon: 'success', title: `Estado: ${nuevoEstado}`, timer: 1800, showConfirmButton: false }); this.loadOnus(); },
-          error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar' })
-        });
+      confirmButtonText: 'Cambiar', cancelButtonText: 'Cancelar',
+      didOpen: () => {
+        const est = document.getElementById('sw-estado') as HTMLSelectElement;
+        const box = document.getElementById('sw-cli-box') as HTMLElement;
+        const info = document.getElementById('sw-info') as HTMLElement;
+        const refrescar = () => {
+          box.style.display = est.value === 'Instalado' ? 'block' : 'none';
+          info.textContent =
+            est.value === 'Mantenimiento' || est.value === 'Observado' ? `Se quitará el responsable y quedará en «${ALMACEN_MANTENIMIENTO}».` :
+              est.value === 'Defectuoso' ? `Se quitará el responsable y quedará en «${ALMACEN_DEFECTUOSOS}».` :
+                est.value === 'Disponible' ? `Se quitará el responsable y quedará en «${ALMACEN_PRINCIPAL}». Solo las ONUs "Disponible" cuentan en el stock del producto.` : '';
+        };
+        est.addEventListener('change', refrescar);
+        refrescar();
+      },
+      preConfirm: () => {
+        const estado = (document.getElementById('sw-estado') as HTMLSelectElement).value;
+        const clienteId = (document.getElementById('sw-cliente') as HTMLSelectElement | null)?.value ?? '';
+        if (estado === 'Instalado' && !clienteId) {
+          Swal.showValidationMessage('Selecciona el cliente donde se instala la ONU');
+          return false;
+        }
+        return { estado, clienteId };
       }
+    }).then(r => {
+      if (!r.isConfirmed || !onu.id || !r.value) return;
+      const { estado, clienteId } = r.value as { estado: string; clienteId: string };
+
+      let tipoPortador = onu.tipoPortador;
+      let portador = onu.portador;
+      let almacen = onu.almacen;
+      let contrato = onu.contrato;
+
+      if (estado === 'Instalado') {
+        const c = this.clientes.find(x => x.id === Number(clienteId));
+        tipoPortador = 'Cliente';
+        portador = c?.nombre ?? '';
+        contrato = c?.numeroContrato ? Number(c.numeroContrato) : contrato;
+        almacen = undefined;
+      } else if (estado === 'Disponible' || estado === 'Mantenimiento' || estado === 'Observado' || estado === 'Defectuoso') {
+        // Se borran "Asignado a" y "Responsable"; la ONU queda en el almacén correspondiente.
+        tipoPortador = undefined as any;
+        portador = undefined as any;
+        contrato = undefined;
+        almacen = estado === 'Disponible' ? ALMACEN_PRINCIPAL : estado === 'Defectuoso' ? ALMACEN_DEFECTUOSOS : ALMACEN_MANTENIMIENTO;
+      }
+
+      this.onuService.update(onu.id, {
+        marca: onu.marca, modelo: onu.modelo, serial: onu.serial, mac: onu.mac, observaciones: onu.observaciones,
+        estado: estado as any, contrato, codigoQR: onu.codigoQR, tipoPortador, portador, almacen
+      }).subscribe({
+        next: () => { Swal.fire({ icon: 'success', title: `Estado: ${estado}`, timer: 1800, showConfirmButton: false }); this.loadOnus(); },
+        error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar' })
+      });
     });
   }
 

@@ -5,7 +5,8 @@ import { Pago } from '../../pago/service/pago.service';
 
 export type TipoReporte =
   | 'COBRANZAS' | 'VENTAS' | 'INGRESOS' | 'COBROS' | 'PAGOS' | 'CANASTILLOS'
-  | 'USUARIOS' | 'CLIENTES' | 'PRODUCTOS' | 'PROVEEDORES' | 'ONUS';
+  | 'USUARIOS' | 'CLIENTES' | 'PRODUCTOS' | 'PROVEEDORES' | 'ONUS'
+  | 'MATERIALES' | 'CLIENTES_ONU' | 'ONUS_MANTENIMIENTO' | 'STOCK' | 'ALERTAS';
 
 export interface DatosReporte {
   movs: any[];
@@ -17,6 +18,9 @@ export interface DatosReporte {
   proveedores?: any[];
   onus?: any[];
   existencias?: any[];
+  materiales?: any[];
+  clientesOnu?: any[];
+  alertas?: any[];
 }
 
 export interface FiltrosReporte {
@@ -59,7 +63,12 @@ export const REPORTES: InfoReporte[] = [
   { tipo: 'CLIENTES', titulo: 'Reporte de Clientes', etiquetaContraparte: 'Estado', tituloDatos: 'Datos Cliente', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (nombre, CI, zona):' },
   { tipo: 'PRODUCTOS', titulo: 'Reporte de Productos', etiquetaContraparte: 'Categoría', tituloDatos: 'Datos Producto', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar producto:' },
   { tipo: 'PROVEEDORES', titulo: 'Reporte de Proveedores', etiquetaContraparte: 'Estado', tituloDatos: 'Datos Proveedor', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (empresa, contacto, NIT):' },
-  { tipo: 'ONUS', titulo: 'Reporte de ONUs', etiquetaContraparte: 'Estado', tituloDatos: 'Datos ONU', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (serial, MAC, cliente):' }
+  { tipo: 'ONUS', titulo: 'Reporte de ONUs', etiquetaContraparte: 'Estado', tituloDatos: 'Datos ONU', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (serial, MAC, cliente):' },
+  { tipo: 'ONUS_MANTENIMIENTO', titulo: 'Reporte de ONUs en Mantenimiento', etiquetaContraparte: 'Estado', tituloDatos: 'Datos ONU', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (serial, MAC, diagnóstico):' },
+  { tipo: 'CLIENTES_ONU', titulo: 'Reporte de Clientes ONU', etiquetaContraparte: 'Tipo de cliente', tituloDatos: 'Datos Cliente ONU', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (nombre, CI, contrato):' },
+  { tipo: 'MATERIALES', titulo: 'Reporte de Materiales de Técnicos', etiquetaContraparte: 'Técnico', tituloDatos: 'Datos Materiales', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar (material, destino, estado):' },
+  { tipo: 'STOCK', titulo: 'Reporte de Stock', etiquetaContraparte: 'Estado de stock', tituloDatos: 'Datos Stock', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar producto o categoría:' },
+  { tipo: 'ALERTAS', titulo: 'Reporte de Alertas de Stock', etiquetaContraparte: 'Estado', tituloDatos: 'Datos Alerta', esListado: true, usaPalabra: true, etiquetaPalabra: 'Buscar producto:' }
 ];
 
 export function infoDe(tipo: TipoReporte): InfoReporte {
@@ -161,6 +170,7 @@ export function construirReporte(tipo: TipoReporte, d: DatosReporte, f: FiltrosR
     case 'PAGOS': return reporteRegistros(d, f, 'PAGOS');
     case 'CANASTILLOS': return reporteCanastillos(d, f);
     case 'USUARIOS': case 'CLIENTES': case 'PRODUCTOS': case 'PROVEEDORES': case 'ONUS':
+    case 'ONUS_MANTENIMIENTO': case 'CLIENTES_ONU': case 'MATERIALES': case 'STOCK': case 'ALERTAS':
       return reporteListado(tipo, d, f);
     default: return reporteCobranzas(d, f);
   }
@@ -428,12 +438,57 @@ function listado(tipo: TipoReporte, d: DatosReporte): FilaListado[] {
         ])
       );
 
+    case 'CLIENTES_ONU':
+      return (d.clientesOnu ?? []).map(c =>
+        fila(c.tipoCliente?.nombre ?? 'Sin tipo', [
+          txt(c.numeroContrato), txt(c.nombre), txt(c.ci), txt(c.celular), txt(c.tipoCliente?.nombre ?? 'Sin tipo'),
+          txt(c.direccion), txt(c.ubicacion), dia(c.fechaNacimiento ?? undefined)
+        ])
+      );
+
+    case 'MATERIALES':
+      return (d.materiales ?? []).map(m =>
+        fila(m.tecnicoNombre ?? 'Sin técnico', [
+          dia(m.fecha), txt(m.tecnicoNombre), txt(m.producto?.articulo), txt(m.destino),
+          Number(m.cantidad) || 0, Number(m.cantidadUsada) || 0, Number(m.cantidadDevuelta) || 0,
+          Number(m.pendiente ?? ((m.cantidad || 0) - (m.cantidadUsada || 0) - (m.cantidadDevuelta || 0))) || 0,
+          txt(m.estado), txt(m.asignadoPor)
+        ])
+      );
+
+    case 'STOCK':
+      return (d.existencias ?? []).map(e => {
+        const actual = Number(e.stockACtual) || 0;
+        const minimo = Number(e.stockMinimo) || 0;
+        const estado = actual <= 0 ? 'Agotado' : actual <= minimo ? 'Crítico' : actual <= minimo * 1.5 ? 'Bajo' : 'Normal';
+        const categoria = typeof e.product?.categoria === 'string' ? e.product.categoria : e.product?.categoria?.nombre;
+        return fila(estado, [
+          txt(e.product?.articulo), txt(categoria || 'Sin categoría'), actual, minimo,
+          redondear(Number(e.product?.precio) || 0), redondear(actual * (Number(e.product?.precio) || 0)), estado
+        ]);
+      });
+
+    case 'ALERTAS':
+      return (d.alertas ?? []).map(a =>
+        fila(a.estado, [
+          dia(a.fecha), txt(a.product?.articulo), Number(a.stockActual) || 0, Number(a.stockMinimo) || 0,
+          txt(a.estado), txt(a.resultado ?? a.descripcion)
+        ])
+      );
+
+    case 'ONUS_MANTENIMIENTO':
+      return (d.onus ?? [])
+        .filter(o => ['Mantenimiento', 'En Reparación', 'Recogido', 'Observado', 'Defectuoso'].includes(o.estado))
+        .map(o => fila(o.estado, [
+          txt(o.marca), txt(o.modelo), txt(o.serial), txt(o.mac), txt(o.almacen), txt(o.estado), txt(o.observaciones)
+        ]));
+
     default:
       return (d.onus ?? []).map(o =>
         fila(o.estado, [
-          txt(o.marca), txt(o.modelo), txt(o.serial), txt(o.mac), txt(o.contrato),
-          nombreCompleto(o.cliente?.nombre, o.cliente?.apellido) || 'Sin asignar',
-          txt(o.portador), txt(o.estado)
+          txt(o.marca), txt(o.modelo), txt(o.serial), txt(o.mac), txt(o.contrato ?? o.client?.numeroContrato),
+          txt(o.client?.nombre) || 'Sin asignar',
+          [txt(o.tipoPortador), txt(o.portador)].filter(Boolean).join(': '), txt(o.almacen), txt(o.estado)
         ])
       );
   }
@@ -448,7 +503,18 @@ const COLUMNAS_LISTADO: Record<string, { columnas: string[]; numericas?: number[
     enteras: [5, 6]
   },
   PROVEEDORES: { columnas: ['Empresa', 'Contacto', 'Correo', 'CI/NIT', 'País', 'Dirección', 'Estado', 'Registro'] },
-  ONUS: { columnas: ['Marca', 'Modelo', 'Serial', 'MAC', 'Contrato', 'Cliente', 'Portador', 'Estado'] }
+  ONUS: { columnas: ['Marca', 'Modelo', 'Serial', 'MAC', 'Contrato', 'Cliente', 'Portador', 'Almacén', 'Estado'] },
+  ONUS_MANTENIMIENTO: { columnas: ['Marca', 'Modelo', 'Serial', 'MAC', 'Almacén', 'Estado', 'Observaciones'] },
+  CLIENTES_ONU: { columnas: ['Contrato', 'Cliente', 'CI', 'Celular', 'Tipo', 'Dirección', 'Ubicación', 'F. nacimiento'] },
+  MATERIALES: {
+    columnas: ['Fecha', 'Técnico', 'Material', 'Destino', 'Entregado', 'Usado', 'Devuelto', 'Pendiente', 'Estado', 'Entregó'],
+    numericas: [4, 5, 6, 7], enteras: [4, 5, 6, 7]
+  },
+  STOCK: {
+    columnas: ['Producto', 'Categoría', 'Stock', 'Mínimo', 'Precio', 'Valor', 'Estado'],
+    numericas: [2, 3, 4, 5], enteras: [2, 3]
+  },
+  ALERTAS: { columnas: ['Fecha', 'Producto', 'Stock actual', 'Stock mínimo', 'Estado', 'Detalle'], numericas: [2, 3], enteras: [2, 3] }
 };
 
 function reporteListado(tipo: TipoReporte, d: DatosReporte, f: FiltrosReporte): TablaExportable {
@@ -463,6 +529,12 @@ function reporteListado(tipo: TipoReporte, d: DatosReporte, f: FiltrosReporte): 
     .filter(r => !buscar || r.texto.includes(buscar));
 
   const resumen = [{ etiqueta: 'Total registros', valor: String(filas.length) }];
+  if (tipo === 'MATERIALES') {
+    resumen.push({ etiqueta: 'Unidades pendientes', valor: String(filas.reduce((t, r) => t + (Number(r.celdas[7]) || 0), 0)) });
+  }
+  if (tipo === 'STOCK') {
+    resumen.push({ etiqueta: 'Valor del stock', valor: moneda(filas.reduce((t, r) => t + (Number(r.celdas[5]) || 0), 0)) });
+  }
   if (tipo === 'PRODUCTOS') {
     const valor = filas.reduce((s, r) => s + (Number(r.celdas[4]) || 0) * (Number(r.celdas[5]) || 0), 0);
     resumen.push({ etiqueta: 'Valor del inventario', valor: moneda(valor) });

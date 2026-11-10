@@ -1,4 +1,3 @@
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +9,7 @@ import Swal from 'sweetalert2';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './lugar-venta-list.component.html',
-  styleUrls: ['./lugar-venta-list.component.css']
+  styleUrls: ['../../../../shared/onu-pantalla.css', './lugar-venta-list.component.css']
 })
 export class LugarVentaListComponent implements OnInit {
   private svc = inject(LugarVentaService);
@@ -58,6 +57,10 @@ export class LugarVentaListComponent implements OnInit {
 
       return coincideEstado && coincideBusqueda;
     });
+  }
+
+  ubicacion(l: any): string {
+    return [l?.ciudad, l?.zona].filter(v => !!v).join(' · ');
   }
 
   get totalActivos(): number {
@@ -187,6 +190,27 @@ export class LugarVentaListComponent implements OnInit {
         this.errorMsg = err?.error?.message ??
           'No se pudo guardar el lugar. Comprueba los datos e inténtalo nuevamente.';
       }
+    });
+  }
+
+  /** Activa o desactiva el lugar (conserva el resto de sus datos). */
+  toggleEstado(lugar: any): void {
+    const nuevo = lugar.estado === 'INACTIVO' ? 'ACTIVO' : 'INACTIVO';
+    const accion = nuevo === 'ACTIVO' ? 'activar' : 'desactivar';
+    Swal.fire({
+      icon: 'question', title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} "${lugar.nombre}"?`,
+      showCancelButton: true, confirmButtonText: `Sí, ${accion}`, cancelButtonText: 'Cancelar',
+      confirmButtonColor: nuevo === 'ACTIVO' ? '#059669' : '#dc2626', reverseButtons: true
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      const body = {
+        nombre: lugar.nombre, direccion: lugar.direccion ?? '', zona: lugar.zona ?? '', ciudad: lugar.ciudad ?? '',
+        telefono: lugar.telefono ?? '', referencia: lugar.referencia ?? '', estado: nuevo
+      };
+      this.svc.update(Number(lugar.idLugarVenta), body).subscribe({
+        next: () => this.load(),
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo cambiar el estado', text: err?.error?.message ?? 'Inténtalo nuevamente.' })
+      });
     });
   }
 

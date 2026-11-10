@@ -393,6 +393,8 @@
 
               <div class="receipt-company">
 
+                <img class="receipt-logo" [src]="logo" alt="SIN LIMITE">
+
                 <h2>
                   SIN LIMITE
                 </h2>
@@ -507,69 +509,19 @@
 
 
               <div class="receipt-product">
-
                 <div class="product-title">
-                  PRODUCTO
+                  {{ lineasDe(movimiento()).length > 1 ? 'PRODUCTOS' : 'PRODUCTO' }}
                 </div>
-
-
-                <div class="product-name">
-
-                  {{
-                    getProductoNombre(
-                      movimiento()
-                    )
-                  }}
-
-                </div>
-
-
-                <div class="product-description">
-
-                  {{
-                    movimiento()?.product?.descripcion ||
-                    'Sin descripción'
-                  }}
-
-                </div>
-
-
-                <div class="receipt-line">
-
-                  <span>
-                    Cantidad:
-                  </span>
-
-                  <strong>
-                    {{
-                      movimiento()?.cantidad ||
-                      0
-                    }}
-                  </strong>
-
-                </div>
-
-
-                <div class="receipt-line">
-
-                  <span>
-                    Precio:
-                  </span>
-
-                  <strong>
-                    {{
-                      formatMoneda(
-                        movimiento()?.product?.precio ||
-                        movimiento()?.precio ||
-                        0
-                      )
-                    }}
-                  </strong>
-
-                </div>
-
+                @for (l of lineasDe(movimiento()); track $index) {
+                  <div class="product-name">
+                    {{ getProductoNombre(l) }}
+                  </div>
+                  <div class="receipt-line">
+                    <span>{{ l.cantidad || 0 }} × {{ formatMoneda(precioDe(l)) }}</span>
+                    <strong>{{ formatMoneda(getTotal(l)) }}</strong>
+                  </div>
+                }
               </div>
-
 
               <div class="receipt-divider">
                 ---------------------------------
@@ -723,9 +675,19 @@
               <button
                 type="button"
                 class="btn-print"
-                (click)="imprimir()">
+                (click)="imprimirTicket()">
 
-                🖨 Imprimir recibo
+                🖨 Ticket térmico
+
+              </button>
+
+
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="imprimirPdf()">
+
+                📄 PDF
 
               </button>
 
@@ -899,16 +861,15 @@
 
 
                     <td class="product-cell">
-
-                      {{
-                        getProductoNombre(
-                          mov
-                        )
-                      }}
-
+                      <ul class="lineas-compra">
+                        @for (l of lineasDe(mov); track $index) {
+                          <li>
+                            <span class="linea-cant">{{ l.cantidad ?? '—' }}×</span>
+                            <span>{{ getProductoNombre(l) }}</span>
+                          </li>
+                        }
+                      </ul>
                     </td>
-
-
                     <td class="center-cell">
 
                       {{
@@ -1022,19 +983,11 @@
                   </tr>
 
                 }
-
               </tbody>
-
             </table></div>
-
           </div>
-
         }
-
       </div>
-
     }
-
   }
-
 </div>

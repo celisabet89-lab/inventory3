@@ -70,15 +70,17 @@
               @if (sidebarOpen() && item.isOpen) {
                 <div class="submenu">
                   @for (subItem of item.subItems; track subItem.path) {
-                    <a
-                      class="submenu-item"
-                      [routerLink]="subItem.path"
-                      routerLinkActive="active"
-                      [routerLinkActiveOptions]="{ exact: false }"
-                    >
-                      <i [class]="'fas ' + subItem.icon"></i>
-                      <span class="menu-label">{{ subItem.label }}</span>
-                    </a>
+                    @if (puede(subItem.path)) {
+                      <a
+                        class="submenu-item"
+                        [routerLink]="subItem.path"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: false }"
+                      >
+                        <i [class]="'fas ' + subItem.icon"></i>
+                        <span class="menu-label">{{ subItem.label }}</span>
+                      </a>
+                    }
                   }
                 </div>
               }

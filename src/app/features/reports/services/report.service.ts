@@ -32,7 +32,10 @@ export class ReportsService {
       productos: this.lista('product'),
       proveedores: this.lista('proveedor'),
       onus: this.lista('onu'),
-      existencias: this.lista('existing')
+      existencias: this.lista('existing'),
+      materiales: this.lista('materiales-tecnico'),
+      clientesOnu: this.lista('cliente-onu'),
+      alertas: this.lista('alert')
     });
   }
 }

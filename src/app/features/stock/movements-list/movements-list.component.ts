@@ -77,7 +77,7 @@ export interface DetalleItem {
 
   templateUrl: 'movements-list.component.html',
 
-  styleUrls: ['movements-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', 'movements-list.component.css']
 })
 
 

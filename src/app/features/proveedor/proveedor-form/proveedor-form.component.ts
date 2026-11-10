@@ -64,6 +64,7 @@ export class ProveedorFormComponent implements OnInit {
       pais: ['Bolivia', Validators.required],
       contacto: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
+      ciNit: ['', Validators.pattern(/^[0-9A-Za-z.\-\s]{5,20}$/)],
       direccion: ['', [Validators.required, Validators.minLength(5)]],
       estado: ['ACTIVO', Validators.required],
       observaciones: ['']
@@ -72,16 +73,15 @@ export class ProveedorFormComponent implements OnInit {
 
   loadProveedor(id: number): void {
     this.loading.set(true);
-    console.log('🔄 Cargando proveedor ID:', id);
 
     this.proveedorService.getById(id).subscribe({
       next: (p: any) => {
-        console.log('✅ Proveedor cargado:', p);
         this.proveedorForm.patchValue({
           empresa: p.empresa,
           pais: p.pais || 'Bolivia',
           contacto: p.contacto,
           email: p.email,
+          ciNit: p.ciNit ?? '',
           direccion: p.direccion,
           estado: p.estado ?? 'ACTIVO',
           observaciones: p.observaciones ?? ''
@@ -89,7 +89,6 @@ export class ProveedorFormComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('❌ Error cargando proveedor:', err);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -108,15 +107,13 @@ export class ProveedorFormComponent implements OnInit {
       );
 
       // Mostrar mensaje de error específico
-      const errors = [];
-      if (this.proveedorForm.get('empresa')?.errors) errors.push('Empresa');
-      if (this.proveedorForm.get('contacto')?.errors) errors.push('Contacto');
-      if (this.proveedorForm.get('email')?.errors) errors.push('Email');
-      if (this.proveedorForm.get('direccion')?.errors) errors.push('Dirección');
+      const nombres: Record<string, string> = { empresa: 'Empresa', contacto: 'Contacto', email: 'Email', direccion: 'Dirección' };
+      const errors = Object.keys(nombres).filter(k => this.proveedorForm.get(k)?.errors).map(k => nombres[k]);
 
       Swal.fire({
         icon: 'warning',
         title: 'Formulario incompleto',
+        confirmButtonColor: '#1b6f6f',
         text: `Completa los campos requeridos: ${errors.join(', ')}`
       });
       return;
@@ -126,16 +123,15 @@ export class ProveedorFormComponent implements OnInit {
     const v = this.proveedorForm.value;
 
     const data: any = {
-      empresa: v.empresa.trim(),
+      empresa: String(v.empresa).trim(),
       pais: v.pais,
-      contacto: v.contacto.trim(),
-      email: v.email.trim().toLowerCase(),
-      direccion: v.direccion.trim(),
+      contacto: String(v.contacto).trim(),
+      email: String(v.email).trim().toLowerCase(),
+      ciNit: String(v.ciNit ?? '').trim() || null,
+      direccion: String(v.direccion).trim(),
       estado: v.estado,
       observaciones: v.observaciones || null
     };
-
-    console.log('📦 Guardando proveedor:', data);
 
     const operation = (this.isEditMode() && this.proveedorId)
       ? this.proveedorService.update(this.proveedorId, data)
@@ -143,18 +139,16 @@ export class ProveedorFormComponent implements OnInit {
 
     operation.subscribe({
       next: (response) => {
-        console.log('✅ Proveedor guardado:', response);
         Swal.fire({
           icon: 'success',
           title: this.isEditMode() ? 'Proveedor actualizado' : 'Proveedor creado',
-          html: `<b>${v.empresa}</b> registrado correctamente`,
+          text: `${v.empresa} registrado correctamente`,
           timer: 2000,
           showConfirmButton: false
         });
         this.saved.emit();
       },
       error: (err) => {
-        console.error('❌ Error guardando proveedor:', err);
         let errorMsg = 'No se pudo guardar el proveedor';
         if (err.error?.message) {
           errorMsg = err.error.message;
@@ -175,6 +169,21 @@ export class ProveedorFormComponent implements OnInit {
     this.cancelled.emit();
   }
 
+  /** Iniciales de la empresa para el avatar del encabezado. */
+  iniciales(): string {
+    const e = String(this.proveedorForm?.get('empresa')?.value ?? '').trim();
+    return e ? e.split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase() : '?';
+  }
+
+  setEstado(valor: string): void {
+    this.proveedorForm.patchValue({ estado: valor });
+    this.proveedorForm.get('estado')?.markAsDirty();
+  }
+
+  get obsLength(): number {
+    return String(this.proveedorForm?.get('observaciones')?.value ?? '').length;
+  }
+
   hasError(f: string, e: string): boolean {
     const c = this.proveedorForm.get(f);
     return !!(c && c.hasError(e) && c.touched);
@@ -188,7 +197,7 @@ export class ProveedorFormComponent implements OnInit {
     if (c.errors['minlength']) return `Mínimo ${c.errors['minlength'].requiredLength} caracteres`;
     if (c.errors['email']) return 'Email inválido';
     if (c.errors['pattern']) {
-      return 'Formato inválido';
+      return f === 'ciNit' ? 'CI/NIT inválido (5 a 20 caracteres)' : 'Formato inválido';
     }
     return 'Inválido';
   }

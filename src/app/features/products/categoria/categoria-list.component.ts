@@ -10,7 +10,7 @@ interface Categoria {
   nombre: string;
   descripcion?: string;
   icono?: string;
-
+  color?: string;
 }
 
 @Component({
@@ -18,7 +18,7 @@ interface Categoria {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './categoria-list.component.html',
-  styleUrls: ['./categoria-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './categoria-list.component.css']
 })
 export class CategoriaListComponent implements OnInit {
   private svc = inject(CategoriaService);
@@ -47,12 +47,10 @@ export class CategoriaListComponent implements OnInit {
     this.loading.set(true);
     this.svc.getAll().subscribe({
       next: (data: Categoria[]) => {
-        console.log('Categorías cargadas:', data);
         this.categorias.set(data);
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error cargando categorías:', error);
         this.loading.set(false);
         Swal.fire({
           icon: 'error',
@@ -75,11 +73,9 @@ export class CategoriaListComponent implements OnInit {
   }
 
   openEdit(categoria: Categoria): void {
-    console.log('Editando categoría:', categoria);
     // Obtener el ID correctamente (puede ser id o idCategoria)
     const id = categoria.idCategoria || categoria.id;
     if (!id) {
-      console.error('Categoría sin ID:', categoria);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -93,6 +89,7 @@ export class CategoriaListComponent implements OnInit {
     this.nombre = categoria.nombre;
     this.descripcion = categoria.descripcion ?? '';
     this.icono  = categoria.icono  ?? 'fa-box';
+    this.color  = categoria.color  ?? '#1b6f6f';
     this.errorMsg = '';
     this.showForm = true;
   }
@@ -145,7 +142,6 @@ export class CategoriaListComponent implements OnInit {
         });
       },
       error: (error) => {
-        console.error('Error al guardar:', error);
         this.saving.set(false);
         if (error.status === 401) {
           this.errorMsg = 'No autorizado. Por favor, inicia sesión nuevamente.';
@@ -161,7 +157,6 @@ export class CategoriaListComponent implements OnInit {
     const id = categoria.idCategoria || categoria.id;
 
     if (!id) {
-      console.error('Categoría sin ID para eliminar:', categoria);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -194,7 +189,6 @@ export class CategoriaListComponent implements OnInit {
             });
           },
           error: (error) => {
-            console.error('Error al eliminar:', error);
             this.loading.set(false);
             let errorMessage = 'Error al eliminar la categoría';
             if (error.status === 401) {

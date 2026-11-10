@@ -82,6 +82,7 @@ export class MainLayoutComponent implements OnInit {
       isOpen: false
     },
     {path: '/proveedores', icon: 'fa-truck', label: 'Proveedores'},
+    {path: '/materiales', icon: 'fa-toolbox', label: 'Materiales técnicos'},
     {
       path: '/movimientos',
       icon: 'fa-exchange-alt',
@@ -90,7 +91,6 @@ export class MainLayoutComponent implements OnInit {
         { path: '/movimientos/movimientos',   icon: 'fa-cart-plus',     label: 'Movimientos'  },
         { path: '/movimientos/gestion-compras',  icon: 'fa-shopping-cart', label: 'Gestiónar Compras' },
         { path: '/movimientos/reporte-compras',  icon: 'fa-chart-line',    label: 'Reporte Compras'   },
-        { path: '/movimientos/ventas-anuladas',  icon: 'fa-ban',           label: 'Ventas Anuladas'   },
         { path: '/movimientos/alertas', icon: 'fa-exclamation-circle',     label: 'Alertas'   },
         {path: 'movimientos/stock', icon: 'fa-shopping-cart',     label: 'Stock'}
 
@@ -119,22 +119,7 @@ export class MainLayoutComponent implements OnInit {
       ],
       isOpen: false
     },
-    {
-      path: '/reportes',
-      icon: 'fa-file-alt',
-      label: 'Reportes',
-      subItems: [
-        { path: '/reportes/ventas',      icon: 'fa-chart-line',         label: 'Reporte de Ventas'    },
-        { path: '/reportes/ingresos',    icon: 'fa-dollar-sign',        label: 'Reporte de Ingresos'  },
-        { path: '/reportes/cobranzas',   icon: 'fa-hand-holding-usd',   label: 'Reporte de Cobranzas' },
-        { path: '/reportes/canastillos', icon: 'fa-shopping-basket',    label: 'Reporte de Canastillos'},
-        { path: '/reportes/usuarios',    icon: 'fa-users',              label: 'Reporte de Usuarios'  },
-        { path: '/reportes/clientes',    icon: 'fa-user-friends',       label: 'Reporte de Clientes'  },
-        { path: '/reportes/productos',   icon: 'fa-box',                label: 'Reporte de Productos' },
-        { path: '/reportes/proveedores', icon: 'fa-truck',              label: 'Reporte de Proveedores'},
-        { path: '/reportes/onus',        icon: 'fa-wifi',               label: 'Reporte de ONUs'      }
-      ],
-      isOpen: false
+    {path: '/reportes', icon: 'fa-file-alt', label: 'Reportes'
     },
     {
       path: '/onus',
@@ -216,13 +201,15 @@ export class MainLayoutComponent implements OnInit {
     return subItems.some(sub => this.router.url.includes(sub.path));
   }
 
+  /** ¿Puede el usuario entrar a esta ruta según su cargo? */
+  puede(path: string): boolean {
+    return this.authService.canAccess(path);
+  }
+
   isMenuItemVisible(item: MenuItem): boolean {
-    if (item.adminOnly) {
-      const user = this.currentUser() as any;
-      const cargo = (user?.profile?.cargo ?? user?.rol?.cargo ?? '').toLowerCase();
-      return cargo.includes('admin') || this.authService.isAdmin();
-    }
-    return true;
+    if (item.adminOnly && !this.authService.isAdmin()) return false;
+    if (item.subItems?.length) return item.subItems.some(s => this.puede(s.path));
+    return this.puede(item.path);
   }
 
   logout(): void {

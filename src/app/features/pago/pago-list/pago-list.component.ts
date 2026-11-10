@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
+import { imprimirRecibo as imprimirReciboComun, usuarioEmisor } from '../../../shared/documento/recibo.util';
 
 import { MovementsService } from '../../stock/services/movements.service';
 import { Pago, PagoService } from '../service/pago.service';
@@ -40,9 +41,19 @@ type Vista = 'PENDIENTES' | 'GESTION';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './pago-list.component.html',
-  styleUrls: ['./pago-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './pago-list.component.css']
 })
 export class PagoListComponent implements OnInit {
+  /** Formas de pago disponibles en la ventana «Registrar pago». */
+  readonly formasPago = [
+    { valor: 'EFECTIVO', texto: 'Efectivo', icono: 'fa-money-bill-wave' },
+    { valor: 'TRANSFERENCIA', texto: 'Transferencia', icono: 'fa-building-columns' },
+    { valor: 'QR', texto: 'QR', icono: 'fa-qrcode' },
+    { valor: 'TARJETA', texto: 'Tarjeta', icono: 'fa-credit-card' },
+    { valor: 'DEPOSITO', texto: 'Depósito', icono: 'fa-piggy-bank' },
+    { valor: 'OTRO', texto: 'Otro', icono: 'fa-ellipsis' }
+  ];
+
   private route = inject(ActivatedRoute);
   private movementsService = inject(MovementsService);
   private pagoService = inject(PagoService);
@@ -384,134 +395,47 @@ export class PagoListComponent implements OnInit {
 
   private imprimirRecibo(compra: Compra, pagos: Pago[], numero: string): void {
     const lineasPago = pagos.length
-      ? pagos.map(p => ({
-        fecha: this.fechaFormato(p.fecha),
-        monto: Number(p.monto ?? 0),
-        formaPago: p.formaPago,
-        observaciones: p.observaciones ?? ''
-      }))
+      ? pagos.map(p => [this.fechaFormato(p.fecha), p.formaPago, p.observaciones ?? '', this.moneda(Number(p.monto ?? 0))])
       : compra.totalPagado > 0
-        ? [{
-          fecha: this.fechaFormato(compra.fecha),
-          monto: compra.totalPagado,
-          formaPago: compra.formaPago,
-          observaciones: 'Pago al contado'
-        }]
+        ? [[this.fechaFormato(compra.fecha), compra.formaPago, 'Pago al contado', this.moneda(compra.totalPagado)]]
         : [];
+    const pagadoAhora = pagos.length
+      ? pagos.reduce((t, p) => t + Number(p.monto ?? 0), 0)
+      : compra.totalPagado;
 
-    const filasProductos = compra.productos
-      .map(p => `
-        <tr>
-          <td>${this.esc(p.articulo)}</td>
-          <td class="num">${this.esc(p.cantidad)}</td>
-          <td class="num">${this.moneda(p.precioUnitario)}</td>
-          <td class="num">${this.moneda(p.subtotal)}</td>
-        </tr>`)
-      .join('');
-
-    const filasPagos = lineasPago
-      .map(p => `
-        <tr>
-          <td>${this.esc(p.fecha)}</td>
-          <td>${this.esc(p.formaPago)}</td>
-          <td>${this.esc(p.observaciones)}</td>
-          <td class="num">${this.moneda(p.monto)}</td>
-        </tr>`)
-      .join('');
-
-    const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Comprobante de pago ${this.esc(numero)}</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #17212b; margin: 0; padding: 28px; font-size: 13px; }
-    .recibo { max-width: 720px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b6f6f; padding-bottom: 14px; margin-bottom: 18px; }
-    header h1 { margin: 0 0 4px; font-size: 20px; color: #155a5a; }
-    header p { margin: 0; color: #64748b; font-size: 12px; }
-    .numero { text-align: right; font-weight: 700; font-size: 15px; }
-    .numero small { display: block; font-weight: 400; font-size: 11px; color: #64748b; }
-    .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 18px; }
-    .datos span { display: block; color: #64748b; font-size: 11px; }
-    h2 { font-size: 13px; margin: 18px 0 6px; color: #155a5a; text-transform: uppercase; letter-spacing: .5px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #1b6f6f; color: #fff; text-align: left; padding: 7px 8px; font-size: 11px; }
-    td { padding: 7px 8px; border-bottom: 1px solid #d8e0e5; font-size: 12px; }
-    .num, th.num { text-align: right; white-space: nowrap; }
-    .totales { margin: 18px 0 0 auto; width: 260px; }
-    .totales div { display: flex; justify-content: space-between; padding: 5px 0; }
-    .totales .saldo { border-top: 2px solid #17212b; margin-top: 4px; padding-top: 8px; font-weight: 700; font-size: 15px; }
-    .firmas { display: flex; justify-content: space-around; margin-top: 70px; }
-    .firmas div { width: 38%; border-top: 1px solid #17212b; padding-top: 6px; text-align: center; font-size: 11px; color: #64748b; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <div class="recibo">
-    <header>
-      <div><h1>SÍN LIMITE</h1><p>COMPROBANTE DE PAGO</p></div>
-      <div class="numero">N.º ${this.esc(numero)}<small>Emitido: ${this.esc(this.fechaFormato(new Date().toISOString()))}</small></div>
-    </header>
-
-    <section class="datos">
-      <div><span>Proveedor</span><strong>${this.esc(compra.proveedorNombre)}</strong></div>
-      <div><span>Compra</span><strong>${this.esc(compra.codigoCompra)}</strong></div>
-    </section>
-
-    <h2>Productos</h2>
-    <table>
-      <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">P. unitario</th><th class="num">Subtotal</th></tr></thead>
-      <tbody>${filasProductos || '<tr><td colspan="4">Sin productos registrados</td></tr>'}</tbody>
-    </table>
-
-    <h2>Detalle de pagos</h2>
-    <table>
-      <thead><tr><th>Fecha</th><th>Forma de pago</th><th>Observaciones</th><th class="num">Monto</th></tr></thead>
-      <tbody>${filasPagos || '<tr><td colspan="4">Sin pagos registrados</td></tr>'}</tbody>
-    </table>
-
-    <section class="totales">
-      <div><span>Total</span><span>${this.moneda(compra.totalCompra)}</span></div>
-      <div><span>Total pagado</span><span>${this.moneda(compra.totalPagado)}</span></div>
-      <div class="saldo"><span>Saldo</span><span>${this.moneda(compra.saldoPendiente)}</span></div>
-    </section>
-
-    <section class="firmas">
-      <div>Entregué conforme</div>
-      <div>Recibí conforme</div>
-    </section>
-  </div>
-  <script>window.onload = function () { window.focus(); window.print(); };</script>
-</body>
-</html>`;
-
-    const ventana = window.open('', '_blank', 'width=860,height=900');
-
-    if (!ventana) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Ventana bloqueada',
-        text: 'Permite las ventanas emergentes de este sitio para imprimir el recibo.',
-        confirmButtonColor: '#1b6f6f'
-      });
-      return;
-    }
-
-    ventana.document.open();
-    ventana.document.write(html);
-    ventana.document.close();
-  }
-
-  /** Evita que un texto con < o & rompa (o inyecte código en) el recibo. */
-  private esc(valor: unknown): string {
-    return String(valor ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    imprimirReciboComun({
+      titulo: 'Comprobante de pago',
+      numero,
+      fecha: this.fechaFormato(new Date().toISOString()),
+      emitidoPor: usuarioEmisor(),
+      datos: [
+        { etiqueta: 'Proveedor', valor: compra.proveedorNombre },
+        { etiqueta: 'Compra', valor: compra.codigoCompra },
+        { etiqueta: 'Fecha de la compra', valor: this.fechaFormato(compra.fecha) }
+      ],
+      tablas: [
+        {
+          titulo: 'Productos',
+          columnas: [{ texto: 'Producto' }, { texto: 'Cant.', num: true }, { texto: 'P. unitario', num: true }, { texto: 'Subtotal', num: true }],
+          filas: compra.productos.map(p => [p.articulo, p.cantidad, this.moneda(p.precioUnitario), this.moneda(p.subtotal)]),
+          vacio: 'Sin productos registrados'
+        },
+        {
+          titulo: 'Detalle de pagos',
+          columnas: [{ texto: 'Fecha' }, { texto: 'Forma de pago' }, { texto: 'Observaciones' }, { texto: 'Monto', num: true }],
+          filas: lineasPago,
+          vacio: 'Sin pagos registrados'
+        }
+      ],
+      totales: [
+        { etiqueta: 'Total de la compra', valor: this.moneda(compra.totalCompra) },
+        { etiqueta: 'Total pagado', valor: this.moneda(compra.totalPagado) },
+        { etiqueta: 'Saldo', valor: this.moneda(compra.saldoPendiente), destacado: true }
+      ],
+      montoLetras: pagadoAhora,
+      sello: compra.saldoPendiente <= 0 ? { texto: 'PAGADO', tipo: 'ok' } : { texto: 'PENDIENTE', tipo: 'warn' },
+      firmas: ['Entregué conforme (pagador)', 'Recibí conforme (proveedor)']
+    });
   }
 
   // ── Anular ──────────────────────────────────────────────────────
@@ -592,6 +516,11 @@ export class PagoListComponent implements OnInit {
 
   // ── Resumen y formato ───────────────────────────────────────────
 
+  /** Texto del tooltip con todos los productos de la compra. */
+  detalleProductos(compra: Compra): string {
+    return compra.productos.map(p => `${p.cantidad} × ${p.articulo} (${this.moneda(p.subtotal)})`).join('\n');
+  }
+
   get tarjetas(): { icono: string; etiqueta: string; valor: string; detalle: string; clase: string }[] {
     const pendientes = this.compras.filter(c => this.tieneSaldo(c));
     const saldadas = this.compras.filter(c => !this.tieneSaldo(c));
@@ -599,50 +528,50 @@ export class PagoListComponent implements OnInit {
     if (this.vista === 'PENDIENTES') {
       return [
         {
-          icono: '⏰',
+          icono: 'fa-hourglass-half',
           etiqueta: 'Saldo por pagar',
           valor: this.moneda(pendientes.reduce((s, c) => s + c.saldoPendiente, 0)),
           detalle: `${pendientes.length} compras con saldo`,
-          clase: 'stat-pending'
+          clase: 'stat-warn'
         },
         {
-          icono: '🔴',
+          icono: 'fa-circle-exclamation',
           etiqueta: 'Sin ningún abono',
           valor: String(pendientes.filter(c => c.estadoPago === 'PENDIENTE').length),
           detalle: 'compras pendientes',
-          clase: 'stat-sales'
+          clase: 'stat-bad'
         },
         {
-          icono: '🟡',
+          icono: 'fa-adjust',
           etiqueta: 'Con abonos parciales',
           valor: String(pendientes.filter(c => c.estadoPago === 'PARCIAL').length),
           detalle: 'compras parciales',
-          clase: 'stat-paid'
+          clase: 'stat-warn'
         }
       ];
     }
 
     return [
       {
-        icono: '✅',
+        icono: 'fa-circle-check',
         etiqueta: 'Total pagado',
         valor: this.moneda(saldadas.reduce((s, c) => s + c.totalPagado, 0)),
         detalle: `${saldadas.length} compras pagadas`,
-        clase: 'stat-paid'
+        clase: 'stat-ok'
       },
       {
-        icono: '🧾',
+        icono: 'fa-receipt',
         etiqueta: 'Pagos registrados',
         valor: String(this.pagos.filter(p => this.esActivo(p)).length),
         detalle: 'activos en el sistema',
-        clase: 'stat-sales'
+        clase: 'stat-base'
       },
       {
-        icono: '🚫',
+        icono: 'fa-ban',
         etiqueta: 'Pagos anulados',
         valor: String(this.pagos.filter(p => !this.esActivo(p)).length),
         detalle: 'no cuentan en los saldos',
-        clase: 'stat-pending'
+        clase: 'stat-bad'
       }
     ];
   }

@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════ */
 :host { display: block; }
 
-.onu-page { padding: 24px; background: #f3f4f6; min-height: calc(100vh - 64px); box-sizing: border-box; width: 100%; }
+.onu-page, .sl-page { padding: 24px; background: #f3f4f6; min-height: calc(100vh - 64px); box-sizing: border-box; width: 100%; }
 
 /* ── Encabezado ── */
 .page-header {

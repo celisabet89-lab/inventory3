@@ -9,7 +9,7 @@ import { mensajeError } from '../services/onu-operaciones.service';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './cliente-onu-list.component.html',
-  styleUrls: ['../../../shared/onu-pantalla.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './cliente-onu-list.component.css']
 })
 export class ClienteOnuListComponent implements OnInit {
   private svc = inject(ClienteOnuService);
@@ -24,6 +24,8 @@ export class ClienteOnuListComponent implements OnInit {
   pagina = signal(1);
   cargando = signal(false);
   guardando = signal(false);
+  /** true tras el primer intento de guardar: activa los avisos de campo */
+  intento = signal(false);
 
   // Formulario (modal)
   formAbierto = signal(false);
@@ -45,6 +47,39 @@ export class ClienteOnuListComponent implements OnInit {
   ngOnInit(): void {
     this.tiposSvc.getAll().subscribe({ next: t => this.tipos.set(t), error: () => {} });
     this.cargar();
+  }
+
+  /** Siguiente número de contrato libre (máximo existente + 1). */
+  contratoSugerido = computed(() =>
+    this.clientes().reduce((m, c) => Math.max(m, Number(c.numeroContrato) || 0), 0) + 1);
+
+  /** Errores del formulario, por campo. */
+  errores(): Record<string, string> {
+    return this.validar();
+  }
+
+  private validar(): Record<string, string> {
+    const e: Record<string, string> = {};
+    const f = this.form;
+    if (!f.nombre?.trim()) e['nombre'] = 'El nombre es obligatorio';
+    else if (f.nombre.trim().length < 3) e['nombre'] = 'Mínimo 3 caracteres';
+    if (f.celular && !/^\+?\d{6,15}$/.test(String(f.celular).replace(/[\s-]/g, ''))) e['celular'] = 'Celular inválido (6 a 15 dígitos)';
+    if (f.ubicacion && !this.esUrl(f.ubicacion) && f.ubicacion.length < 5) e['ubicacion'] = 'Pega el enlace de Google Maps';
+    const n = f.numeroContrato as unknown;
+    if (n !== null && n !== '' && n !== undefined) {
+      const num = Number(n);
+      if (!Number.isInteger(num) || num <= 0) e['numeroContrato'] = 'Número de contrato inválido';
+      else if (this.clientes().some(c => Number(c.numeroContrato) === num && c.id !== this.editandoId)) e['numeroContrato'] = 'Ese contrato ya pertenece a otro cliente';
+    }
+    return e;
+  }
+
+  tipoSeleccionado(): TipoClienteOnu | null {
+    return this.tipos().find(t => t.id === this.tipoId) ?? null;
+  }
+
+  usarContratoSugerido(): void {
+    this.form.numeroContrato = this.contratoSugerido();
   }
 
   private vacio(): ClienteOnu {
@@ -75,7 +110,9 @@ export class ClienteOnuListComponent implements OnInit {
   nuevo(): void {
     this.editandoId = null;
     this.form = this.vacio();
+    this.form.numeroContrato = this.contratoSugerido();
     this.tipoId = null;
+    this.intento.set(false);
     this.formAbierto.set(true);
   }
 
@@ -83,14 +120,17 @@ export class ClienteOnuListComponent implements OnInit {
     this.editandoId = c.id ?? null;
     this.form = { ...c };
     this.tipoId = (c.tipoCliente as TipoClienteOnu | null | undefined)?.id ?? null;
+    this.intento.set(false);
     this.formAbierto.set(true);
   }
 
   cerrar(): void { this.formAbierto.set(false); }
 
   guardar(): void {
-    if (!this.form.nombre?.trim()) {
-      Swal.fire({ icon: 'warning', title: 'Falta el nombre', text: 'Escribe el nombre del cliente.' });
+    this.intento.set(true);
+    const errores = this.validar();
+    if (Object.keys(errores).length) {
+      Swal.fire({ icon: 'warning', title: 'Revisa el formulario', text: Object.values(errores).join('. '), confirmButtonColor: '#1b6f6f' });
       return;
     }
     const contrato = this.form.numeroContrato as unknown;

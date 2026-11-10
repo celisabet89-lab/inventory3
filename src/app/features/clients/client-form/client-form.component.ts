@@ -1,5 +1,6 @@
 import { Component, OnInit, OnChanges, Input, Output, EventEmitter, inject, signal, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ClientService } from '../services/client.service';
 import { LugarVentaService } from '../services/lugar-venta.service';
@@ -8,9 +9,9 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-client-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './client-form.component.html',
-  styleUrls: ['./client-form.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './client-form.component.css']
 })
 export class ClientFormComponent implements OnInit, OnChanges {
   @Input() client: any = null;
@@ -41,11 +42,11 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   buildForm(): void {
     this.form = this.fb.group({
-      nombre:        ['', Validators.required],
-      apellido:      ['', Validators.required],
+      nombre:        ['', [Validators.required, Validators.minLength(2)]],
+      apellido:      ['', [Validators.required, Validators.minLength(2)]],
       ci:            [''],
-      telefono:      [null],           // Integer en backend
-      gmail:         [''],             // gmail (no email)
+      telefono:      [null, Validators.pattern(/^\d{6,15}$/)],           // Integer en backend
+      gmail:         ['', Validators.email],             // gmail (no email)
       direccion:     [''],
       zona:          [''],
       estado:        ['ACTIVO'],
@@ -85,9 +86,34 @@ export class ClientFormComponent implements OnInit, OnChanges {
     }
   }
 
-  hasError(f: string, t: string): boolean {
+  nombreCompleto(): string {
+    return `${this.form?.value?.nombre ?? ''} ${this.form?.value?.apellido ?? ''}`.trim();
+  }
+
+  iniciales(): string {
+    const n = String(this.form?.value?.nombre ?? '').trim().charAt(0);
+    const a = String(this.form?.value?.apellido ?? '').trim().charAt(0);
+    return (n + a).toUpperCase() || '?';
+  }
+
+  setEstado(valor: 'ACTIVO' | 'INACTIVO'): void {
+    this.form.patchValue({ estado: valor });
+    this.form.get('estado')?.markAsDirty();
+  }
+
+  hasError(f: string, t?: string): boolean {
     const c = this.form.get(f);
-    return !!(c?.hasError(t) && c?.touched);
+    return !!(c && c.touched && (t ? c.hasError(t) : c.invalid));
+  }
+
+  getError(f: string): string {
+    const e = this.form.get(f)?.errors;
+    if (!e) return '';
+    if (e['required']) return 'Campo obligatorio';
+    if (e['minlength']) return `Mínimo ${e['minlength'].requiredLength} caracteres`;
+    if (e['email']) return 'Correo inválido';
+    if (e['pattern']) return 'Solo dígitos (6 a 15)';
+    return 'Valor inválido';
   }
 
   getLugarSeleccionado(): any {
@@ -114,10 +140,9 @@ export class ClientFormComponent implements OnInit, OnChanges {
       idLugarVenta:  v.idLugarVenta  ? Number(v.idLugarVenta) : null
     };
 
-    console.log('Guardando cliente:', body);
-
-    const op = this.isEdit && this.client?.idCliente
-      ? this.clientSvc.update(this.client.idCliente, body)
+    const idEdit = this.client?.idCliente ?? this.client?.id;
+    const op = this.isEdit && idEdit
+      ? this.clientSvc.update(idEdit, body)
       : this.clientSvc.create(body);
 
     op.subscribe({
@@ -128,7 +153,6 @@ export class ClientFormComponent implements OnInit, OnChanges {
       },
       error: err => {
         this.saving.set(false);
-        console.error('Error:', err);
         Swal.fire({ icon:'error', title:'Error al guardar', text: err?.error?.message || 'Error del servidor' });
       }
     });

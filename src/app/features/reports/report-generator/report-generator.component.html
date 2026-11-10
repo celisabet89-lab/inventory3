@@ -1,79 +1,104 @@
-<div class="rep-page">
+<div class="sl-page rep-page">
   <header class="rep-head">
-    <h1><i class="fas fa-newspaper"></i> Reportes</h1>
-    <small>{{ info.titulo }}</small>
+    <span class="rep-head-ic"><i class="fas fa-newspaper" aria-hidden="true"></i></span>
+    <div>
+      <h2>Reportes</h2>
+      <span class="header-sub">Elige el reporte, ajusta los filtros y descárgalo en PDF o Excel</span>
+    </div>
   </header>
 
-  <section class="rep-grid">
-    <article class="rep-card">
-      <h2>Período del Reporte</h2>
-      @if (info.esListado) {
-        <p class="rep-hint">Este reporte es un listado completo; no depende de fechas.</p>
-      } @else if (info.soloHasta) {
-        <label for="desde">Hasta:</label>
-        <input id="desde" type="month" [(ngModel)]="filtros.hasta" name="hasta" />
-        <p class="rep-hint">Se listan todas las deudas pendientes hasta este mes.</p>
-      } @else {
-        <label for="desde">Desde:</label>
-        <input id="desde" type="month" [(ngModel)]="filtros.desde" name="desde" />
-        <label for="hasta">Hasta:</label>
-        <input id="hasta" type="month" [(ngModel)]="filtros.hasta" name="hasta" />
-      }
-    </article>
-
-    <article class="rep-card">
-      <h2>Elija Reporte</h2>
-      @for (r of lista; track r.tipo) {
-        <label class="rep-radio">
-          <input type="radio" name="tipo" [checked]="tipo === r.tipo" (change)="elegir(r.tipo)" />
-          <span>{{ r.titulo }}</span>
-        </label>
-      }
-    </article>
-
-    <article class="rep-card">
-      <h2>{{ info.tituloDatos ?? 'Datos ' + info.etiquetaContraparte }}</h2>
-      <label for="contra">{{ info.etiquetaContraparte }}:</label>
-      <select id="contra" [(ngModel)]="filtros.contraparte" name="contra">
-        <option value="">Todos</option>
-        @for (c of contrapartes; track c) {
-          <option [value]="c">{{ c }}</option>
+  <section class="card rep-card" aria-label="Generador de reportes">
+    <!-- 1. Tipo -->
+    <div class="rep-bloque">
+      <span class="rep-etq">Reporte</span>
+      <div class="rep-tipos" role="radiogroup" aria-label="Tipo de reporte">
+        @for (r of lista; track r.tipo) {
+          <button type="button" class="rep-tipo" role="radio" [class.activo]="tipo === r.tipo"
+                  [attr.aria-checked]="tipo === r.tipo" (click)="elegir(r.tipo)">
+            <i class="fas" [class]="'fas ' + iconos[r.tipo]" aria-hidden="true"></i>
+            <span>{{ r.titulo.replace('Reporte de ', '').replace('Reporte ', '') }}</span>
+          </button>
         }
-      </select>
+      </div>
+    </div>
 
-      @if (!info.esListado) {
-        <label for="forma">Forma de pago:</label>
-        <select id="forma" [(ngModel)]="filtros.formaPago" name="forma">
-          <option value="">Todas</option>
-          @for (f of formasPago; track f) {
-            <option [value]="f">{{ f }}</option>
-          }
-        </select>
-      }
+    <!-- 2. Filtros en una sola fila -->
+    <div class="rep-bloque">
+      <span class="rep-etq">Filtros</span>
+      <div class="rep-filtros">
+        @if (info.esListado) {
+          <span class="rep-nota"><i class="fas fa-circle-info" aria-hidden="true"></i> Listado completo, sin fechas</span>
+        } @else if (info.soloHasta) {
+          <label class="rep-campo">
+            <span>Hasta</span>
+            <input type="month" [(ngModel)]="filtros.hasta" name="hasta" />
+          </label>
+        } @else {
+          <label class="rep-campo">
+            <span>Desde</span>
+            <input type="month" [(ngModel)]="filtros.desde" name="desde" />
+          </label>
+          <label class="rep-campo">
+            <span>Hasta</span>
+            <input type="month" [(ngModel)]="filtros.hasta" name="hasta" />
+          </label>
+        }
 
-      @if (info.usaPalabra) {
-        <label for="palabra">{{ info.etiquetaPalabra }}</label>
-        <input id="palabra" type="text" [(ngModel)]="filtros.palabra" name="palabra" placeholder="Escribe para buscar" />
-      }
-    </article>
+        <label class="rep-campo">
+          <span>{{ info.etiquetaContraparte }}</span>
+          <select [(ngModel)]="filtros.contraparte" name="contra">
+            <option value="">Todos</option>
+            @for (c of contrapartes; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </label>
 
-    <article class="rep-card">
-      <h2>Formato del Reporte</h2>
-      <label class="rep-radio">
-        <input type="radio" name="formato" [checked]="formato === 'PDF'" (change)="formato = 'PDF'" />
-        <span>PDF</span>
-      </label>
-      <label class="rep-radio">
-        <input type="radio" name="formato" [checked]="formato === 'EXCEL'" (change)="formato = 'EXCEL'" />
-        <span>EXCEL</span>
-      </label>
-    </article>
-  </section>
+        @if (!info.esListado) {
+          <label class="rep-campo">
+            <span>Forma de pago</span>
+            <select [(ngModel)]="filtros.formaPago" name="forma">
+              <option value="">Todas</option>
+              @for (f of formasPago; track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+        }
 
-  <section class="rep-accion">
-    <button type="button" class="rep-btn" (click)="generar()" [disabled]="cargando">
-      <i class="fas fa-file-alt"></i>
-      {{ cargando ? 'Generando...' : 'Generar Reporte' }}
-    </button>
+        @if (info.usaPalabra) {
+          <label class="rep-campo rep-campo-ancho">
+            <span>{{ info.etiquetaPalabra }}</span>
+            <input type="text" [(ngModel)]="filtros.palabra" name="palabra" placeholder="Escribe para buscar" />
+          </label>
+        }
+
+        <button type="button" class="rep-limpiar" (click)="limpiarFiltros()" title="Limpiar filtros" aria-label="Limpiar filtros">
+          <i class="fas fa-eraser" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Generar -->
+    <div class="rep-salida">
+      <div class="rep-preview" aria-live="polite">
+        <span class="rep-preview-ic"><i class="fas" [class]="'fas ' + iconos[tipo]" aria-hidden="true"></i></span>
+        <div>
+          <b>{{ info.titulo }}</b>
+          <small>{{ resumenFiltros }}</small>
+        </div>
+      </div>
+
+      <div class="rep-botones">
+        <button type="button" class="rep-gen rep-pdf" (click)="generarComo('PDF')" [disabled]="cargando">
+          <i class="fas" [class]="cargando && formato === 'PDF' ? 'fas fa-spinner fa-spin' : 'fas fa-file-pdf'" aria-hidden="true"></i>
+          PDF
+        </button>
+        <button type="button" class="rep-gen rep-xls" (click)="generarComo('EXCEL')" [disabled]="cargando">
+          <i class="fas" [class]="cargando && formato === 'EXCEL' ? 'fas fa-spinner fa-spin' : 'fas fa-file-excel'" aria-hidden="true"></i>
+          Excel
+        </button>
+      </div>
+    </div>
   </section>
 </div>

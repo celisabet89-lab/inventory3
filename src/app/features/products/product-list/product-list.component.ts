@@ -1,3 +1,4 @@
+import { AuthService } from '../../../core/services/auth.service';
 import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -46,10 +47,11 @@ interface DashboardStats {
   standalone: true,
   imports: [CommonModule, FormsModule, ProductFormComponent],
   templateUrl: './product-list.component.html',
-  styleUrls: ['./product-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './product-list.component.css']
 })
 export class ProductListComponent implements OnInit, OnDestroy {
   private productSvc = inject(ProductService);
+  readonly puedeEditar = inject(AuthService).canEdit();
   private categoriaSvc = inject(CategoriaService);
   private unidadSvc = inject(UnidadMedidaService);
 
@@ -91,7 +93,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
   // Cache para colores de categorías
   private categoriaColorCache = new Map<string, string>();
   private categoriaIconCache = new Map<string, string>();
-  Math: any;
+  readonly Math = Math;
 
   ngOnInit(): void {
     this.setupSearchDebounce();

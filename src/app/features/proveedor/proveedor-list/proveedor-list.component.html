@@ -1,151 +1,124 @@
 <div class="proveedores-container">
-  <!-- HEADER -->
-  <div class="page-header">
+  <header class="page-header">
     <div class="header-left">
-      <i class="fas fa-truck header-icon"></i>
+      <div class="header-icon-wrap"><i class="fas fa-truck"></i></div>
       <div>
         <h2>Proveedores</h2>
-        <span class="header-sub">Gestión de proveedores del sistema</span>
+        <span class="header-sub">Administra tus empresas proveedoras y su estado.</span>
       </div>
     </div>
-    <button class="btn-nuevo" (click)="openNew()">
-      <i class="fas fa-plus"></i> Nuevo Proveedor
+    <button type="button" class="btn-nuevo" (click)="openNew()" [disabled]="loading()">
+      <i class="fas fa-plus"></i> Nuevo proveedor
     </button>
-  </div>
+  </header>
 
-  <!-- STATS -->
-  <div class="stats-grid">
-    <div class="stat-card s-total">
-      <i class="fas fa-building stat-icon"></i>
-      <div><p class="stat-val">{{ stats().total }}</p><p class="stat-lbl">Total</p></div>
-    </div>
-    <div class="stat-card s-activo">
-      <i class="fas fa-check-circle stat-icon"></i>
-      <div><p class="stat-val">{{ stats().activos }}</p><p class="stat-lbl">Activos</p></div>
-    </div>
-    <div class="stat-card s-inactivo">
-      <i class="fas fa-ban stat-icon"></i>
-      <div><p class="stat-val">{{ stats().inactivos }}</p><p class="stat-lbl">Inactivos</p></div>
-    </div>
-  </div>
+  <section class="stats-grid" aria-label="Resumen de proveedores">
+    <article class="stat-card s-total">
+      <div class="stat-icon-wrap"><i class="fas fa-building"></i></div>
+      <div><span class="stat-lbl">Total de proveedores</span><strong class="stat-val">{{ stats().total }}</strong></div>
+    </article>
+    <article class="stat-card s-activo">
+      <div class="stat-icon-wrap"><i class="fas fa-check-circle"></i></div>
+      <div><span class="stat-lbl">Activos</span><strong class="stat-val">{{ stats().activos }}</strong></div>
+    </article>
+    <article class="stat-card s-inactivo">
+      <div class="stat-icon-wrap"><i class="fas fa-ban"></i></div>
+      <div><span class="stat-lbl">Inactivos</span><strong class="stat-val">{{ stats().inactivos }}</strong></div>
+    </article>
+  </section>
 
-  <!-- FILTROS -->
-  <div class="bar-filtros">
+  <section class="filters-card">
     <div class="search-wrap">
       <i class="fas fa-search"></i>
-      <input [(ngModel)]="searchTerm" (input)="onSearchChange()"
-             placeholder="Buscar por empresa, contacto, email..." class="search-in" />
-    </div>
-    <select [(ngModel)]="filtroPais" (change)="onPaisChange()" class="f-sel">
-      <option value="TODOS">Todos los países</option>
-      @for (p of paisesDisponibles(); track p) {
-        <option [value]="p">{{ p }}</option>
+      <input type="search" [(ngModel)]="searchTerm" (input)="onSearchChange()"
+             placeholder="Buscar empresa, contacto, correo, NIT o dirección..." class="search-in" />
+      @if (searchTerm) {
+        <button type="button" class="clear-search" title="Limpiar búsqueda" aria-label="Limpiar búsqueda"
+                (click)="searchTerm = ''; onSearchChange()"><i class="fas fa-times"></i></button>
       }
-    </select>
-    <select [(ngModel)]="filtroEstado" (change)="onEstadoChange()" class="f-sel">
-      <option value="TODOS">Todos los estados</option>
-      <option value="ACTIVO">Activos</option>
-      <option value="INACTIVO">Inactivos</option>
-    </select>
-  </div>
+    </div>
+    <label class="filter-field">
+      <span>País</span>
+      <select [(ngModel)]="filtroPais" (change)="onPaisChange()" class="f-sel">
+        <option value="TODOS">Todos los países</option>
+        @for (pais of paisesDisponibles(); track pais) { <option [value]="pais">{{ pais }}</option> }
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>Estado</span>
+      <select [(ngModel)]="filtroEstado" (change)="onEstadoChange()" class="f-sel">
+        <option value="TODOS">Todos los estados</option>
+        <option value="ACTIVO">Activos</option>
+        <option value="INACTIVO">Inactivos</option>
+      </select>
+    </label>
+    <button type="button" class="btn-filter-reset" (click)="searchTerm = ''; filtroPais = 'TODOS'; filtroEstado = 'TODOS'; applyFilters()">
+      <i class="fas fa-undo"></i> Limpiar
+    </button>
+  </section>
 
-  <!-- TABLA -->
-  <div class="table-wrap">
+  <section class="table-card">
+    <div class="table-heading">
+      <div><h3>Listado de proveedores</h3><p>Información registrada en el sistema</p></div>
+      <span class="result-count">{{ filteredProveedores().length }} registro(s)</span>
+    </div>
+
     @if (loading()) {
-      <div class="empty-st"><i class="fas fa-spinner fa-spin"></i> Cargando proveedores...</div>
+      <div class="empty-st"><i class="fas fa-spinner fa-spin"></i><strong>Cargando proveedores...</strong><span>Estamos consultando los datos.</span></div>
     } @else if (filteredProveedores().length === 0) {
-      <div class="empty-st">
-        <i class="fas fa-truck"></i>
-        <p>No se encontraron proveedores</p>
+      <div class="empty-st"><i class="fas fa-truck-loading"></i><strong>No se encontraron proveedores</strong>
+        <span>Prueba cambiando los filtros o registra un nuevo proveedor.</span>
+        @if (!searchTerm && filtroPais === 'TODOS' && filtroEstado === 'TODOS') {
+          <button type="button" class="btn-nuevo" (click)="openNew()"><i class="fas fa-plus"></i> Registrar proveedor</button>
+        }
       </div>
     } @else {
-      <table class="prov-table">
-        <thead>
-        <tr>
-          <th>#</th>
-          <th>Empresa</th>
-          <th>Contacto</th>
-          <th>Email</th>
-          <th>País</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-          @for (p of getPaginatedProveedores(); track p.idProveedor; let i = $index) {
-            <tr>
-              <td class="tc gray">{{ (currentPage-1)*itemsPerPage + i + 1 }}</td>
-              <td>
-                <div class="prov-cell">
-                  <i class="fas fa-building prov-icon"></i>
-                  <div>
-                    <div class="prov-nombre">{{ p.empresa }}</div>
-                    @if (p.ruc) {
-                      <div class="prov-ruc">RUC: {{ p.ruc }}</div>
-                    }
-                  </div>
-                </div>
-              </td>
-              <td>{{ p.contacto }}</td>
-              <td class="gray">{{ p.email }}</td>
-              <td><span class="pais-badge">{{ p.pais }}</span></td>
-              <td>
-                <span [class]="'status-badge ' + getStatusClass(p.estado)">
-                  {{ p.estado }}
-                </span>
-              </td>
-              <td class="acc-cell">
-                <button (click)="verDetalle(p)" class="btn-ac view" title="Ver">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button (click)="openEdit(p)" class="btn-ac edit" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <!-- Cambiar esta línea
-                <button (click)="changeStatus(p, p.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO')"
-                        class="btn-ac state" title="Cambiar estado">
-                  <i class="fas fa-exchange-alt"></i>
-                </button> -->
-                <button (click)="deleteProveedor(p)" class="btn-ac delete" title="Eliminar">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="prov-table">
+          <thead><tr><th>#</th><th>Empresa</th><th>Contacto</th><th>Correo electrónico</th><th>País</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            @for (p of getPaginatedProveedores(); track p.idProveedor ?? $index; let i = $index) {
+              <tr>
+                <td class="tc muted">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+                <td><div class="prov-cell"><div class="prov-avatar"><i class="fas fa-building"></i></div><div class="prov-info">
+                  <strong class="prov-nombre">{{ p.empresa || 'Sin nombre' }}</strong>
+                  <span class="prov-secondary">NIT / RUC: {{ p.ruc || p.ciNit || p.nit || 'No registrado' }}</span>
+                </div></div></td>
+                <td><span class="main-text">{{ p.contacto || '—' }}</span></td>
+                <td><a class="email-link" [href]="'mailto:' + p.email" *ngIf="p.email; else noEmail">{{ p.email }}</a><ng-template #noEmail><span class="muted">—</span></ng-template></td>
+                <td><span class="pais-badge"><i class="fas fa-globe-americas"></i> {{ p.pais || '—' }}</span></td>
+                <td><span class="status-badge" [class]="'status-badge ' + getStatusClass(p.estado)"><span class="status-dot"></span>{{ getStatusText(p.estado) }}</span></td>
+                <td><div class="acc-cell">
+                  <button type="button" class="btn-ac view" (click)="verDetalle(p)" title="Ver detalles" aria-label="Ver detalles"><i class="fas fa-eye"></i></button>
+                  <button type="button" class="btn-ac edit" (click)="openEdit(p)" title="Editar" aria-label="Editar"><i class="fas fa-pen"></i></button>
+                  <button type="button" class="btn-ac state" (click)="changeStatus(p)" [title]="p.estado === 'INACTIVO' ? 'Activar proveedor' : 'Desactivar proveedor'" [attr.aria-label]="p.estado === 'INACTIVO' ? 'Activar proveedor' : 'Desactivar proveedor'"><i class="fas fa-power-off"></i></button>
+                  <button type="button" class="btn-ac delete" (click)="deleteProveedor(p)" title="Eliminar" aria-label="Eliminar"><i class="fas fa-trash"></i></button>
+                </div></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar">
+        <div class="pagination-info">Mostrando <strong>{{ (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, filteredProveedores().length) }}</strong> de <strong>{{ filteredProveedores().length }}</strong> proveedores</div>
+        <div class="pagination-controls">
+          <label class="page-size">Filas
+            <select [(ngModel)]="itemsPerPage" (ngModelChange)="onItemsPerPageChange()" class="items-select">
+              <option [ngValue]="10">10</option><option [ngValue]="25">25</option><option [ngValue]="50">50</option>
+            </select>
+          </label>
+          <button type="button" (click)="previousPage()" [disabled]="currentPage === 1" class="page-btn" aria-label="Página anterior"><i class="fas fa-chevron-left"></i></button>
+          @for (page of getPageNumbers(); track page) { <button type="button" (click)="goToPage(page)" [class.active]="currentPage === page" class="page-btn">{{ page }}</button> }
+          <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages()" class="page-btn" aria-label="Página siguiente"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </footer>
     }
-  </div>
-
-  <!-- PAGINACIÓN -->
-  <div class="pagination-bar">
-    <div class="pagination-info">
-      Mostrando {{ (currentPage-1)*itemsPerPage+1 }}--{{ Math.min(currentPage*itemsPerPage, filteredProveedores().length) }}
-      de {{ filteredProveedores().length }} proveedores
-    </div>
-    <div class="pagination-controls">
-      <button (click)="previousPage()" [disabled]="currentPage===1" class="page-btn">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      @for (page of getPageNumbers(); track page) {
-        <button (click)="goToPage(page)" [class.active]="currentPage===page" class="page-btn">{{ page }}</button>
-      }
-      <button (click)="nextPage()" [disabled]="currentPage===totalPages()" class="page-btn">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-      <select [(ngModel)]="itemsPerPage" (change)="applyFilters()" class="items-select">
-        <option [value]="10">10</option>
-        <option [value]="25">25</option>
-        <option [value]="50">50</option>
-      </select>
-    </div>
-  </div>
+  </section>
 </div>
 
-<!-- MODAL FORMULARIO -->
 @if (showForm()) {
   <div class="modal-overlay" (click)="closeForm()">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-container" role="dialog" aria-modal="true" aria-label="Formulario de proveedor" (click)="$event.stopPropagation()">
       <app-proveedor-form
         [proveedorId]="selectedProveedor?.idProveedor ?? null"
         [isEdit]="isEditMode"

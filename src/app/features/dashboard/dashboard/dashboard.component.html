@@ -52,38 +52,42 @@
       </div>
     </div>
 
-    <div class="dash-card">
-      <div class="card-header">
-        <h3><i class="fas fa-chart-column"></i> Movimientos de la semana</h3>
-        <a routerLink="/movimientos/movimientos" class="ver-todo">Ver todo →</a>
+    @if (permitido('/movimientos/movimientos')) {
+      <div class="dash-card">
+        <div class="card-header">
+          <h3><i class="fas fa-chart-column"></i> Movimientos de la semana</h3>
+          <a routerLink="/movimientos/movimientos" class="ver-todo">Ver todo →</a>
+        </div>
+        <div class="bar-wrap"><canvas #movChart></canvas></div>
       </div>
-      <div class="bar-wrap"><canvas #movChart></canvas></div>
-    </div>
+    }
   </section>
 
   <!-- ACTIVIDAD + ACCIONES -->
-  <section class="dash-row">
-    <div class="dash-card">
-      <div class="card-header">
-        <h3><i class="fas fa-clock-rotate-left"></i> Actividad reciente</h3>
-        <a routerLink="/movimientos/movimientos" class="ver-todo">Ver todo →</a>
-      </div>
-      @for (a of actividadReciente(); track a.id) {
-        <div class="act-item">
-          <div class="act-icon" [style.background]="a.bg" [style.color]="a.color"><i class="fas" [class]="'fas ' + a.icon"></i></div>
-          <div class="act-info">
-            <span class="act-title">{{ a.title }}</span>
-            <span class="act-desc">{{ a.desc }}</span>
-          </div>
-          <div class="act-meta">
-            <span class="act-user">{{ a.user }}</span>
-            <span class="act-fecha">{{ a.fecha | date:'dd/MM HH:mm' }}</span>
-          </div>
+  <section class="dash-row" [class.sin-actividad]="!permitido('/movimientos/movimientos')">
+    @if (permitido('/movimientos/movimientos')) {
+      <div class="dash-card">
+        <div class="card-header">
+          <h3><i class="fas fa-clock-rotate-left"></i> Actividad reciente</h3>
+          <a routerLink="/movimientos/movimientos" class="ver-todo">Ver todo →</a>
         </div>
-      } @empty {
-        <div class="act-empty"><i class="fas fa-inbox"></i><p>Sin movimientos registrados</p></div>
-      }
-    </div>
+        @for (a of actividadReciente(); track a.id) {
+          <div class="act-item">
+            <div class="act-icon" [style.background]="a.bg" [style.color]="a.color"><i class="fas" [class]="'fas ' + a.icon"></i></div>
+            <div class="act-info">
+              <span class="act-title">{{ a.title }}</span>
+              <span class="act-desc">{{ a.desc }}</span>
+            </div>
+            <div class="act-meta">
+              <span class="act-user">{{ a.user }}</span>
+              <span class="act-fecha">{{ a.fecha | date:'dd/MM HH:mm' }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="act-empty"><i class="fas fa-inbox"></i><p>Sin movimientos registrados</p></div>
+        }
+      </div>
+    }
 
     <div class="dash-card quick-card">
       <div class="card-header"><h3><i class="fas fa-bolt"></i> Acciones rápidas</h3></div>
@@ -96,13 +100,15 @@
         }
       </div>
 
-      <div class="estado-resumen">
-        <h4>Atención</h4>
-        <div class="estado-item" [class.alerta]="stockCritico() > 0"><span><i class="fas fa-box"></i> Stock crítico</span><strong>{{ stockCritico() }}</strong></div>
-        <div class="estado-item" [class.alerta]="alertasPendientes() > 0"><span><i class="fas fa-bell"></i> Alertas pendientes</span><strong>{{ alertasPendientes() }}</strong></div>
-        <div class="estado-item" [class.alerta]="entregasPendientes() > 0"><span><i class="fas fa-truck"></i> Entregas pendientes</span><strong>{{ entregasPendientes() }}</strong></div>
-        <div class="estado-item ok"><span><i class="fas fa-user-check"></i> Clientes activos</span><strong>{{ clientesActivos() }}</strong></div>
-      </div>
+      @if (veAtencion) {
+        <div class="estado-resumen">
+          <h4>Atención</h4>
+          <div class="estado-item" [class.alerta]="stockCritico() > 0"><span><i class="fas fa-box"></i> Stock crítico</span><strong>{{ stockCritico() }}</strong></div>
+          <div class="estado-item" [class.alerta]="alertasPendientes() > 0"><span><i class="fas fa-bell"></i> Alertas pendientes</span><strong>{{ alertasPendientes() }}</strong></div>
+          <div class="estado-item" [class.alerta]="materialesEnTecnicos() > 0"><span><i class="fas fa-toolbox"></i> Material en manos de técnicos</span><strong>{{ materialesEnTecnicos() }}</strong></div>
+          <div class="estado-item ok"><span><i class="fas fa-user-check"></i> Clientes activos</span><strong>{{ clientesActivos() }}</strong></div>
+        </div>
+      }
     </div>
   </section>
 </div>

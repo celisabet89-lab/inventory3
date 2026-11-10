@@ -648,3 +648,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Aviso de error de inicio de sesión */
+.login-alert {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 11px 14px;
+  background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #b91c1c; font-size: 13px; font-weight: 600;
+  animation: login-sacudir .35s ease;
+}
+@keyframes login-sacudir { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+.eye-btn:focus-visible, .login-btn:focus-visible, .forgot-password:focus-visible, .form-input:focus-visible { outline: 2px solid #1b6f6f; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .login-alert { animation: none; } }

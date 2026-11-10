@@ -1,10 +1,11 @@
-
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, filter } from 'rxjs';
 import Swal from 'sweetalert2';
+import { imprimirRecibo as imprimirReciboComun, usuarioEmisor } from '../../../shared/documento/recibo.util';
 
 import { MovementsService } from '../../stock/services/movements.service';
 import { Cobro, CobroService } from '../service/cobro.service';
@@ -38,7 +39,7 @@ type VistaCobros = 'REGISTRO' | 'PENDIENTES' | 'GESTION';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './cobros-list.component.html',
-  styleUrls: ['./cobros-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './cobros-list.component.css']
 })
 export class CobrosListComponent implements OnInit {
   private movementsService = inject(MovementsService);
@@ -46,6 +47,7 @@ export class CobrosListComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private productService = inject(ProductService);
+  private destroyRef = inject(DestroyRef);
 
   productosCatalogo: Product[] = [];
 
@@ -55,6 +57,7 @@ export class CobrosListComponent implements OnInit {
   cobros: Cobro[] = [];
 
   busqueda = '';
+  filtroEstado: 'TODOS' | 'PENDIENTE' | 'PARCIAL' | 'PAGADO' = 'TODOS';
   cargando = false;
   errorCarga = false;
 
@@ -91,19 +94,23 @@ export class CobrosListComponent implements OnInit {
   ngOnInit(): void {
     this.actualizarVista();
 
-    this.route.data.subscribe(() => {
-      this.actualizarVista();
-      this.aplicarFiltros();
-    });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refrescarVista());
 
     this.router.events
-      .pipe(filter(evento => evento instanceof NavigationEnd))
-      .subscribe(() => {
-        this.actualizarVista();
-        this.aplicarFiltros();
-      });
+      .pipe(
+        filter(evento => evento instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => this.refrescarVista());
 
     this.cargarDatos();
+  }
+
+  private refrescarVista(): void {
+    this.actualizarVista();
+    this.aplicarFiltros();
   }
 
   private actualizarVista(): void {
@@ -141,6 +148,14 @@ export class CobrosListComponent implements OnInit {
         );
 
         this.construirVentas(movimientos ?? []);
+
+        // Mantiene al día la venta abierta en el historial (saldos tras cobrar/anular).
+        const abierta = this.ventaSeleccionada;
+        if (abierta) {
+          this.ventaSeleccionada =
+            this.ventas.find(v => v.codigoVenta === abierta.codigoVenta) ?? abierta;
+        }
+
         this.cargando = false;
       },
       error: error => {
@@ -328,6 +343,11 @@ export class CobrosListComponent implements OnInit {
 
       if (!textoMatch) return false;
 
+      if (this.vista !== 'GESTION' && this.filtroEstado !== 'TODOS' &&
+        venta.estadoPago !== this.filtroEstado) {
+        return false;
+      }
+
       if (this.vista === 'GESTION') {
         return venta.saldoPendiente <= 0.01;
       }
@@ -338,6 +358,12 @@ export class CobrosListComponent implements OnInit {
 
       return true;
     });
+  }
+
+  limpiarFiltros(): void {
+    this.busqueda = '';
+    this.filtroEstado = 'TODOS';
+    this.aplicarFiltros();
   }
 
   abrirCobro(venta: VentaCobro): void {
@@ -370,7 +396,7 @@ export class CobrosListComponent implements OnInit {
       return;
     }
 
-    if (monto > venta.saldoPendiente + 0.001) {
+    if (monto > venta.saldoPendiente + 0.01) {
       Swal.fire(
         'Monto excedido',
         `El saldo pendiente es ${this.moneda(venta.saldoPendiente)}.`,
@@ -451,61 +477,75 @@ export class CobrosListComponent implements OnInit {
     const venta = this.ventaSeleccionada;
     if (!venta) return;
 
-    const productos = venta.productos.map(producto =>
-      `<tr>
-        <td>${this.escapar(producto.nombre)}</td>
-        <td>${producto.cantidad}</td>
-        <td>${this.moneda(producto.precio)}</td>
-        <td>${this.moneda(producto.subtotal)}</td>
-      </tr>`
-    ).join('');
+    const numero = cobro.idCobro ?? '—';
+    const anulado = String((cobro as any).estado ?? '').toUpperCase() === 'ANULADO';
 
-    const html = `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<title>Recibo ${cobro.idCobro ?? ''}</title>
-<style>
-body{font-family:Arial,sans-serif;padding:28px;color:#222}
-h1{font-size:22px}
-table{width:100%;border-collapse:collapse;margin-top:16px}
-th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
-.total{font-size:18px;font-weight:bold;margin-top:20px}
-</style>
-</head>
-<body>
-<h1>RECIBO DE COBRO</h1>
-<p><b>N.º de recibo:</b> ${cobro.idCobro ?? '—'}</p>
-<p><b>Venta:</b> ${this.escapar(venta.codigoVenta)}</p>
-<p><b>Cliente:</b> ${this.escapar(venta.clienteNombre)}</p>
-<p><b>Fecha:</b> ${this.escapar(this.fechaFormato(cobro.fecha))}</p>
-<p><b>Forma de pago:</b> ${this.escapar(cobro.formaPago)}</p>
-<table>
-<thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
-<tbody>${productos}</tbody>
-</table>
-<p class="total">Monto de este cobro: ${this.moneda(cobro.monto)}</p>
-<p>Total de venta: ${this.moneda(venta.totalVenta)}</p>
-<p>Saldo pendiente: ${this.moneda(venta.saldoPendiente)}</p>
-<p>Observaciones: ${this.escapar(cobro.observaciones ?? '—')}</p>
-<script>window.onload=()=>window.print()<\/script>
-</body>
-</html>`;
+    imprimirReciboComun({
+      titulo: 'Recibo de cobro',
+      numero,
+      fecha: this.fechaFormato(new Date().toISOString()),
+      emitidoPor: usuarioEmisor(),
+      datos: [
+        { etiqueta: 'Cliente', valor: venta.clienteNombre },
+        { etiqueta: 'Venta', valor: venta.codigoVenta },
+        { etiqueta: 'Fecha del cobro', valor: this.fechaFormato(cobro.fecha) },
+        { etiqueta: 'Forma de pago', valor: cobro.formaPago }
+      ],
+      tablas: [{
+        titulo: 'Productos',
+        columnas: [{ texto: 'Producto' }, { texto: 'Cant.', num: true }, { texto: 'Precio', num: true }, { texto: 'Subtotal', num: true }],
+        filas: venta.productos.map(p => [p.nombre, p.cantidad, this.moneda(p.precio), this.moneda(p.subtotal)]),
+        vacio: 'Sin productos registrados'
+      }],
+      totales: [
+        { etiqueta: 'Total de venta', valor: this.moneda(venta.totalVenta) },
+        { etiqueta: 'Saldo pendiente', valor: this.moneda(venta.saldoPendiente) },
+        { etiqueta: 'Monto cobrado', valor: this.moneda(cobro.monto), destacado: true }
+      ],
+      montoLetras: Number(cobro.monto ?? 0),
+      observaciones: cobro.observaciones || undefined,
+      sello: anulado
+        ? { texto: 'ANULADO', tipo: 'bad' }
+        : venta.saldoPendiente <= 0 ? { texto: 'PAGADO', tipo: 'ok' } : undefined,
+      firmas: ['Entregué conforme (cliente)', 'Recibí conforme (cobrador)']
+    });
+  }
 
-    const ventana = window.open('', '_blank', 'width=850,height=700');
+  /** Imprime el recibo del último cobro activo de la venta (acción de la fila). */
+  imprimirVenta(venta: VentaCobro): void {
+    this.cobroService.getByCodigoVenta(venta.codigoVenta).subscribe({
+      next: datos => {
+        const activos = (datos ?? []).filter(c => !this.estaAnulado(c));
+        if (!activos.length) {
+          Swal.fire({ icon: 'info', title: 'Sin cobros', text: 'Esta venta no tiene cobros activos para imprimir.', confirmButtonColor: '#1b6f6f' });
+          return;
+        }
+        this.ventaSeleccionada = venta;
+        this.imprimirRecibo(activos[activos.length - 1]);
+      },
+      error: () => Swal.fire('Error', 'No se pudo preparar el recibo.', 'error')
+    });
+  }
 
-    if (!ventana) {
-      Swal.fire(
-        'Ventana bloqueada',
-        'Permite ventanas emergentes para imprimir el recibo.',
-        'warning'
-      );
-      return;
-    }
-
-    ventana.document.open();
-    ventana.document.write(html);
-    ventana.document.close();
+  /** Anula un cobro de la venta; si hay varios, abre el historial para elegir cuál. */
+  anularVenta(venta: VentaCobro): void {
+    this.cobroService.getByCodigoVenta(venta.codigoVenta).subscribe({
+      next: datos => {
+        const lista = datos ?? [];
+        const activos = lista.filter(c => !this.estaAnulado(c));
+        if (!activos.length) {
+          Swal.fire({ icon: 'info', title: 'Nada que anular', text: 'Esta venta no tiene cobros activos.', confirmButtonColor: '#1b6f6f' });
+          return;
+        }
+        this.ventaSeleccionada = venta;
+        if (activos.length === 1) { this.anularCobro(activos[0]); return; }
+        this.historial = lista;
+        this.cargandoHistorial = false;
+        this.mostrandoHistorial = true;
+        Swal.fire({ icon: 'info', title: 'Elige el cobro a anular', text: 'Esta venta tiene varios cobros. Usa el botón "Anular" del que corresponda.', confirmButtonColor: '#1b6f6f' });
+      },
+      error: () => Swal.fire('Error', 'No se pudo consultar los cobros.', 'error')
+    });
   }
 
   anularCobro(cobro: Cobro): void {
@@ -525,8 +565,11 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
 
     Swal.fire({
       title: '¿Anular este cobro?',
-      text: `Se anulará el cobro de ${this.moneda(cobro.monto)}.`,
+      text: `Se anulará el cobro de ${this.moneda(cobro.monto)}. La venta recuperará ese saldo pendiente.`,
       icon: 'warning',
+      input: 'textarea',
+      inputLabel: 'Motivo (opcional)',
+      inputAttributes: { maxlength: '300' },
       showCancelButton: true,
       confirmButtonText: 'Sí, anular',
       cancelButtonText: 'Volver',
@@ -534,9 +577,17 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
     }).then(resultado => {
       if (!resultado.isConfirmed) return;
 
-      this.cobroService.anular(cobro.idCobro!).subscribe({
+      const motivo = String(resultado.value ?? '').trim();
+
+      this.cobroService.anular(cobro.idCobro!, motivo || undefined).subscribe({
         next: () => {
-          Swal.fire('Cobro anulado', 'El cobro fue anulado.', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: 'Cobro anulado',
+            text: 'El cobro fue anulado.',
+            timer: 1600,
+            showConfirmButton: false
+          });
 
           const venta = this.ventaSeleccionada;
 
@@ -562,7 +613,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
     });
   }
 
-  private escapar(value: string): string {
+  private escapar(value: unknown): string {
     const entidades: Record<string, string> = {
       '&': '&amp;',
       '<': '&lt;',
@@ -571,7 +622,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
       "'": '&#39;'
     };
 
-    return value.replace(/[&<>"']/g, caracter => entidades[caracter] ?? caracter);
+    return String(value ?? '').replace(/[&<>"']/g, caracter => entidades[caracter] ?? caracter);
   }
 
   moneda(valor: number): string {
@@ -614,5 +665,38 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
       (suma, venta) => suma + venta.saldoPendiente,
       0
     );
+  }
+
+  /** Texto del tooltip con todos los productos de la venta. */
+  detalleProductos(venta: { productos: { nombre: string; cantidad: number; subtotal: number }[] }): string {
+    return venta.productos.map(p => `${p.cantidad} × ${p.nombre} (${this.moneda(p.subtotal)})`).join('\n');
+  }
+
+  get tarjetas(): { icono: string; etiqueta: string; valor: string; detalle: string; clase: string }[] {
+    const pendientes = this.ventasFiltradas.filter(v => v.saldoPendiente > 0.01).length;
+
+    return [
+      {
+        icono: 'fa-file-invoice-dollar',
+        etiqueta: 'Total de ventas',
+        valor: this.moneda(this.totalVentas),
+        detalle: `${this.ventasFiltradas.length} ventas`,
+        clase: 'stat-base'
+      },
+      {
+        icono: 'fa-circle-check',
+        etiqueta: 'Total cobrado',
+        valor: this.moneda(this.totalCobrado),
+        detalle: 'cobros activos',
+        clase: 'stat-ok'
+      },
+      {
+        icono: 'fa-hourglass-half',
+        etiqueta: 'Saldo pendiente',
+        valor: this.moneda(this.totalPendiente),
+        detalle: `${pendientes} ventas con saldo`,
+        clase: 'stat-warn'
+      }
+    ];
   }
 }

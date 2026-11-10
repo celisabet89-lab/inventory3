@@ -1,4 +1,3 @@
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +11,7 @@ import Swal from 'sweetalert2';
   standalone: true,
   imports: [CommonModule, FormsModule, ClientFormComponent],
   templateUrl: './client-list.component.html',
-  styleUrls: ['./client-list.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './client-list.component.css']
 })
 export class ClientListComponent implements OnInit {
   private clientSvc = inject(ClientService);
@@ -143,7 +142,7 @@ export class ClientListComponent implements OnInit {
   }
 
   getEstadoClass(estado: string): string {
-    return estado === 'ACTIVO' ? 'badge-activo' : 'badge-inactivo';
+    return estado === 'ACTIVO' ? 'badge-success' : 'badge-danger';
   }
 
   openNew(): void {
@@ -167,6 +166,32 @@ export class ClientListComponent implements OnInit {
   onSaved(): void {
     this.closeForm();
     this.loadClients();
+  }
+
+  /** Activa o desactiva el cliente (pide confirmación). */
+  toggleEstado(cliente: any): void {
+    const id = cliente?.idCliente ?? cliente?.id;
+    const nuevo: 'ACTIVO' | 'INACTIVO' = cliente?.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+    const accion = nuevo === 'ACTIVO' ? 'activar' : 'desactivar';
+    Swal.fire({
+      icon: 'question',
+      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} cliente?`,
+      html: `¿Seguro que deseas ${accion} a <b>${this.getNombre(cliente)}</b>?`,
+      showCancelButton: true,
+      confirmButtonColor: nuevo === 'ACTIVO' ? '#059669' : '#dc2626',
+      confirmButtonText: `Sí, ${accion}`,
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.clientSvc.changeStatus(Number(id), nuevo).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: nuevo === 'ACTIVO' ? 'Cliente activado' : 'Cliente desactivado', timer: 1300, showConfirmButton: false });
+          this.loadClients();
+        },
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo cambiar el estado', text: err?.error?.message ?? 'Inténtalo nuevamente.' })
+      });
+    });
   }
 
   deleteClient(cliente: any): void {

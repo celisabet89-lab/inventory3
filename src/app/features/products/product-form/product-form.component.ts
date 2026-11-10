@@ -1,25 +1,15 @@
-import { Component, OnInit, OnChanges, Input, Output, EventEmitter, inject, signal, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { ProductService } from '../services/product.service';
 import { CategoriaService } from '../services/Categoria.service';
 import { UnidadMedidaService } from '../services/unidadMedida.servise';
 import Swal from 'sweetalert2';
 
-interface Categoria {
-  idCategoria: number;
-  nombre: string;
-  color?: string;
-  icono?: string;
-}
-
-interface UnidadMedida {
-  idUnidad: number;
-  nombre: string;
-  abreviatura: string;
-}
-
+interface Categoria { idCategoria: number; nombre: string; color?: string; icono?: string; }
+interface UnidadMedida { idUnidad: number; nombre: string; abreviatura: string; }
 interface Product {
   idProducto?: number;
   articulo: string;
@@ -45,20 +35,19 @@ export class ProductFormComponent implements OnInit, OnChanges {
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
 
-  private fb = inject(FormBuilder);
-  private productSvc = inject(ProductService);
-  private categoriaSvc = inject(CategoriaService);
-  private unidadSvc = inject(UnidadMedidaService);
+  private readonly fb = inject(FormBuilder);
+  private readonly productSvc = inject(ProductService);
+  private readonly categoriaSvc = inject(CategoriaService);
+  private readonly unidadSvc = inject(UnidadMedidaService);
 
   form!: FormGroup;
-  saving = signal(false);
-  loadingCatalogs = signal(false);
-  loadingProduct = signal(false);
-  fotoPreview = signal<string | null>(null);
-  categorias = signal<Categoria[]>([]);
-  unidades = signal<UnidadMedida[]>([]);
-
-  private readonly MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+  readonly saving = signal(false);
+  readonly loadingCatalogs = signal(false);
+  readonly loadingProduct = signal(false);
+  readonly fotoPreview = signal<string | null>(null);
+  readonly categorias = signal<Categoria[]>([]);
+  readonly unidades = signal<UnidadMedida[]>([]);
+  private readonly maxImageSize = 2 * 1024 * 1024;
 
   ngOnInit(): void {
     this.buildForm();
@@ -66,15 +55,10 @@ export class ProductFormComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // IMPORTANTE: Detectar cambios en product y isEdit
+    if (!this.form) return;
     if (changes['product'] || changes['isEdit']) {
-      if (this.form) {
-        if (this.isEdit && this.product) {
-          this.loadProductData();
-        } else if (!this.isEdit) {
-          this.resetForm();
-        }
-      }
+      if (this.isEdit && this.product) this.loadProductData();
+      else this.resetForm();
     }
   }
 
@@ -82,124 +66,90 @@ export class ProductFormComponent implements OnInit, OnChanges {
     this.form = this.fb.group({
       articulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       descripcion: ['', [Validators.maxLength(500)]],
-      categoria: [null, [Validators.required]],
-      unidadMedida: [null, [Validators.required]],
+      categoria: [null, Validators.required],
+      unidadMedida: [null, Validators.required],
       precio: [0, [Validators.required, Validators.min(0)]],
-      unidad: [0, [Validators.min(0)]],
+      unidad: [0, [Validators.required, Validators.min(0)]],
       codigoBarras: ['', [Validators.pattern('^[0-9]*$'), Validators.maxLength(50)]],
       foto: ['']
     });
   }
 
+  private loadCatalogs(): void {
+    this.loadingCatalogs.set(true);
+    forkJoin({ categorias: this.categoriaSvc.getAll(), unidades: this.unidadSvc.getAll() })
+      .pipe(finalize(() => this.loadingCatalogs.set(false)))
+      .subscribe({
+        next: ({ categorias, unidades }) => {
+          this.categorias.set(categorias ?? []);
+          this.unidades.set(unidades ?? []);
+          if (this.isEdit && this.product) this.loadProductData();
+        },
+        error: () => Swal.fire({
+          icon: 'warning',
+          title: 'No se pudieron cargar los catálogos',
+          text: 'Verifica la conexión antes de guardar el producto.'
+        })
+      });
+  }
+
   private loadProductData(): void {
-    if (!this.product) return;
-
-    console.log('Cargando datos del producto:', this.product);
+    if (!this.product || !this.form) return;
     this.loadingProduct.set(true);
-
-    // Extraer IDs correctamente con validación de null
     const categoriaId = this.product.categoria?.idCategoria ?? null;
     const unidadId = this.product.unidadMedida?.idUnidad ?? null;
 
-    const patchData = {
-      articulo: this.product.articulo || '',
-      descripcion: this.product.descripcion || '',
+    this.form.reset({
+      articulo: this.product.articulo ?? '',
+      descripcion: this.product.descripcion ?? '',
       categoria: categoriaId,
       unidadMedida: unidadId,
-      precio: this.product.precio || 0,
-      unidad: this.product.unidad || 0,
-      codigoBarras: this.product.codigoBarras || '',
-      foto: this.product.foto || ''
-    };
-
-    console.log('Datos a cargar en el formulario:', patchData);
-
-    // Resetear y luego patch
-    this.form.reset(patchData);
+      precio: Number(this.product.precio ?? 0),
+      unidad: Number(this.product.unidad ?? 0),
+      codigoBarras: this.product.codigoBarras ?? '',
+      foto: this.product.foto ?? ''
+    });
     this.form.markAsPristine();
     this.form.markAsUntouched();
-
-    if (this.product.foto) {
-      this.fotoPreview.set(this.product.foto);
-    } else {
-      this.fotoPreview.set(null);
-    }
-
+    this.fotoPreview.set(this.product.foto || null);
     this.loadingProduct.set(false);
   }
 
   resetForm(): void {
     if (!this.form) return;
-
     this.form.reset({
-      articulo: '',
-      descripcion: '',
-      categoria: null,
-      unidadMedida: null,
-      precio: 0,
-      unidad: 0,
-      codigoBarras: '',
-      foto: ''
+      articulo: '', descripcion: '', categoria: null, unidadMedida: null,
+      precio: 0, unidad: 0, codigoBarras: '', foto: ''
     });
-
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.fotoPreview.set(null);
   }
 
-  private loadCatalogs(): void {
-    this.loadingCatalogs.set(true);
-
-    // Cargar catálogos en paralelo
-    Promise.all([
-      this.categoriaSvc.getAll().toPromise(),
-      this.unidadSvc.getAll().toPromise()
-    ]).then(([categorias, unidades]) => {
-      if (categorias) {
-        this.categorias.set(categorias as Categoria[]);
-        console.log('Categorías cargadas:', categorias);
-      }
-      if (unidades) {
-        this.unidades.set(unidades as UnidadMedida[]);
-        console.log('Unidades cargadas:', unidades);
-      }
-
-      // Después de cargar catálogos, si estamos en modo edición, cargar datos
-      if (this.isEdit && this.product) {
-        this.loadProductData();
-      }
-    }).catch(error => {
-      console.error('Error cargando catálogos:', error);
-      Swal.fire({
-        icon: 'warning',
-        title: 'Error al cargar datos',
-        text: 'No se pudieron cargar las categorías o unidades de medida'
-      });
-    }).finally(() => {
-      this.loadingCatalogs.set(false);
-    });
-  }
-
   onFotoChange(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
 
-    if (file.size > this.MAX_IMAGE_SIZE) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Imagen muy grande',
-        text: `El tamaño máximo es de ${this.MAX_IMAGE_SIZE / (1024 * 1024)}MB`
-      });
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      Swal.fire('Formato no permitido', 'Selecciona una imagen JPG, PNG o WEBP.', 'warning');
+      input.value = '';
+      return;
+    }
+    if (file.size > this.maxImageSize) {
+      Swal.fire('Imagen muy grande', 'El tamaño máximo permitido es 2 MB.', 'warning');
+      input.value = '';
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      const base64 = reader.result as string;
+      const base64 = String(reader.result ?? '');
       this.fotoPreview.set(base64);
       this.form.patchValue({ foto: base64 });
       this.form.markAsDirty();
     };
+    reader.onerror = () => Swal.fire('Error', 'No se pudo leer la imagen seleccionada.', 'error');
     reader.readAsDataURL(file);
   }
 
@@ -207,121 +157,105 @@ export class ProductFormComponent implements OnInit, OnChanges {
     this.fotoPreview.set(null);
     this.form.patchValue({ foto: '' });
     this.form.markAsDirty();
-
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) fileInput.value = '';
+    const input = document.querySelector<HTMLInputElement>('.foto-file-input');
+    if (input) input.value = '';
   }
 
   hasError(field: string, errorType: string): boolean {
     const control = this.form.get(field);
-    return !!(control?.hasError(errorType) && control?.touched);
+    return Boolean(control?.hasError(errorType) && control?.touched);
   }
 
   getFieldError(field: string): string {
     const control = this.form.get(field);
-    if (!control?.touched || !control?.errors) return '';
-
+    if (!control?.touched || !control.errors) return '';
     const errors = control.errors;
-    if (errors['required']) return 'Este campo es requerido';
-    if (errors['minlength']) return `Mínimo ${errors['minlength'].requiredLength} caracteres`;
-    if (errors['maxlength']) return `Máximo ${errors['maxlength'].requiredLength} caracteres`;
-    if (errors['min']) return `El valor mínimo es ${errors['min'].min}`;
-    if (errors['pattern']) return 'Formato inválido';
-
-    return 'Campo inválido';
+    if (errors['required']) return 'Este campo es obligatorio.';
+    if (errors['minlength']) return `Escribe al menos ${errors['minlength'].requiredLength} caracteres.`;
+    if (errors['maxlength']) return `El máximo permitido es ${errors['maxlength'].requiredLength} caracteres.`;
+    if (errors['min']) return `El valor mínimo permitido es ${errors['min'].min}.`;
+    if (errors['pattern']) return 'Utiliza solo números para el código de barras.';
+    return 'Revisa este campo.';
   }
 
   getCategoriaSeleccionada(): Categoria | null {
-    const id = this.form.value.categoria;
-    if (!id) return null;
-    const categoria = this.categorias().find(c => c.idCategoria === id);
-    console.log('Categoría seleccionada:', categoria);
-    return categoria || null;
+    const rawId = this.form?.get('categoria')?.value;
+    if (rawId === null || rawId === undefined || rawId === '') return null;
+    return this.categorias().find(c => Number(c.idCategoria) === Number(rawId)) ?? null;
   }
 
-  getCategoriaStyle(): { [key: string]: string } {
-    const categoria = this.getCategoriaSeleccionada();
-    if (!categoria?.color) {
-      return {};
-    }
-
+  getCategoriaStyle(): Record<string, string> {
+    const category = this.getCategoriaSeleccionada();
+    if (!category?.color) return {};
     return {
-      backgroundColor: `${categoria.color}22`,
-      color: categoria.color,
-      borderColor: categoria.color
+      backgroundColor: `${category.color}18`,
+      color: category.color,
+      borderColor: `${category.color}80`
     };
   }
 
   guardar(): void {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formulario incompleto',
-        text: 'Por favor, completa todos los campos requeridos correctamente'
-      });
+      Swal.fire('Formulario incompleto', 'Revisa los campos marcados antes de continuar.', 'warning');
       return;
     }
 
-    this.saving.set(true);
-    const formValue = this.form.value;
-
+    const value = this.form.getRawValue();
     const body = {
-      articulo: formValue.articulo.trim(),
-      descripcion: formValue.descripcion?.trim() || '',
-      precio: Number(formValue.precio),
-      unidad: Number(formValue.unidad) || 0,
-      codigoBarras: formValue.codigoBarras?.trim() || null,
-      foto: formValue.foto || null,
-      categoria: formValue.categoria ? Number(formValue.categoria) : null,
-      unidadMedida: formValue.unidadMedida ? Number(formValue.unidadMedida) : null
+      articulo: String(value.articulo).trim(),
+      descripcion: String(value.descripcion ?? '').trim(),
+      precio: Number(value.precio),
+      unidad: Number(value.unidad),
+      codigoBarras: String(value.codigoBarras ?? '').trim() || undefined,
+      foto: value.foto || undefined,
+      categoria: Number(value.categoria),
+      unidadMedida: Number(value.unidadMedida)
     };
 
-    console.log('Guardando producto:', body);
+    const productId = this.product?.idProducto;
+    const updating = this.isEdit && productId != null;
+    const operation = updating
+      ? this.productSvc.update(productId!, body)
+      : this.productSvc.create(body);
 
-    // @ts-ignore
-    const operation = !(this.isEdit && this.product?.idProducto) ? this.productSvc.create(body) : this.productSvc.update(this.product.idProducto, body);
-
-    operation.pipe(
-      finalize(() => this.saving.set(false))
-    ).subscribe({
-      next: (response) => {
-        console.log('Respuesta del servidor:', response);
+    this.saving.set(true);
+    operation.pipe(finalize(() => this.saving.set(false))).subscribe({
+      next: () => {
         Swal.fire({
           icon: 'success',
-          title: this.isEdit ? 'Producto actualizado' : 'Producto creado',
+          title: updating ? 'Producto actualizado' : 'Producto creado',
+          text: 'Los datos se guardaron correctamente.',
           timer: 1500,
           showConfirmButton: false
         });
         this.saved.emit();
       },
-      error: (error) => {
-        console.error('Error al guardar:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error al guardar',
-          text: error?.error?.message || 'Ocurrió un error al guardar el producto'
-        });
-      }
+      error: (error) => Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar el producto',
+        text: error?.error?.message || 'Verifica los datos e inténtalo nuevamente.'
+      })
     });
   }
 
   cancelar(): void {
-    if (this.form.dirty) {
-      Swal.fire({
-        title: '¿Descartar cambios?',
-        text: 'Tienes cambios sin guardar que se perderán',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, descartar',
-        cancelButtonText: 'No, continuar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.cancelled.emit();
-        }
-      });
-    } else {
+    if (this.saving()) return;
+    if (!this.form.dirty) {
       this.cancelled.emit();
+      return;
     }
+    Swal.fire({
+      title: '¿Descartar cambios?',
+      text: 'Los cambios que no guardaste se perderán.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, descartar',
+      cancelButtonText: 'Continuar editando',
+      reverseButtons: true
+    }).then(result => {
+      if (result.isConfirmed) this.cancelled.emit();
+    });
   }
 }

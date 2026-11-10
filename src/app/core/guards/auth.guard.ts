@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, CanActivateChildFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { rutaInicial } from '../permissions';
 
 export const authGuard = () => {
   const authService = inject(AuthService);
@@ -25,4 +26,14 @@ export const adminGuard = () => {
   }
 
   return router.createUrlTree(['/dashboard']);
+};
+
+/** Bloquea las rutas que el cargo del usuario no puede ver. */
+export const permisoGuard: CanActivateChildFn = (_route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  return authService.canAccess(state.url)
+    ? true
+    : router.createUrlTree([rutaInicial(authService.rol())]);
 };

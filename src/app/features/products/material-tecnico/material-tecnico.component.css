@@ -1,0 +1,76 @@
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(16,24,40,.06); }
+.kpi i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #e6f4f4; color: #1b6f6f; }
+.kpi b { display: block; font-size: 22px; color: #0f4f4f; line-height: 1.1; }
+.kpi span { font-size: 12px; color: #6b7280; }
+.prod-cell { display: flex; align-items: center; gap: 10px; }
+.prod-cell img, .prod-cell .sin-foto { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; background: #f3f4f6; flex-shrink: 0; display: grid; place-items: center; color: #9ca3af; }
+.barra { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.barra input, .barra select { padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; font-size: 14px; }
+.barra input { flex: 1; min-width: 200px; }
+.stock-hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.bitacora { white-space: pre-line; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 13px; max-height: 220px; overflow: auto; }
+.mini { font-size: 12px; color: #6b7280; }
+
+/* Entrega de varios materiales */
+.mat-agregar { display: grid; grid-template-columns: 1fr 1.4fr 110px auto; gap: 12px; align-items: end; margin-top: 4px; }
+.mat-btn { height: 40px; white-space: nowrap; }
+.carrito { margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.carrito-head { display: flex; justify-content: space-between; gap: 8px; padding: 10px 14px; background: #f0f7f7; color: #0f4f4f; font-weight: 700; font-size: 13px; }
+.carrito-total { font-weight: 600; color: #4b5563; }
+.carrito-fila { display: grid; grid-template-columns: 1fr 100px 36px; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid #f1f3f4; }
+.carrito-vacio { padding: 18px; text-align: center; color: #9ca3af; font-size: 13px; }
+.cant-in { width: 100%; padding: 7px 8px; border: 1.5px solid #e5e7eb; border-radius: 8px; font: inherit; text-align: right; }
+.cant-in.invalida { border-color: #dc2626; background: #fef2f2; }
+@media (max-width: 760px) {
+  .mat-agregar { grid-template-columns: 1fr 1fr; }
+  .mat-sel { grid-column: 1 / -1; }
+}
+
+.escaner { margin: 4px 0 12px; }
+.escaner input { width: 100%; padding: 10px 12px; border: 1.5px dashed #1b6f6f; border-radius: 10px; background: #f0f7f7; font: inherit; }
+
+.modal-ancho { max-width: 760px; width: 94vw; }
+.modal-ancho .modal-body { max-height: 70vh; overflow-y: auto; }
+
+/* varias líneas de material dentro de una sola fila de entrega */
+.sub { display: flex; align-items: center; gap: 6px; min-height: 44px; }
+.sub.num { justify-content: flex-end; }
+.sub + .sub { border-top: 1px dashed #e5e7eb; }
+td.num .sub { justify-content: flex-end; }
+
+.onu-acciones { display: flex; gap: 8px; padding: 8px 10px; flex-wrap: wrap; }
+.onu-acciones input { flex: 1 1 260px; }
+
+/* ── Tabla más presentable (cabecera, filas, espaciado) ── */
+.sl-table-wrap { border: 0; border-radius: 14px; box-shadow: 0 2px 14px rgba(15, 23, 42, .08); overflow: hidden; overflow-x: auto; }
+.sl-table { font-size: 14px; }
+.sl-table thead th {
+  padding: 15px 16px; font-size: 12.5px; letter-spacing: .06em;
+  background: linear-gradient(180deg, #218080 0%, #1b6f6f 100%); border-bottom: 3px solid #145757;
+}
+.sl-table tbody td { padding: 14px 16px; border-bottom: 1px solid #e8eef0; }
+.sl-table tbody tr:nth-child(even) td { background: #f6fafa; }
+.sl-table tbody tr:hover td { background: #e3f2f2; }
+.sl-table tbody td:first-child { font-weight: 700; color: #0f4f4f; }
+.sl-table .badge { padding: 5px 12px; font-size: 12px; border-radius: 99px; font-weight: 700; }
+.sl-table .btn-ic { width: 34px; height: 34px; border-radius: 9px; }
+
+/* MAC segmentada (igual que en el formulario de ONU) */
+.mac-fila { display: flex; gap: 8px; padding: 8px 10px; align-items: stretch; }
+.mac-input-container { display: flex; align-items: center; gap: 2px; background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0 10px; flex: 1; min-width: 0; }
+.mac-input-container:focus-within { border-color: #1b6f6f; box-shadow: 0 0 0 3px rgba(27, 111, 111, .12); background: #fff; }
+.mac-part { width: 100%; min-width: 0; max-width: 42px; padding: 11px 0; text-align: center; border: none; background: transparent; font-family: 'Courier New', monospace; font-size: 15px; font-weight: 700; text-transform: uppercase; }
+.mac-part:focus { outline: none; background: #e6f7f7; border-radius: 4px; }
+.mac-separator { font-size: 15px; font-weight: bold; color: #1b6f6f; user-select: none; }
+.btn-scanner { width: 46px; border: 0; border-radius: 10px; background: #1b6f6f; color: #fff; font-size: 17px; cursor: pointer; }
+.btn-scanner:hover { background: #145757; }
+.scan-video { width: 100%; max-height: 320px; border-radius: 10px; background: #000; }
+
+/* MAC dentro de la ventana de ONU's: cajas ordenadas */
+.mac-fila { gap: 10px; }
+.mac-input-container { justify-content: center; gap: 6px; background: #fff; padding: 8px 12px; }
+.mac-input-container .mac-part { width: 46px; max-width: 46px; height: 42px; padding: 0; border: 1.5px solid #d1d5db; border-radius: 8px; background: #f9fafb; font-size: 16px; }
+.mac-input-container .mac-part:focus { border-color: #1b6f6f; background: #fff; box-shadow: 0 0 0 3px rgba(27, 111, 111, .15); }
+.mac-input-container .mac-separator { font-size: 18px; }
+.btn-scanner { width: 52px; border-radius: 10px; }

@@ -21,6 +21,8 @@ export interface User {
   id?: number;
 
   password?: string;
+  /** Token de sesión (solo llega al iniciar sesión). */
+  token?: string;
 
   profile?: Profile;
   rol?: Rol;

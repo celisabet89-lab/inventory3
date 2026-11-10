@@ -1,26 +1,71 @@
-.rep-page { background: #e5e5e5; min-height: 100%; padding-bottom: 24px; }
-.rep-head { background: #fff; padding: 14px 20px 10px; box-shadow: 0 2px 4px rgba(0,0,0,.15); margin-bottom: 20px; }
-.rep-head h1 { margin: 0; font-size: 26px; font-weight: 400; color: #222; }
-.rep-head small { font-style: italic; color: #333; }
+/* Reportes: una sola tarjeta, tamaño medio y presentable */
+.rep-page { max-width: 1020px; margin: 0 auto; padding: 18px 20px 28px; }
 
-.rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; padding: 0 14px; align-items: start; }
-.rep-card { background: #fff; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,.2); padding: 16px 16px 20px; }
-.rep-card h2 { margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #222; line-height: 1.2; }
-.rep-card label { display: block; font-size: 14px; color: #222; margin: 10px 0 5px; }
-
-.rep-card input[type='month'],
-.rep-card input[type='text'],
-.rep-card select {
-  width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 4px;
-  font-size: 14px; background: #fff; color: #333; box-sizing: border-box;
+/* Encabezado tipo banner */
+.rep-head {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 18px; padding: 18px 22px; border-radius: 16px;
+  background: linear-gradient(135deg, #1b6f6f 0%, #2a8f8f 100%); color: #fff; box-shadow: 0 6px 18px rgba(27, 111, 111, .25);
 }
-.rep-card input:focus, .rep-card select:focus { outline: none; border-color: #009688; box-shadow: 0 0 0 2px rgba(0,150,136,.2); }
-.rep-hint { font-size: 12px; color: #64748b; margin: 8px 0 0; }
+.rep-head h2 { margin: 0; font-size: 22px; font-weight: 800; color: #fff; letter-spacing: .2px; }
+.rep-head .header-sub { color: rgba(255, 255, 255, .85); font-size: 14px; }
+.rep-head-ic { width: 48px; height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .18); color: #fff; font-size: 21px; flex-shrink: 0; }
 
-.rep-card label.rep-radio { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; cursor: pointer; }
-.rep-radio input { accent-color: #009688; width: 16px; height: 16px; margin: 0; }
+.rep-card { padding: 22px 24px; margin: 0; display: grid; gap: 22px; border-radius: 16px; box-shadow: 0 2px 14px rgba(15, 23, 42, .08); }
+.rep-bloque { display: grid; gap: 12px; }
+.rep-etq { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #0f4f4f; display: flex; align-items: center; gap: 10px; }
+.rep-etq::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
 
-.rep-accion { background: #fff; margin: 18px 14px 0; border-radius: 4px; padding: 16px; display: flex; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
-.rep-btn { background: #009688; color: #fff; border: 0; border-radius: 4px; padding: 10px 26px; font-size: 15px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
-.rep-btn:hover:not(:disabled) { background: #00796b; }
-.rep-btn:disabled { opacity: .6; cursor: wait; }
+/* Selector de reporte: botones con icono */
+.rep-tipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.rep-tipo {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; text-align: left;
+  background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 600; color: #374151; transition: .15s;
+}
+.rep-tipo i { font-size: 17px; color: var(--primary); width: 22px; text-align: center; }
+.rep-tipo:hover { border-color: var(--primary); background: #fff; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0, 0, 0, .07); }
+.rep-tipo:focus-visible, .rep-gen:focus-visible, .rep-limpiar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.rep-tipo.activo { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(27, 111, 111, .3); }
+.rep-tipo.activo i { color: #fff; }
+
+/* Filtros */
+.rep-filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.rep-campo { display: grid; gap: 5px; min-width: 150px; }
+.rep-campo > span { font-size: 13px; font-weight: 700; color: #374151; }
+.rep-campo-ancho { flex: 1 1 240px; }
+.rep-campo input, .rep-campo select {
+  width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #f9fafb;
+  font: inherit; font-size: 14px; color: #111827; outline: none; transition: .15s;
+}
+.rep-campo input:focus, .rep-campo select:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(27, 111, 111, .14); }
+.rep-nota { font-size: 14px; color: #6b7280; display: inline-flex; align-items: center; gap: 8px; height: 40px; }
+.rep-nota i { color: var(--primary); }
+.rep-limpiar { width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer; font-size: 15px; }
+.rep-limpiar:hover { color: var(--primary); border-color: var(--primary); }
+
+/* Barra de salida */
+.rep-salida {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 16px 18px; border-radius: 12px; background: #f1f8f8; border: 1px solid #d5e9e9;
+}
+.rep-preview { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 280px; }
+.rep-preview-ic { width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: #fff; color: var(--primary); font-size: 18px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+.rep-preview b { display: block; color: #0f4f4f; font-size: 15.5px; }
+.rep-preview small { display: block; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; margin-top: 2px; }
+
+.rep-botones { display: flex; gap: 10px; }
+.rep-gen {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; padding: 0 24px; border: 0; border-radius: 11px;
+  color: #fff; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; transition: .15s;
+}
+.rep-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0, 0, 0, .22); }
+.rep-gen:disabled { opacity: .6; cursor: wait; }
+.rep-pdf { background: #dc2626; }
+.rep-xls { background: var(--primary); }
+
+@media (max-width: 640px) {
+  .rep-page { padding: 12px; }
+  .rep-head { padding: 14px; }
+  .rep-card { padding: 16px; }
+  .rep-botones { width: 100%; }
+  .rep-gen { flex: 1; }
+}

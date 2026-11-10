@@ -1,0 +1,289 @@
+<div class="sl-page">
+  <div class="page-header">
+    <div class="header-left">
+      <span class="header-icon"><i class="fas fa-toolbox"></i></span>
+      <div>
+        <h2>{{ esTecnico ? 'Mis materiales' : 'Materiales para técnicos' }}</h2>
+        <span class="header-sub">{{ esTecnico ? 'Material que te entregaron para tus instalaciones' : 'Entrega material a los técnicos y controla lo que usan o devuelven' }}</span>
+      </div>
+    </div>
+    @if (!esTecnico) {
+      <button type="button" class="btn-nuevo" (click)="nueva()"><i class="fas fa-plus"></i> Entregar material</button>
+    }
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><i class="fas fa-clipboard-list"></i><div><b>{{ resumen().entregas }}</b><span>Entregas</span></div></div>
+    <div class="kpi"><i class="fas fa-hand-holding"></i><div><b>{{ resumen().enManos }}</b><span>En manos del técnico</span></div></div>
+    <div class="kpi"><i class="fas fa-screwdriver-wrench"></i><div><b>{{ resumen().usado }}</b><span>Usado en instalaciones</span></div></div>
+    <div class="kpi"><i class="fas fa-rotate-left"></i><div><b>{{ resumen().devuelto }}</b><span>Devuelto al almacén</span></div></div>
+  </div>
+
+  @if (formAbierto()) {
+    <div class="modal-fondo" (click)="cancelar()">
+      <div class="modal modal-ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="mt-titulo">
+        <div class="modal-head">
+          <h3 id="mt-titulo"><i class="fas fa-plus-circle"></i> Entregar material a un técnico</h3>
+          <button type="button" class="modal-x" aria-label="Cerrar" (click)="cancelar()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="fila-2">
+            <div class="campo">
+              <label for="mt-tec">Técnico <span class="req">*</span></label>
+              <select id="mt-tec" [(ngModel)]="form.tecnicoId" name="mt-tec">
+                <option [ngValue]="0">Selecciona un técnico</option>
+                @for (t of tecnicos(); track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+              </select>
+              @if (!tecnicos().length) { <div class="stock-hint">No hay usuarios con cargo Técnico.</div> }
+            </div>
+            <div class="campo">
+              <label for="mt-dest">Trabajo / destino</label>
+              <input id="mt-dest" type="text" [(ngModel)]="form.destino" name="mt-dest" placeholder="Ej: Instalaciones zona norte" />
+            </div>
+          </div>
+
+          <div class="campo escaner">
+            <label for="mt-scan"><i class="fas fa-barcode"></i> Escanear código de barras</label>
+            <input id="mt-scan" type="text" autocomplete="off" [ngModel]="codigoEscaneado()" (ngModelChange)="codigoEscaneado.set($event)"
+                   (keydown.enter)="escanear(); $event.preventDefault()" name="mt-scan" placeholder="Pasa el lector por el código y se agrega solo (Enter)" />
+          </div>
+
+          <div class="mat-agregar">
+            <div class="campo mat-buscar">
+              <label for="mt-bmat">Buscar material</label>
+              <input id="mt-bmat" type="text" [ngModel]="busquedaMat()" (ngModelChange)="busquedaMat.set($event)" name="mt-bmat" placeholder="Filtra la lista..." />
+            </div>
+            <div class="campo mat-sel">
+              <label for="mt-mat">Material <span class="req">*</span></label>
+              <select id="mt-mat" [(ngModel)]="nuevoMaterial.productoId" name="mt-mat">
+                <option [ngValue]="0">Selecciona un material</option>
+                @for (m of disponibles(); track m.idProducto) { <option [ngValue]="m.idProducto">{{ m.articulo }} ({{ m.unidad }} disp.)</option> }
+              </select>
+            </div>
+            <div class="campo mat-cant">
+              <label for="mt-cant">Cantidad</label>
+              <input id="mt-cant" type="number" min="1" [max]="materialElegido()?.unidad ?? 1" [(ngModel)]="nuevoMaterial.cantidad" name="mt-cant" />
+            </div>
+            <button type="button" class="btn-registrar mat-btn" (click)="agregarLinea()"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+          @if (materialElegido(); as m) { <div class="stock-hint">Stock disponible de {{ m.articulo }}: <b>{{ m.unidad }}</b></div> }
+
+          <div class="carrito">
+            <div class="carrito-head">
+              <span><i class="fas fa-basket-shopping"></i> Materiales a entregar</span>
+              <span class="carrito-total">{{ lineas().length }} material(es) · {{ totalUnidades() }} unid.</span>
+            </div>
+            @for (l of lineasDetalle(); track l.productoId) {
+              <div class="carrito-fila">
+                <div class="prod-cell">
+                  @if (l.foto) { <img [src]="l.foto" alt="" /> } @else { <span class="sin-foto"><i class="fas fa-box"></i></span> }
+                  <span>{{ l.articulo }}<small class="mini"> · {{ l.stock }} disp.</small></span>
+                </div>
+                <input type="number" min="1" [max]="l.stock" class="cant-in" [attr.aria-label]="'Cantidad de ' + l.articulo"
+                       [ngModel]="l.cantidad" (ngModelChange)="cambiarCantidad(l.productoId, $event)" [name]="'mt-l-' + l.productoId"
+                       [class.invalida]="!l.cantidad || l.cantidad <= 0 || l.cantidad > l.stock" />
+                <button type="button" class="btn-ic del" title="Quitar" aria-label="Quitar material" (click)="quitarLinea(l.productoId)"><i class="fas fa-xmark"></i></button>
+              </div>
+            } @empty {
+              <div class="carrito-vacio">Aún no agregaste materiales. Elige uno y pulsa «Agregar».</div>
+            }
+          </div>
+
+          <div class="carrito">
+            <div class="carrito-head">
+              <span><i class="fas fa-tower-broadcast"></i> ONU's a entregar</span>
+              <span class="carrito-total">{{ onusElegidas().length }} ONU(s)</span>
+            </div>
+            <div class="onu-acciones">
+              <button type="button" class="btn-sm" (click)="abrirSelectorOnu()"><i class="fas fa-list-check"></i> Elegir de las disponibles</button>
+            </div>
+            @for (o of onusElegidas(); track o.id) {
+              <div class="carrito-fila">
+                <div class="prod-cell"><span class="sin-foto"><i class="fas fa-tower-broadcast"></i></span>
+                  <span>{{ o.marca }} {{ o.modelo }}<small class="mini"> · S/N {{ o.serial }} · {{ o.mac }}</small></span></div>
+                <span></span>
+                <button type="button" class="btn-ic del" title="Quitar" aria-label="Quitar ONU" (click)="quitarOnu(o)"><i class="fas fa-xmark"></i></button>
+              </div>
+            } @empty {
+              <div class="carrito-vacio">Opcional: escanea una ONU o elígela de la lista de disponibles.</div>
+            }
+          </div>
+
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-cerrar" (click)="cancelar()"><i class="fas fa-times"></i> Cancelar</button>
+          <button type="button" class="btn-registrar" (click)="asignar()" [disabled]="guardando()">
+            <i class="fas fa-paper-plane"></i> {{ guardando() ? 'Entregando...' : 'Entregar' + (lineas().length > 1 ? ' (' + lineas().length + ')' : '') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (scannerAbierto()) {
+    <div class="modal-fondo" (click)="cerrarCamara()" style="z-index:1200">
+      <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <div class="modal-head"><h3><i class="fas fa-camera"></i> Escaneando ONU</h3>
+          <button type="button" class="modal-x" aria-label="Cerrar" (click)="cerrarCamara()">×</button></div>
+        <div class="modal-body"><video #videoEl class="scan-video" playsinline muted></video>
+          <div class="mini" style="margin-top:6px">Apunta al código de barras o QR de la ONU.</div></div>
+      </div>
+    </div>
+  }
+
+  @if (selectorOnuAbierto()) {
+    <div class="modal-fondo" (click)="cerrarSelectorOnu()" style="z-index:1100">
+      <div class="modal modal-ancho" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3><i class="fas fa-tower-broadcast"></i> ONU's disponibles</h3>
+          <button type="button" class="modal-x" aria-label="Cerrar" (click)="cerrarSelectorOnu()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="campo">
+            <label><i class="fas fa-network-wired"></i> Dirección MAC (escribe, pega o escanea)</label>
+            <div class="mac-fila" style="padding:0">
+              <div class="mac-input-container">
+                @for (i of macIdx; track i) {
+                  <input type="text" maxlength="12" class="mac-part mt-mac-part" autocomplete="off" [attr.aria-label]="'Bloque ' + (i + 1) + ' de la MAC'"
+                         [value]="macValor(i)" (input)="alEscribirMac($event, i)" (paste)="alPegarMac($event)" />
+                  @if (i < 5) { <span class="mac-separator">:</span> }
+                }
+              </div>
+              <button type="button" class="btn-scanner" (click)="abrirCamara()" title="Escanear con la cámara" aria-label="Escanear con la cámara"><i class="fas fa-camera"></i></button>
+            </div>
+          </div>
+          <div class="campo">
+            <input type="text" aria-label="Buscar ONU" [ngModel]="busquedaOnu()" (ngModelChange)="busquedaOnu.set($event)" name="mt-bonu" placeholder="Buscar por serial, MAC, marca o modelo..." />
+          </div>
+          <div class="sl-table-wrap">
+            <table class="sl-table sl-table--sm">
+              <thead><tr><th>Cod</th><th>Marca</th><th>Modelo</th><th>Serial</th><th>MAC</th><th></th></tr></thead>
+              <tbody>
+                @for (o of onusDisponibles(); track o.id) {
+                  <tr>
+                    <td>{{ o.id }}</td><td>{{ o.marca }}</td><td>{{ o.modelo }}</td><td>{{ o.serial }}</td><td>{{ o.mac }}</td>
+                    <td><button type="button" class="btn-sm" (click)="agregarOnu(o)"><i class="fas fa-plus"></i> Agregar</button></td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="6" class="vacio-fila">No hay ONU's disponibles</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <span class="mini">{{ onusElegidas().length }} elegida(s)</span>
+          <button type="button" class="btn-registrar" (click)="cerrarSelectorOnu()"><i class="fas fa-check"></i> Listo</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="barra">
+    <input type="text" aria-label="Buscar" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" name="mt-buscar" placeholder="Buscar técnico, material o destino..." />
+    <select aria-label="Estado" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)" name="mt-estado">
+      <option value="">Todos los estados</option>
+      <option value="ASIGNADO">Entregado</option>
+      <option value="PARCIAL">En uso</option>
+      <option value="CERRADO">Cerrado</option>
+    </select>
+    @if (!esTecnico) {
+      <select aria-label="Técnico" [ngModel]="filtroTecnico()" (ngModelChange)="filtroTecnico.set($event)" name="mt-ftec">
+        <option value="">Todos los técnicos</option>
+        @for (t of tecnicos(); track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+      </select>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="vacio-grande"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+  } @else {
+    <div class="sl-table-wrap">
+      <table class="sl-table">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          @if (!esTecnico) { <th>Técnico</th> }
+          <th>Material</th>
+          <th class="num">Entregado</th>
+          <th class="num">Usado</th>
+          <th class="num">Devuelto</th>
+          <th class="num">En su poder</th>
+          <th>Destino</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (g of grupos(); track g.clave) {
+            <tr>
+              <td>{{ g.items[0].fecha | date:'dd/MM/yyyy HH:mm' }}<div class="mini">por {{ g.items[0].asignadoPor || '—' }}@if (g.items[0].cargoAsignador) { ({{ g.items[0].cargoAsignador }}) }</div></td>
+              @if (!esTecnico) { <td><b>{{ g.items[0].tecnicoNombre }}</b></td> }
+              <td>
+                @for (a of g.items; track a.id) {
+                  <div class="sub prod-cell">
+                    @if (a.producto?.foto) { <img [src]="a.producto?.foto" alt="" /> } @else { <span class="sin-foto"><i class="fas fa-box"></i></span> }
+                    <span>{{ a.producto?.articulo }}</span>
+                  </div>
+                }
+              </td>
+              <td class="num">@for (a of g.items; track a.id) { <div class="sub num">{{ a.cantidad }}</div> }</td>
+              <td class="num">@for (a of g.items; track a.id) { <div class="sub num">{{ a.cantidadUsada }}</div> }</td>
+              <td class="num">@for (a of g.items; track a.id) { <div class="sub num">{{ a.cantidadDevuelta }}</div> }</td>
+              <td class="num">@for (a of g.items; track a.id) { <div class="sub num"><b>{{ a.pendiente }}</b></div> }</td>
+              <td>{{ g.items[0].destino || '—' }}</td>
+              <td>
+                @for (a of g.items; track a.id) {
+                  <div class="sub"><span class="badge" [class]="'badge ' + claseEstado(a.estado)">{{ etiqueta(a.estado) }}</span>
+                    <span class="mini">{{ a.fechaConfirmacion ? 'Recibido ' + (a.fechaConfirmacion | date:'dd/MM HH:mm') : 'Sin confirmar' }}</span></div>
+                }
+              </td>
+              <td class="acc-cell">
+                @for (a of g.items; track a.id) {
+                  <div class="sub">
+                    <button type="button" class="btn-ic ver" title="Ver bitácora" aria-label="Ver bitácora" (click)="ver(a)"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn-ic edit" title="Imprimir acta de entrega" aria-label="Imprimir acta de entrega" (click)="imprimirActa(a)"><i class="fas fa-print"></i></button>
+                    @if (puedeConfirmar(a)) {
+                      <button type="button" class="btn-ic edit" title="Confirmar recepción" aria-label="Confirmar recepción" (click)="confirmar(a)"><i class="fas fa-check"></i></button>
+                    }
+                    @if (a.pendiente > 0) {
+                      <button type="button" class="btn-ic edit" title="Registrar uso" aria-label="Registrar uso" (click)="registrar(a, 'uso')"><i class="fas fa-screwdriver-wrench"></i></button>
+                      <button type="button" class="btn-ic ver" title="Devolver al almacén" aria-label="Devolver al almacén" (click)="registrar(a, 'devolver')"><i class="fas fa-rotate-left"></i></button>
+                    }
+                    @if (puedeAnular(a)) {
+                      <button type="button" class="btn-ic del" title="Anular entrega" aria-label="Anular entrega" (click)="anular(a)"><i class="fas fa-ban"></i></button>
+                    }
+                  </div>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="esTecnico ? 9 : 10" class="vacio-fila">No hay materiales asignados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (detalleAbierto(); as d) {
+    <div class="modal-fondo" (click)="cerrarDetalle()">
+      <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3><i class="fas fa-clipboard-list"></i> {{ d.producto?.articulo }}</h3>
+          <button type="button" class="modal-x" aria-label="Cerrar" (click)="cerrarDetalle()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="ficha">
+            <div><span>Técnico</span><b>{{ d.tecnicoNombre }}</b></div>
+            <div><span>Estado</span><b>{{ etiqueta(d.estado) }}</b></div>
+            <div><span>Entregado</span><b>{{ d.cantidad }}</b></div>
+            <div><span>En su poder</span><b>{{ d.pendiente }}</b></div>
+            <div class="ancho"><span>Destino</span><b>{{ d.destino || '—' }}</b></div>
+          </div>
+          <div class="bitacora">{{ d.bitacora || 'Sin movimientos' }}</div>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn-cerrar" (click)="cerrarDetalle()">Cerrar</button></div>
+      </div>
+    </div>
+  }
+</div>

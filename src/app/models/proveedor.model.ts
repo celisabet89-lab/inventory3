@@ -5,6 +5,7 @@ export interface Proveedor {
   pais: string;
   contacto: string;
   email: string;
+  ciNit?: string;
   direccion: string;
   estado: 'ACTIVO' | 'INACTIVO';
   observaciones?: string;
@@ -17,6 +18,7 @@ export interface ProveedorRequest {
   pais: string;
   contacto: string;
   email: string;
+  ciNit?: string;
   direccion: string;
   estado?: 'ACTIVO' | 'INACTIVO';
   observaciones?: string;

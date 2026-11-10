@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, permisoGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -10,6 +10,7 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
+    canActivateChild: [permisoGuard],
     loadComponent: () => import('./layouts/main-layout/main-layout.component')
       .then(m => m.MainLayoutComponent),
     children: [
@@ -101,17 +102,20 @@ export const routes: Routes = [
         ]
       },
 
-      // ── Reportes / Reports ──────────────────────────────────────
+      // ── Materiales asignados a técnicos ─────────────────────────
       {
-        path: 'reports',
-        loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component')
-          .then(m => m.ReportDashboardComponent)
+        path: 'materiales',
+        loadComponent: () => import('./features/products/material-tecnico/material-tecnico.component').then(m => m.MaterialTecnicoComponent)
       },
+
+      // ── Reportes / Reports ──────────────────────────────────────
+      { path: 'reports', redirectTo: 'reportes/ventas', pathMatch: 'full' },
+
       // alias del menú nuevo
       {
         path: 'reportes',
         children: [
-          { path: '', loadComponent: () => import('./features/reports/report-dashboard/report-dashboard.component').then(m => m.ReportDashboardComponent) },
+          { path: '', redirectTo: 'ventas', pathMatch: 'full' },
           { path: 'ventas', data: { reporte: 'VENTAS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
           { path: 'ingresos', data: { reporte: 'INGRESOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
           { path: 'cobranzas', data: { reporte: 'COBRANZAS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
@@ -120,7 +124,12 @@ export const routes: Routes = [
           { path: 'clientes', data: { reporte: 'CLIENTES' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
           { path: 'productos', data: { reporte: 'PRODUCTOS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
           { path: 'proveedores', data: { reporte: 'PROVEEDORES' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
-          { path: 'onus', data: { reporte: 'ONUS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) }
+          { path: 'onus', data: { reporte: 'ONUS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'materiales', data: { reporte: 'MATERIALES' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'clientes-onu', data: { reporte: 'CLIENTES_ONU' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'onus-mantenimiento', data: { reporte: 'ONUS_MANTENIMIENTO' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'stock', data: { reporte: 'STOCK' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) },
+          { path: 'alertas', data: { reporte: 'ALERTAS' }, loadComponent: () => import('./features/reports/report-generator/report-generator.component').then(m => m.ReportGeneratorComponent) }
         ]
       },
 

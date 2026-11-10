@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { forkJoin } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ProductService } from '../../products/services/product.service';
@@ -16,7 +17,7 @@ import { MovementsService } from '../services/movements.service';
     FormsModule
   ],
   templateUrl: './movements-manager.component.html',
-  styleUrls: ['./movements-manager.component.css']
+  styleUrls: ['../../../shared/onu-pantalla.css', './movements-manager.component.css']
 })
 export class MovementsManagerComponent implements OnInit {
 
@@ -320,6 +321,11 @@ export class MovementsManagerComponent implements OnInit {
                 );
               }
             );
+        }
+
+        // Compras: todos los productos con el mismo código van en una sola fila.
+        if (this.activeTab() === 'COMPRA') {
+          movimientos = this.agruparPorCodigo(movimientos);
         }
 
         this.movimientos.set(
@@ -1108,6 +1114,132 @@ export class MovementsManagerComponent implements OnInit {
           });
         }
       });
+  }
+
+  // ── Agrupar compras por código ───────────────────────────────────
+
+  /** Une las líneas con el mismo código en una sola fila (conserva el orden). */
+  private agruparPorCodigo(lista: any[]): any[] {
+    const grupos = new Map<string, any[]>();
+
+    lista.forEach((m, i) => {
+      const codigo = String(m.codigo ?? m.nroMovimiento ?? '').trim();
+      const clave = codigo || `__solo_${m.idMovements ?? m.idMovimiento ?? i}`;
+      if (!grupos.has(clave)) grupos.set(clave, []);
+      grupos.get(clave)!.push(m);
+    });
+
+    return Array.from(grupos.values()).map(lineas => {
+      const primera = lineas[0];
+      const activas = lineas.filter(l => String(l.estadoMovimiento || 'ACTIVO').toUpperCase() !== 'ANULADO');
+      const total = lineas.reduce((t, l) => t + (this.getMovimientoTotal(l) || 0), 0);
+
+      return {
+        ...primera,
+        __lineas: lineas,
+        cantidad: lineas.reduce((t, l) => t + (Number(l.cantidad) || 0), 0),
+        total,
+        estadoMovimiento: activas.length === 0 ? 'ANULADO' : 'ACTIVO'
+      };
+    });
+  }
+
+  /** Productos de una fila (una compra puede tener varios). */
+  lineasDe(mov: any): any[] {
+    return mov?.__lineas?.length ? mov.__lineas : [mov];
+  }
+
+  /** Detalle completo de la compra: todos sus productos. */
+  verDetallesCompra(mov: any): void {
+    const lineas = this.lineasDe(mov);
+    const filas = lineas.map(l => `
+      <tr>
+        <td style="padding:5px 8px;text-align:left">${this.escapeHtml(this.getProductoNombre(l))}</td>
+        <td style="padding:5px 8px;text-align:right">${this.escapeHtml(l.cantidad ?? '—')}</td>
+        <td style="padding:5px 8px;text-align:right">${this.escapeHtml(this.formatCurrency(this.getMovimientoTotal(l)))}</td>
+      </tr>`).join('');
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Detalle de compra',
+      width: 640,
+      confirmButtonColor: '#1b6f6f',
+      html: `
+        <div style="text-align:left;line-height:1.8">
+          <div><strong>Número:</strong> ${this.escapeHtml(mov.codigo || mov.nroMovimiento || '—')}</div>
+          <div><strong>Fecha:</strong> ${this.escapeHtml(this.formatDate(mov.fecha))}</div>
+          <div><strong>Proveedor:</strong> ${this.escapeHtml(mov.responsable || '—')}</div>
+          <div><strong>Usuario:</strong> ${this.escapeHtml(this.getUsuarioNombre(mov))}</div>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px">
+            <thead><tr style="background:#1b6f6f;color:#fff">
+              <th style="padding:6px 8px;text-align:left">Producto</th>
+              <th style="padding:6px 8px;text-align:right">Cant.</th>
+              <th style="padding:6px 8px;text-align:right">Total</th>
+            </tr></thead>
+            <tbody>${filas}</tbody>
+            <tfoot><tr style="font-weight:700;border-top:2px solid #1b6f6f">
+              <td style="padding:6px 8px">Total de la compra</td>
+              <td style="padding:6px 8px;text-align:right">${this.escapeHtml(mov.cantidad)}</td>
+              <td style="padding:6px 8px;text-align:right">${this.escapeHtml(this.formatCurrency(this.getMovimientoTotal(mov)))}</td>
+            </tr></tfoot>
+          </table>
+        </div>`
+    });
+  }
+
+  /** Anula todos los productos de la compra con una sola confirmación. */
+  async anularCompra(mov: any): Promise<void> {
+    const activas = this.lineasDe(mov).filter(l =>
+      String(l.estadoMovimiento || 'ACTIVO').toUpperCase() !== 'ANULADO');
+
+    if (activas.length === 0) {
+      await Swal.fire({ icon: 'info', title: 'Compra ya anulada', text: 'Todos los productos ya fueron anulados.' });
+      return;
+    }
+
+    const ids = activas
+      .map(l => l.idMovements ?? l.idMovimiento ?? l.id)
+      .filter(id => id !== null && id !== undefined)
+      .map(Number);
+
+    if (ids.length !== activas.length) {
+      await Swal.fire({ icon: 'error', title: 'Error', text: 'No se encontró el ID de algún movimiento.' });
+      return;
+    }
+
+    const confirmacion = await Swal.fire({
+      icon: 'warning',
+      title: '¿Anular esta compra?',
+      html: `<div style="text-align:left;line-height:1.8">
+        <div><strong>Número:</strong> ${this.escapeHtml(mov.codigo || mov.nroMovimiento || '—')}</div>
+        <div><strong>Productos:</strong> ${activas.length}</div>
+        <div><strong>Total:</strong> ${this.escapeHtml(this.formatCurrency(this.getMovimientoTotal(mov)))}</div>
+      </div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, anular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626'
+    });
+    if (!confirmacion.isConfirmed) return;
+
+    Swal.fire({ title: 'Anulando...', allowOutsideClick: false, allowEscapeKey: false, didOpen: () => Swal.showLoading() });
+
+    forkJoin(ids.map(id => this.movSvc.anular(id))).subscribe({
+      next: async () => {
+        Swal.close();
+        await Swal.fire({ icon: 'success', title: 'Compra anulada', text: 'La compra fue anulada correctamente.', confirmButtonColor: '#1b6f6f' });
+        this.loadMovimientos();
+      },
+      error: async (error) => {
+        Swal.close();
+        await Swal.fire({
+          icon: 'error',
+          title: 'No se pudo anular',
+          text: error?.error?.message || error?.error?.error || error?.message || 'No se pudo anular la compra.'
+        });
+        this.loadMovimientos();
+      }
+    });
   }
 
   getPaginatedMovements(): any[] {

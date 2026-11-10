@@ -16,7 +16,7 @@ interface UnidadMedida {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './unidad-medida-list.component.html',
-  styleUrls: ['./unidad-medida-list.component.css']
+  styleUrls: ['../../../../shared/onu-pantalla.css', './unidad-medida-list.component.css']
 })
 export class UnidadMedidaListComponent implements OnInit {
   private svc = inject(UnidadMedidaService);
@@ -39,12 +39,10 @@ export class UnidadMedidaListComponent implements OnInit {
     this.loading.set(true);
     this.svc.getAll().subscribe({
       next: (data: UnidadMedida[]) => {
-        console.log('Unidades cargadas:', data);
         this.unidades.set(data);
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error cargando unidades:', error);
         this.loading.set(false);
         Swal.fire({
           icon: 'error',
@@ -65,13 +63,11 @@ export class UnidadMedidaListComponent implements OnInit {
   }
 
   openEdit(unidad: UnidadMedida): void {
-    console.log('Editando unidad:', unidad);
 
     // Obtener el ID correctamente (puede ser id o idUnidad)
     const id = unidad.idUnidad || unidad.id;
 
     if (!id) {
-      console.error('Unidad sin ID:', unidad);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -142,7 +138,6 @@ export class UnidadMedidaListComponent implements OnInit {
       },
       error: (error) => {
         this.saving.set(false);
-        console.error('Error al guardar unidad:', error);
 
         if (error.status === 401) {
           this.errorMsg = 'No autorizado. Por favor, inicia sesión nuevamente.';
@@ -160,7 +155,6 @@ export class UnidadMedidaListComponent implements OnInit {
     const id = unidad.idUnidad || unidad.id;
 
     if (!id) {
-      console.error('Unidad sin ID para eliminar:', unidad);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -193,7 +187,6 @@ export class UnidadMedidaListComponent implements OnInit {
             });
           },
           error: (error) => {
-            console.error('Error al eliminar:', error);
             this.loading.set(false);
             let errorMessage = 'No se pudo eliminar la unidad';
 

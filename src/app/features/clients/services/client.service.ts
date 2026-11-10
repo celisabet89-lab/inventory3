@@ -11,5 +11,6 @@ export class ClientService {
   getById(id: number):           Observable<any>   { return this.http.get<any>(`${this.api}/${id}`); }
   create(data: any):             Observable<any>   { return this.http.post<any>(this.api, data); }
   update(id: number, data: any): Observable<any>   { return this.http.put<any>(`${this.api}/${id}`, data); }
+  changeStatus(id: number, estado: 'ACTIVO' | 'INACTIVO'): Observable<any> { return this.http.patch<any>(`${this.api}/${id}/estado`, { estado }); }
   delete(id: number):            Observable<void>  { return this.http.delete<void>(`${this.api}/${id}`); }
 }

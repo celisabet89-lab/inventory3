@@ -1,147 +1,103 @@
-<div class="cf-wrap">
+<div class="modal-head">
+  <h3>
+    <span class="cf-avatar" aria-hidden="true">{{ iniciales() }}</span>
+    <span class="cf-titulo">{{ isEdit ? 'Editar cliente' : 'Nuevo cliente' }}<small>{{ nombreCompleto() || 'Completa los datos del cliente' }}</small></span>
+  </h3>
+  <button type="button" class="modal-x" (click)="cancelar()" aria-label="Cerrar">&times;</button>
+</div>
 
-  <div class="cf-header">
-    <div class="header-left">
-      <div class="header-icon-wrap"><i class="fas fa-user-friends"></i></div>
-      <div>
-        <h3>{{ isEdit ? 'Editar Cliente' : 'Nuevo Cliente' }}</h3>
-        <span class="header-sub">{{ isEdit ? 'Modifica los datos del cliente' : 'Completa los datos del nuevo cliente' }}</span>
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body cf-body">
+    <div class="fila-2">
+      <div class="campo">
+        <label for="c-nombre">Nombre <span class="req">*</span></label>
+        <input id="c-nombre" formControlName="nombre" placeholder="Nombre" [class.invalido]="hasError('nombre')" autocomplete="off" />
+        @if (hasError('nombre')) { <span class="ferr">{{ getError('nombre') }}</span> }
+      </div>
+      <div class="campo">
+        <label for="c-apellido">Apellido <span class="req">*</span></label>
+        <input id="c-apellido" formControlName="apellido" placeholder="Apellido" [class.invalido]="hasError('apellido')" autocomplete="off" />
+        @if (hasError('apellido')) { <span class="ferr">{{ getError('apellido') }}</span> }
       </div>
     </div>
-    <button class="btn-close" (click)="cancelar()" type="button"><i class="fas fa-times"></i></button>
-  </div>
 
-  <form [formGroup]="form" class="cf-body">
-    <div class="cf-grid">
-
-      <!-- COLUMNA PRINCIPAL -->
-      <div class="col-main">
-
-        <div class="section-card">
-          <h4 class="section-t"><i class="fas fa-user"></i> Datos Personales</h4>
-
-          <div class="row-2">
-            <div class="fld">
-              <label>Nombre *</label>
-              <input formControlName="nombre" class="f-in" placeholder="Nombre..." />
-              @if (hasError('nombre','required')) { <span class="ferr">Requerido</span> }
-            </div>
-            <div class="fld">
-              <label>Apellido *</label>
-              <input formControlName="apellido" class="f-in" placeholder="Apellido..." />
-              @if (hasError('apellido','required')) { <span class="ferr">Requerido</span> }
-            </div>
-          </div>
-
-          <div class="row-2">
-            <div class="fld">
-              <label><i class="fas fa-id-card"></i> CI</label>
-              <input formControlName="ci" class="f-in" placeholder="Número de CI..." />
-            </div>
-            <div class="fld">
-              <label><i class="fas fa-phone"></i> Teléfono</label>
-              <input type="number" formControlName="telefono" class="f-in" placeholder="77712345" />
-            </div>
-          </div>
-
-          <div class="row-2">
-            <div class="fld">
-              <label><i class="fas fa-envelope"></i> Gmail</label>
-              <input formControlName="gmail" class="f-in" placeholder="correo@gmail.com" />
-            </div>
-            <div class="fld">
-              <label><i class="fas fa-map-marker-alt"></i> Zona</label>
-              <input formControlName="zona" class="f-in" placeholder="Norte, Sur, Centro..." />
-            </div>
-          </div>
-
-          <div class="fld">
-            <label><i class="fas fa-home"></i> Dirección</label>
-            <input formControlName="direccion" class="f-in" placeholder="Av. Principal 123..." />
-          </div>
-
-          <div class="fld">
-            <label><i class="fas fa-sticky-note"></i> Observaciones</label>
-            <textarea formControlName="observaciones" class="f-in f-ta" rows="2"
-                      placeholder="Observaciones adicionales..."></textarea>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h4 class="section-t"><i class="fas fa-file-contract"></i> Lugar y Estado</h4>
-
-          <div class="row-2">
-            <!-- DROPDOWN LUGAR DE VENTA — idLugarVenta igual que idCategoria en producto -->
-            <div class="fld">
-              <label><i class="fas fa-store"></i> Lugar de Venta</label>
-              @if (lugares().length > 0) {
-                <select formControlName="idLugarVenta" class="f-in f-sel">
-                  <option [value]="null">— Sin lugar asignado —</option>
-                  @for (l of lugares(); track $index) {
-                    <option [value]="l.idLugarVenta">
-                      {{ l.nombre }}@if (l.ciudad) { · {{ l.ciudad }} }
-                    </option>
-                  }
-                </select>
-              } @else {
-                <div class="f-hint">
-                  ⏳ Cargando lugares... Si no aparecen,
-                  <a routerLink="/clientes/lugar-venta">créalos aquí</a>
-                </div>
-              }
-            </div>
-
-            <div class="fld">
-              <label>Estado</label>
-              <select formControlName="estado" class="f-in f-sel">
-                <option value="ACTIVO">Activo</option>
-                <option value="INACTIVO">Inactivo</option>
-              </select>
-            </div>
-          </div>
-        </div>
+    <div class="fila-2">
+      <div class="campo">
+        <label for="c-ci">CI / NIT</label>
+        <input id="c-ci" formControlName="ci" placeholder="Número de documento" autocomplete="off" />
       </div>
+      <div class="campo">
+        <label for="c-tel">Teléfono</label>
+        <input id="c-tel" type="tel" inputmode="numeric" maxlength="15" formControlName="telefono" placeholder="77712345" [class.invalido]="hasError('telefono')" />
+        @if (hasError('telefono')) { <span class="ferr">{{ getError('telefono') }}</span> }
+      </div>
+    </div>
 
-      <!-- COLUMNA LATERAL -->
-      <div class="col-side">
-        <div class="section-card avatar-card">
-          <div class="avatar-grande">
-            {{ (form.value.nombre?.charAt(0) || '?').toUpperCase() }}{{ (form.value.apellido?.charAt(0) || '').toUpperCase() }}
-          </div>
-          <p class="avatar-nombre">{{ form.value.nombre || 'Nombre' }} {{ form.value.apellido || '' }}</p>
-          <span class="estado-chip" [class.activo]="form.value.estado === 'ACTIVO'">
-            {{ form.value.estado }}
-          </span>
-        </div>
+    <div class="fila-2">
+      <div class="campo">
+        <label for="c-gmail">Correo (Gmail)</label>
+        <input id="c-gmail" type="email" formControlName="gmail" placeholder="correo@gmail.com" [class.invalido]="hasError('gmail')" />
+        @if (hasError('gmail')) { <span class="ferr">{{ getError('gmail') }}</span> }
+      </div>
+      <div class="campo">
+        <label for="c-zona">Zona</label>
+        <input id="c-zona" formControlName="zona" placeholder="Norte, Sur, Centro..." />
+      </div>
+    </div>
 
-        <!-- Preview lugar seleccionado -->
-        @if (getLugarSeleccionado()) {
-          <div class="section-card lugar-preview">
-            <p class="preview-lbl"><i class="fas fa-store"></i> Lugar seleccionado:</p>
-            <p class="lugar-nombre">{{ getLugarSeleccionado()?.nombre }}</p>
-            @if (getLugarSeleccionado()?.ciudad) {
-              <span class="lugar-det">📍 {{ getLugarSeleccionado()?.ciudad }}</span>
+    <div class="campo">
+      <label for="c-dir">Dirección</label>
+      <input id="c-dir" formControlName="direccion" placeholder="Av. Principal 123..." />
+    </div>
+
+    <div class="campo">
+      <label for="c-obs">Observaciones</label>
+      <textarea id="c-obs" formControlName="observaciones" rows="2" maxlength="300" placeholder="Observaciones adicionales..."></textarea>
+    </div>
+
+    <h4 class="seccion"><i class="fa-solid fa-store"></i> Lugar y estado</h4>
+    <div class="fila-2">
+      <div class="campo">
+        <label for="c-lugar">Lugar de venta</label>
+        @if (lugares().length > 0) {
+          <select id="c-lugar" formControlName="idLugarVenta">
+            <option [ngValue]="null">— Sin lugar asignado —</option>
+            @for (l of lugares(); track l.idLugarVenta) {
+              <option [ngValue]="l.idLugarVenta">{{ l.nombre }}@if (l.ciudad) { · {{ l.ciudad }} }</option>
             }
-            @if (getLugarSeleccionado()?.direccion) {
-              <span class="lugar-det">{{ getLugarSeleccionado()?.direccion }}</span>
-            }
-            @if (getLugarSeleccionado()?.telefono) {
-              <span class="lugar-det"><i class="fas fa-phone"></i> {{ getLugarSeleccionado()?.telefono }}</span>
-            }
+          </select>
+        } @else {
+          <div class="f-hint">
+            No hay lugares cargados. <a routerLink="/clientes/lugar-venta">Créalos aquí</a>
           </div>
         }
       </div>
-
+      <div class="campo">
+        <span class="lbl">Estado</span>
+        <div class="cf-estados" role="radiogroup" aria-label="Estado del cliente">
+          <button type="button" role="radio" class="cf-est" [class.on]="form.value.estado === 'ACTIVO'" [attr.aria-checked]="form.value.estado === 'ACTIVO'" (click)="setEstado('ACTIVO')"><i class="fa-solid fa-circle-check"></i> Activo</button>
+          <button type="button" role="radio" class="cf-est off" [class.on]="form.value.estado === 'INACTIVO'" [attr.aria-checked]="form.value.estado === 'INACTIVO'" (click)="setEstado('INACTIVO')"><i class="fa-solid fa-circle-pause"></i> Inactivo</button>
+        </div>
+      </div>
     </div>
-  </form>
 
-  <div class="cf-footer">
-    <button type="button" class="btn-cancel" (click)="cancelar()" [disabled]="saving()">
-      <i class="fas fa-times"></i> Cancelar
+    @if (getLugarSeleccionado(); as lugar) {
+      <div class="ficha">
+        <div class="ancho"><span>Lugar seleccionado</span><b>{{ lugar.nombre }}</b></div>
+        @if (lugar.ciudad) { <div><span>Ciudad</span><b>{{ lugar.ciudad }}</b></div> }
+        @if (lugar.telefono) { <div><span>Teléfono</span><b>{{ lugar.telefono }}</b></div> }
+        @if (lugar.direccion) { <div class="ancho"><span>Dirección</span><b>{{ lugar.direccion }}</b></div> }
+      </div>
+    }
+  </div>
+
+  <div class="modal-foot">
+    <button type="button" class="btn-cerrar" (click)="cancelar()" [disabled]="saving()">
+      <i class="fa-solid fa-xmark"></i> Cancelar
     </button>
-    <button type="button" class="btn-save" (click)="guardar()" [disabled]="saving()">
-      @if (saving()) { <i class="fas fa-spinner fa-spin"></i> Guardando... }
-      @else { <i class="fas fa-save"></i> {{ isEdit ? 'Actualizar Cliente' : 'Guardar Cliente' }} }
+    <button type="submit" class="btn-registrar" [disabled]="saving()">
+      @if (saving()) { <i class="fa-solid fa-spinner fa-spin"></i> Guardando... }
+      @else { <i class="fa-solid fa-floppy-disk"></i> {{ isEdit ? 'Actualizar cliente' : 'Guardar cliente' }} }
     </button>
   </div>
-</div>
+</form>

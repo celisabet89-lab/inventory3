@@ -4,9 +4,12 @@ import {
 } from '@angular/common/http';
 
 import { catchError, throwError } from 'rxjs';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
 export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
 
   return next(req).pipe(
 
@@ -36,13 +39,18 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
 
         localStorage.removeItem('token');
         sessionStorage.removeItem('token');
+        // Sesión vencida (por ejemplo, el servidor se reinició): volver a iniciar sesión.
+        if (!req.url.includes('/auth/login')) {
+          localStorage.removeItem('user');
+          router.navigate(['/login']);
+        }
 
       } else if (error.status === 403) {
 
         errorTitle = 'Acceso prohibido';
 
         errorMessage =
-          'No tiene permisos para realizar esta acción';
+          error.error?.message || 'No tiene permisos para realizar esta acción';
 
       } else if (error.status === 404) {
 
@@ -66,7 +74,10 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
           errorMessage;
       }
 
-      if (error.status !== 401) {
+      // Las consultas (GET) que el cargo no puede ver se ignoran sin ventana: la pantalla las trata como vacías.
+      const consultaProhibida = error.status === 403 && req.method === 'GET';
+
+      if (error.status !== 401 && !consultaProhibida) {
 
         Swal.fire({
           icon: 'error',

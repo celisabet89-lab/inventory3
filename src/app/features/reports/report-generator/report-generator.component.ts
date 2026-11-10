@@ -14,13 +14,21 @@ import { exportarExcel, exportarPdf } from '../../../shared/exportar/exportar.ut
   standalone: true,
   imports: [FormsModule],
   templateUrl: './report-generator.component.html',
-  styleUrl: './report-generator.component.css'
+  styleUrls: ['../../../shared/onu-pantalla.css', './report-generator.component.css']
 })
 export class ReportGeneratorComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private reportes = inject(ReportsService);
 
   readonly lista = REPORTES;
+
+  readonly iconos: Record<TipoReporte, string> = {
+    COBRANZAS: 'fa-hand-holding-dollar', VENTAS: 'fa-cart-shopping', INGRESOS: 'fa-sack-dollar', COBROS: 'fa-receipt',
+    PAGOS: 'fa-money-bill-transfer', CANASTILLOS: 'fa-box-open', USUARIOS: 'fa-users', CLIENTES: 'fa-user-tie',
+    PRODUCTOS: 'fa-boxes-stacked', PROVEEDORES: 'fa-truck', ONUS: 'fa-wifi',
+    MATERIALES: 'fa-toolbox', CLIENTES_ONU: 'fa-user-group', ONUS_MANTENIMIENTO: 'fa-screwdriver-wrench',
+    STOCK: 'fa-warehouse', ALERTAS: 'fa-bell'
+  };
 
   tipo: TipoReporte = (this.route.snapshot.data['reporte'] as TipoReporte) ?? 'COBRANZAS';
 
@@ -44,6 +52,20 @@ export class ReportGeneratorComponent implements OnInit {
 
   get info() {
     return infoDe(this.tipo);
+  }
+
+  /** Texto de vista previa con los filtros activos. */
+  get resumenFiltros(): string {
+    const i = this.info;
+    const partes: string[] = [];
+    if (i.esListado) partes.push('Listado completo');
+    else if (i.soloHasta) partes.push(`Deudas hasta ${this.filtros.hasta}`);
+    else partes.push(`${this.filtros.desde} a ${this.filtros.hasta}`);
+    partes.push(`${i.etiquetaContraparte}: ${this.filtros.contraparte || 'Todos'}`);
+    if (!i.esListado) partes.push(`Pago: ${this.filtros.formaPago || 'Todas'}`);
+    const palabra = (this.filtros.palabra ?? '').trim();
+    if (i.usaPalabra && palabra && palabra !== 'canast') partes.push(`Texto: "${palabra}"`);
+    return partes.join('  ·  ');
   }
 
   ngOnInit(): void {
@@ -76,6 +98,18 @@ export class ReportGeneratorComponent implements OnInit {
   private actualizarOpciones(): void {
     this.contrapartes = opcionesContraparte(this.tipo, this.datos);
     this.formasPago = opcionesFormaPago(this.datos);
+  }
+
+  generarComo(formato: 'PDF' | 'EXCEL'): void {
+    if (this.cargando) return;
+    this.formato = formato;
+    this.generar();
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.contraparte = '';
+    this.filtros.formaPago = '';
+    this.filtros.palabra = this.tipo === 'CANASTILLOS' ? 'canast' : '';
   }
 
   generar(): void {

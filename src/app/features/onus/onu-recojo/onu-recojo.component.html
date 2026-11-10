@@ -1,7 +1,7 @@
-<div class="onu-page">
+<div class="onu-page sl-page">
   <div class="page-header">
     <div class="header-left">
-      <span class="header-icon"><i class="fas fa-truck-loading"></i></span>
+      <span class="header-icon"><i class="fas fa-truck-loading" aria-hidden="true"></i></span>
       <div>
         <h2>Autorización de Recojo de ONU</h2>
         <span class="header-sub">Nueva autorización de recojo de ONU</span>
@@ -52,7 +52,7 @@
             </thead>
             <tbody>
               @for (o of disponibles(); track o.id) {
-                <tr class="fila-click" (dblclick)="agregar(o)">
+                <tr class="fila-click" (dblclick)="agregar(o)" title="Doble clic para agregar">
                   <td>{{ o.id }}</td>
                   <td>{{ o.marca }}</td>
                   <td>{{ o.modelo }}</td>
@@ -60,7 +60,7 @@
                   <td>{{ o.mac }}</td>
                   <td>{{ o.contrato || '—' }}</td>
                   <td>{{ cliente(o) }}</td>
-                  <td><button type="button" class="btn-sm" (click)="agregar(o)"><i class="fas fa-plus"></i> Agregar</button></td>
+                  <td><button type="button" class="btn-sm" (click)="agregar(o)" [attr.aria-label]="'Agregar ONU ' + o.serial"><i class="fas fa-plus" aria-hidden="true"></i> Agregar</button></td>
                 </tr>
               } @empty {
                 <tr><td colspan="8" class="vacio-fila">{{ cargando() ? 'Cargando...' : 'No hay ONU\'s asignadas a clientes para recoger' }}</td></tr>
@@ -90,8 +90,8 @@
               <td>{{ l.onu.mac }}</td>
               <td>{{ l.onu.contrato || '—' }}</td>
               <td>{{ cliente(l.onu) }}</td>
-              <td><input class="detalle-obs" type="text" [(ngModel)]="l.observaciones" name="obs-{{ l.onu.id }}" placeholder="Opcional" /></td>
-              <td><button type="button" class="btn-sm btn-quitar" (click)="quitar(l)" title="Quitar"><i class="fas fa-trash"></i></button></td>
+              <td><input class="detalle-obs" type="text" [attr.aria-label]="'Observaciones ONU ' + l.onu.serial" [(ngModel)]="l.observaciones" name="obs-{{ l.onu.id }}" placeholder="Opcional" /></td>
+              <td><button type="button" class="btn-sm btn-quitar" (click)="quitar(l)" title="Quitar" [attr.aria-label]="'Quitar ONU ' + l.onu.serial"><i class="fas fa-trash" aria-hidden="true"></i></button></td>
             </tr>
           } @empty {
             <tr><td colspan="9" class="vacio-fila">Agrega ONU's desde la lista de ONU's de clientes</td></tr>
